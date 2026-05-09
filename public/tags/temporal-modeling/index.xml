@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Temporal Modeling on Paper</title>
+    <link>https://y30n9ju1v.github.io/paper/tags/temporal-modeling/</link>
+    <description>Recent content in Temporal Modeling on Paper</description>
+    <generator>Hugo</generator>
+    <language>ko-KR</language>
+    <lastBuildDate>Fri, 24 Apr 2026 13:00:00 +0900</lastBuildDate>
+    <atom:link href="https://y30n9ju1v.github.io/paper/tags/temporal-modeling/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction</title>
+      <link>https://y30n9ju1v.github.io/paper/docs/autonomous-driving/perception/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/</link>
+      <pubDate>Fri, 24 Apr 2026 13:00:00 +0900</pubDate>
+      <guid>https://y30n9ju1v.github.io/paper/docs/autonomous-driving/perception/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/</guid>
+      <description>&lt;h2 id=&#34;개요&#34;&gt;개요&lt;a class=&#34;anchor&#34; href=&#34;#%ea%b0%9c%ec%9a%94&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;strong&gt;저자&lt;/strong&gt;: Sicheng Zuo, Wenzhao Zheng, Yuanhui Huang, Jie Zhou, Jiwen Lu (Tsinghua University)&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;발행년도&lt;/strong&gt;: 2024&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;arXiv&lt;/strong&gt;: 2412.10373&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;주요 내용&lt;/strong&gt;: 3D Gaussian을 장면 표현으로 채택한 World Model 기반 프레임워크. 3D occupancy 예측을 현재 센서 입력에 조건화된 4D occupancy 예측 문제로 재정의하고, 추가 연산 없이 단일 프레임 대비 mIoU 2% 이상 향상.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;한계-극복&#34;&gt;한계 극복&lt;a class=&#34;anchor&#34; href=&#34;#%ed%95%9c%ea%b3%84-%ea%b7%b9%eb%b3%b5&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;strong&gt;기존 한계 1 — 단순 멀티 프레임 융합의 물리적 비일관성&lt;/strong&gt;: BEVFormer 등 기존 시간적 퍼셉션 방법들은 각 프레임의 BEV/볼륨 피처를 독립적으로 추출한 뒤 정합·융합하는 방식을 사용. 이는 인접 프레임의 장면 표현이 자차 이동과 동적 객체 움직임으로부터 직접 진화한다는 자연스러운 연속성(continuity)과 단순성(simplicity)을 무시함.&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;기존 한계 2 — 추가 연산 비용&lt;/strong&gt;: 시간적 융합을 위해 추가 인코딩·정합·융합 모듈이 필요하여 단일 프레임 대비 레이턴시·메모리가 크게 증가.&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;기존 한계 3 — 암묵적 동적 객체 모델링&lt;/strong&gt;: StreamPETR 같은 객체 쿼리 기반 방법은 동적 객체의 움직임을 암묵적으로만 표현하여 밀집 occupancy 예측에 부적합.&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;이 논문의 접근 방식&lt;/strong&gt;: 3D Gaussian으로 장면을 명시적으로 표현하고, 장면 진화를 세 요소(자차 정합·동적 객체 이동·신규 영역 완성)로 분해하여 World Model이 이를 학습. 단일 프레임 입력만으로 스트리밍 방식의 4D occupancy 예측 수행.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;목차&#34;&gt;목차&lt;a class=&#34;anchor&#34; href=&#34;#%eb%aa%a9%ec%b0%a8&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Section 1: Introduction&lt;/li&gt;&#xA;&lt;li&gt;Section 2: Related Work&lt;/li&gt;&#xA;&lt;li&gt;Section 3: Proposed Approach&#xA;&lt;ul&gt;&#xA;&lt;li&gt;3.1 World Models for Perception&lt;/li&gt;&#xA;&lt;li&gt;3.2 Explicit Scene Evolution Modeling&lt;/li&gt;&#xA;&lt;li&gt;3.3 3D Gaussian World Model&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;/li&gt;&#xA;&lt;li&gt;Section 4: Experiments&lt;/li&gt;&#xA;&lt;li&gt;Section 5: Conclusion&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;hr&gt;&#xA;&lt;h2 id=&#34;section-1--2-introduction--related-work&#34;&gt;Section 1 &amp;amp; 2: Introduction &amp;amp; Related Work&lt;a class=&#34;anchor&#34; href=&#34;#section-1--2-introduction--related-work&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;p&gt;&lt;strong&gt;요약&lt;/strong&gt;&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

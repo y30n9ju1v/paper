@@ -5,6 +5,7 @@ draft: false
 categories: ["Papers", "Autonomous Driving", "Benchmark & Dataset"]
 tags: ["Autonomous Driving", "Dataset", "3D Object Detection", "Multi-Modal", "LiDAR"]
 year: 2020
+references: []
 ---
 
 ## 개요

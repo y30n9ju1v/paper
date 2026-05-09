@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="ko-KR" dir="ltr">
+<head><script src="/paper/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=paper/livereload" data-no-instant defer></script>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="개요# 저자: Holger Caesar, Varun Bankiti, Alex H. Lang, Sourabh Vora, Venice Erin Liong, Qiang Xu, Anush Krishnan, Yu Pan, Giancarlo Baldan, Oscar Beijbom (nuTonomy, an APTIV company) 발행년도: 2020 학회: CVPR 2020 arXiv: 1903.11027 주요 내용: 자율주행을 위한 최초의 완전한 멀티모달 공개 데이터셋. 6개의 카메라, 5개의 레이더, 1개의 라이다로 구성된 전방위 센서 슈트를 갖추고 있으며, 1000개의 씬, 23개 클래스, 140만 개 이상의 3D 바운딩 박스 어노테이션을 포함한다. 목차# Section 1: Introduction Section 2: The nuScenes Dataset Section 3: Tasks &amp; Metrics Section 4: Experiments Section 5: Conclusion Supplementary: Dataset Details &amp; Implementation Section 1: Introduction# 요약
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/paper/docs/nuscenes-multimodal-dataset-autonomous-driving/">
+  <meta property="og:site_name" content="Paper">
+  <meta property="og:title" content="nuScenes: A Multimodal Dataset for Autonomous Driving">
+  <meta property="og:description" content="개요# 저자: Holger Caesar, Varun Bankiti, Alex H. Lang, Sourabh Vora, Venice Erin Liong, Qiang Xu, Anush Krishnan, Yu Pan, Giancarlo Baldan, Oscar Beijbom (nuTonomy, an APTIV company) 발행년도: 2020 학회: CVPR 2020 arXiv: 1903.11027 주요 내용: 자율주행을 위한 최초의 완전한 멀티모달 공개 데이터셋. 6개의 카메라, 5개의 레이더, 1개의 라이다로 구성된 전방위 센서 슈트를 갖추고 있으며, 1000개의 씬, 23개 클래스, 140만 개 이상의 3D 바운딩 박스 어노테이션을 포함한다. 목차# Section 1: Introduction Section 2: The nuScenes Dataset Section 3: Tasks &amp; Metrics Section 4: Experiments Section 5: Conclusion Supplementary: Dataset Details &amp; Implementation Section 1: Introduction# 요약">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:published_time" content="2026-04-10T09:00:00+09:00">
+    <meta property="article:modified_time" content="2026-04-10T09:00:00+09:00">
+    <meta property="article:tag" content="Autonomous Driving">
+    <meta property="article:tag" content="Dataset">
+    <meta property="article:tag" content="3D Object Detection">
+    <meta property="article:tag" content="Multi-Modal">
+    <meta property="article:tag" content="LiDAR">
+
+
+  <meta itemprop="name" content="nuScenes: A Multimodal Dataset for Autonomous Driving">
+  <meta itemprop="description" content="개요# 저자: Holger Caesar, Varun Bankiti, Alex H. Lang, Sourabh Vora, Venice Erin Liong, Qiang Xu, Anush Krishnan, Yu Pan, Giancarlo Baldan, Oscar Beijbom (nuTonomy, an APTIV company) 발행년도: 2020 학회: CVPR 2020 arXiv: 1903.11027 주요 내용: 자율주행을 위한 최초의 완전한 멀티모달 공개 데이터셋. 6개의 카메라, 5개의 레이더, 1개의 라이다로 구성된 전방위 센서 슈트를 갖추고 있으며, 1000개의 씬, 23개 클래스, 140만 개 이상의 3D 바운딩 박스 어노테이션을 포함한다. 목차# Section 1: Introduction Section 2: The nuScenes Dataset Section 3: Tasks &amp; Metrics Section 4: Experiments Section 5: Conclusion Supplementary: Dataset Details &amp; Implementation Section 1: Introduction# 요약">
+  <meta itemprop="datePublished" content="2026-04-10T09:00:00+09:00">
+  <meta itemprop="dateModified" content="2026-04-10T09:00:00+09:00">
+  <meta itemprop="wordCount" content="1349">
+  <meta itemprop="keywords" content="Autonomous Driving,Dataset,3D Object Detection,Multi-Modal,LiDAR">
+
+<title>nuScenes: A Multimodal Dataset for Autonomous Driving | Paper</title>
+<link rel="icon" href="/paper/favicon.png" >
+<link rel="manifest" href="/paper/manifest.json">
+<link rel="canonical" href="http://localhost:1313/paper/docs/nuscenes-multimodal-dataset-autonomous-driving/">
+<link rel="stylesheet" href="/paper/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/paper/fuse.min.js"></script>
+  <script defer src="/paper/en.search.min.136303f53f731e7f187e59dca354807444ce24732e128843ea97e041d47b7d93.js" integrity="sha256-E2MD9T9zHn8Yflnco1SAdETOJHMuEohD6pfgQdR7fZM=" crossorigin="anonymous"></script>
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '\\[', right: '\\]', display: true},
+      {left: '\\(', right: '\\)', display: false},
+      {left: '$', right: '$', display: false}
+    ]
+  });
+});
+</script>
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/paper/"><span>Paper</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/controlnet-adding-conditional-control-to-text-to-image-diffusion-models/" class="">
+      ControlNet: Adding Conditional Control to Text-to-Image Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/clip-learning-transferable-visual-models-from-natural-language-supervision/" class="">
+      CLIP: Learning Transferable Visual Models From Natural Language Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointnet-plus-plus-deep-hierarchical-feature-learning/" class="">
+      PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/" class="">
+      GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/lidarsim-realistic-lidar-simulation-by-leveraging-the-real-world/" class="">
+      LiDARsim: Realistic LiDAR Simulation by Leveraging the Real World</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vit-an-image-is-worth-16x16-words/" class="">
+      ViT: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/resnet-deep-residual-learning-for-image-recognition/" class="">
+      ResNet: Deep Residual Learning for Image Recognition</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/" class="">
+      StreamMapNet: Streaming Mapping Network for Vectorized Online HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vectormapnet-end-to-end-vectorized-hd-map-learning/" class="">
+      VectorMapNet: End-to-end Vectorized HD Map Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/detr-end-to-end-object-detection-with-transformers/" class="">
+      DETR: End-to-End Object Detection with Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/attention-is-all-you-need/" class="">
+      Attention Is All You Need</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/maptr-structured-modeling-online-vectorized-hd-map-construction/" class="">
+      MapTR: Structured Modeling and Learning for Online Vectorized HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/high-resolution-image-synthesis-with-latent-diffusion-models/" class="">
+      High-Resolution Image Synthesis with Latent Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/proximal-policy-optimization/" class="">
+      Proximal Policy Optimization Algorithms (PPO)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/denoising-diffusion-probabilistic-models/" class="">
+      Denoising Diffusion Probabilistic Models (DDPM)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/" class="">
+      PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointpillars-fast-encoders-object-detection-point-clouds/" class="">
+      PointPillars: Fast Encoders for Object Detection from Point Clouds</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/centerpoint-center-based-3d-object-detection-and-tracking/" class="">
+      CenterPoint: Center-based 3D Object Detection and Tracking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/monoscene-monocular-3d-semantic-scene-completion/" class="">
+      MonoScene: Monocular 3D Semantic Scene Completion</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/tpvformer-tri-perspective-view-3d-semantic-occupancy/" class="">
+      TPVFormer: Tri-Perspective View for Vision-Based 3D Semantic Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/drivearena/" class="">
+      DriveArena: A Closed-loop Generative Simulation Platform for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/neurad-neural-rendering-for-autonomous-driving/" class="">
+      NeuRAD: Neural Rendering for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/omnire-omni-urban-scene-reconstruction/" class="">
+      OmniRe: Omni Urban Scene Reconstruction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/magicdrive-street-view-generation-3d-geometry-control/" class="">
+      MagicDrive: Street View Generation with Diverse 3D Geometry Control</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/surroundocc/" class="">
+      SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/drivedreamer/" class="">
+      DriveDreamer: Towards Real-world-driven World Models for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/street-gaussians-modeling-dynamic-urban-scenes/" class="">
+      Street Gaussians: Modeling Dynamic Urban Scenes with Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bench2drive-multi-ability-benchmarking-e2e-autonomous-driving/" class="">
+      Bench2Drive: Towards Multi-Ability Benchmarking of Closed-Loop End-To-End Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/emernerf/" class="">
+      EmerNeRF: Emergent Spatial-Temporal Scene Decomposition via Self-Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/detr3d-3d-object-detection-multi-view-images/" class="">
+      DETR3D: 3D Object Detection from Multi-view Images via 3D-to-2D Queries</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/occ3d-large-scale-3d-occupancy-prediction-benchmark/" class="">
+      Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/unisim-neural-closed-loop-sensor-simulator/" class="">
+      UniSim: A Neural Closed-Loop Sensor Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevfusion-multi-task-multi-sensor-fusion/" class="">
+      BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/instant-ngp-multiresolution-hash-encoding/" class="">
+      Instant Neural Graphics Primitives with a Multiresolution Hash Encoding</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/lift-splat-shoot/" class="">
+      Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevdepth/" class="">
+      BEVDepth: Acquisition of Reliable Depth for Multi-view 3D Object Detection</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/4d-gaussian-splatting/" class="">
+      4D Gaussian Splatting for Real-Time Dynamic Scene Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/gaia-1/" class="">
+      GAIA-1: A Generative World Model for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/dqn-playing-atari-with-deep-reinforcement-learning/" class="">
+      Playing Atari with Deep Reinforcement Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevformer/" class="">
+      BEVFormer: Learning Bird&#39;s-Eye-View Representation from Multi-Camera Images via Spatiotemporal Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/navsim/" class="">
+      NAVSIM: Data-Driven Non-Reactive Autonomous Vehicle Simulation and Benchmarking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nuplan/" class="">
+      nuPlan: A closed-loop ML-based planning benchmark for autonomous vehicles</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/transfuser/" class="">
+      TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3d-gaussian-splatting/" class="">
+      3D Gaussian Splatting for Real-Time Radiance Field Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/driving-gaussian-composite-gaussian-splatting/" class="">
+      DrivingGaussian: Composite Gaussian Splatting for Surrounding Dynamic Autonomous Driving Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3d-gaussian-ray-tracing/" class="">
+      3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/" class="">
+      3DGUT: Enabling Distorted Cameras and Secondary Rays in Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/carla-an-open-urban-driving-simulator/" class="">
+      CARLA: An Open Urban Driving Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/difix3d-plus/" class="">
+      DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/hugsim-real-time-photorealistic-closed-loop-simulator/" class="">
+      HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/" class="">
+      NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nuscenes-multimodal-dataset-autonomous-driving/" class="active">
+      nuScenes: A Multimodal Dataset for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/waymo-open-dataset/" class="">
+      Scalability in Perception for Autonomous Driving: Waymo Open Dataset</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/uniad-planning-oriented-autonomous-driving/" class="">
+      UniAD: Planning-oriented Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vad/" class="">
+      VAD: Vectorized Scene Representation for Efficient Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/paper/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>nuScenes: A Multimodal Dataset for Autonomous Driving</h3>
+
+  <label for="toc-control">
+    
+    <img src="/paper/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#section-1-introduction">Section 1: Introduction</a></li>
+    <li><a href="#section-2-the-nuscenes-dataset">Section 2: The nuScenes Dataset</a></li>
+    <li><a href="#section-3-tasks--metrics">Section 3: Tasks &amp; Metrics</a>
+      <ul>
+        <li><a href="#31-detection-탐지">3.1 Detection (탐지)</a></li>
+        <li><a href="#32-tracking-추적">3.2 Tracking (추적)</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-4-experiments">Section 4: Experiments</a>
+      <ul>
+        <li><a href="#41-baselines">4.1 Baselines</a></li>
+        <li><a href="#42-analysis">4.2 Analysis</a></li>
+      </ul>
+    </li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h2 id="개요">개요<a class="anchor" href="#%ea%b0%9c%ec%9a%94">#</a></h2>
+<ul>
+<li><strong>저자</strong>: Holger Caesar, Varun Bankiti, Alex H. Lang, Sourabh Vora, Venice Erin Liong, Qiang Xu, Anush Krishnan, Yu Pan, Giancarlo Baldan, Oscar Beijbom (nuTonomy, an APTIV company)</li>
+<li><strong>발행년도</strong>: 2020</li>
+<li><strong>학회</strong>: CVPR 2020</li>
+<li><strong>arXiv</strong>: 1903.11027</li>
+<li><strong>주요 내용</strong>: 자율주행을 위한 최초의 완전한 멀티모달 공개 데이터셋. 6개의 카메라, 5개의 레이더, 1개의 라이다로 구성된 전방위 센서 슈트를 갖추고 있으며, 1000개의 씬, 23개 클래스, 140만 개 이상의 3D 바운딩 박스 어노테이션을 포함한다.</li>
+</ul>
+<h2 id="목차">목차<a class="anchor" href="#%eb%aa%a9%ec%b0%a8">#</a></h2>
+<ul>
+<li>Section 1: Introduction</li>
+<li>Section 2: The nuScenes Dataset</li>
+<li>Section 3: Tasks &amp; Metrics</li>
+<li>Section 4: Experiments</li>
+<li>Section 5: Conclusion</li>
+<li>Supplementary: Dataset Details &amp; Implementation</li>
+</ul>
+<hr>
+<h2 id="section-1-introduction">Section 1: Introduction<a class="anchor" href="#section-1-introduction">#</a></h2>
+<p><strong>요약</strong></p>
+<p>자율주행 시스템에서 환경 내 객체의 탐지(detection)와 추적(tracking)은 핵심 과제다. 기존에는 이미지 기반 벤치마크가 주를 이뤘지만, 라이다·레이더 같은 거리 센서를 포함한 멀티모달 데이터셋은 부족했다. 특히 KITTI는 이미지와 라이다만 제공하며 레이더 데이터가 없고 어노테이션 수도 적었다.</p>
+<p>nuScenes는 이러한 간극을 메우기 위해 제작된 첫 자율주행 차량용 완전한 센서 슈트 데이터셋이다. KITTI 대비 7배 이상의 어노테이션, 100배 이상의 데이터를 제공하며, 레이더 데이터를 포함한 최초의 자율주행 공개 데이터셋이다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>멀티모달 센서 융합의 필요성</strong>: 카메라는 색상·질감·분류에 강하지만 3D 위치 추정이 어렵다. 라이다는 3D 정확도가 높지만 의미론적 정보가 부족하다. 레이더는 200~300m까지 감지하고 도플러 효과로 속도를 직접 측정한다. 세 가지를 결합하면 각각의 단점을 보완할 수 있다.</li>
+<li><strong>KITTI의 한계</strong>: 레이더 없음, 어노테이션 수 적음(KITTI 대비 nuScenes는 7배 어노테이션, 100배 데이터), 카메라가 전방만 촬영</li>
+<li><strong>nuScenes의 차별점</strong>: 360° 커버리지, 레이더 포함, 대규모 어노테이션, 새로운 3D 탐지·추적 메트릭 정의</li>
+</ul>
+<hr>
+<h2 id="section-2-the-nuscenes-dataset">Section 2: The nuScenes Dataset<a class="anchor" href="#section-2-the-nuscenes-dataset">#</a></h2>
+<p><strong>요약</strong></p>
+<p>nuScenes 데이터셋의 수집 방식, 센서 구성, 지도, 어노테이션 방법론을 설명한다. 미국 보스턴과 싱가포르에서 두 대의 Renault Zoe 차량으로 수집되었으며, 주·야간, 맑음·비·건설현장 등 다양한 환경 조건을 포함한다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li>
+<p><strong>센서 구성</strong></p>
+<ul>
+<li><strong>6개 카메라</strong>: 1/1.8&quot; CMOS 센서, 1600×900 해상도, 12Hz 촬영. 전방위 360° 커버리지</li>
+<li><strong>1개 라이다</strong>: 360° 수평 시야, 초당 20회전, 32채널, 최대 70m 범위</li>
+<li><strong>5개 레이더</strong>: 전방 1개 + 전방 좌우 + 후방 좌우 배치, 200~300m 범위, 도플러 속도 측정</li>
+<li><strong>GPS &amp; IMU</strong>: 100Hz, 위치·자세 정보 제공</li>
+</ul>
+</li>
+<li>
+<p><strong>데이터 규모</strong></p>
+<ul>
+<li>1000개 씬, 각 20초 길이</li>
+<li>40,000개 키프레임 (2Hz 샘플링)</li>
+<li>23개 카테고리, 8개 속성</li>
+<li>140만 개 이상의 3D 바운딩 박스 어노테이션</li>
+</ul>
+</li>
+<li>
+<p><strong>지도(Map)</strong>: 11개 시맨틱 레이어(도로, 인도, 교차로 등)를 포함하는 정밀 HD 맵 제공. 벡터화된 방식으로 저장하여 효율적 접근 가능</p>
+</li>
+<li>
+<p><strong>센서 동기화</strong>: 라이다 1회전 완료 시점에 카메라 셔터가 트리거됨 → 타임스탬프 정렬이 자연스럽게 달성됨</p>
+</li>
+<li>
+<p><strong>로컬라이제이션</strong>: Monte Carlo Localization 기반, IMU와 오도메트리를 결합하여 30cm 이내 정확도 달성</p>
+</li>
+<li>
+<p><strong>어노테이션 통계</strong>:</p>
+<ul>
+<li>클래스 불균형이 심함: car가 가장 많고 ambulance가 가장 적음 (비율 1:10K)</li>
+<li>프레임당 평균 보행자 7명, 차량 20명</li>
+<li>야간 비율 19.4%, 비 내리는 상황 11.6%</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="section-3-tasks--metrics">Section 3: Tasks &amp; Metrics<a class="anchor" href="#section-3-tasks--metrics">#</a></h2>
+<p><strong>요약</strong></p>
+<p>nuScenes는 3D 탐지와 3D 추적 두 가지 주요 태스크를 정의한다. 기존의 KITTI IoU 기반 메트릭의 한계를 극복하는 새로운 메트릭 체계를 제안한다.</p>
+<h3 id="31-detection-탐지">3.1 Detection (탐지)<a class="anchor" href="#31-detection-%ed%83%90%ec%a7%80">#</a></h3>
+<p><strong>Average Precision (mAP)</strong></p>
+<p>기존 IoU 대신 **2D 중심점 거리(center distance on ground plane)**를 매칭 기준으로 사용한다.</p>
+$$\text{mAP} = \frac{1}{|\mathbb{C}||\mathbb{D}|} \sum_{c \in \mathbb{C}} \sum_{d \in \mathbb{D}} \text{AP}_{c,d}$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$\mathbb{C}$</strong>: 모든 클래스의 집합 (예: car, pedestrian, bicycle 등 10개)</li>
+<li><strong>$\mathbb{D}$</strong>: 매칭 거리 임계값 집합 $\{0.5, 1, 2, 4\}$ 미터</li>
+<li><strong>$\text{AP}_{c,d}$</strong>: 클래스 $c$, 거리 임계값 $d$에서의 Average Precision</li>
+<li>네 가지 거리 임계값에서 AP를 구한 뒤 평균 → 거리에 따른 성능을 종합적으로 평가</li>
+</ul>
+<blockquote class='book-hint '>
+<p><strong>왜 IoU가 아닌 거리인가?</strong> 보행자나 자전거처럼 바닥 면적이 작은 객체는 IoU가 작은 위치 오차에도 0이 돼버려 이미지 기반 방법이 불리하게 평가된다. 중심점 거리를 사용하면 이런 편향을 줄일 수 있다.</p>
+</blockquote><p><strong>True Positive Metrics (TP Metrics)</strong></p>
+<p>탐지의 질을 다각도로 평가하는 5가지 TP 메트릭:</p>
+<table>
+  <thead>
+      <tr>
+          <th>메트릭</th>
+          <th>약자</th>
+          <th>의미</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Average Translation Error</td>
+          <td>ATE</td>
+          <td>중심점 유클리드 거리 (미터)</td>
+      </tr>
+      <tr>
+          <td>Average Scale Error</td>
+          <td>ASE</td>
+          <td>크기 IoU 오차 ($1 - \text{IOU}$)</td>
+      </tr>
+      <tr>
+          <td>Average Orientation Error</td>
+          <td>AOE</td>
+          <td>최소 yaw 각도 차이 (라디안)</td>
+      </tr>
+      <tr>
+          <td>Average Velocity Error</td>
+          <td>AVE</td>
+          <td>2D 속도 L2 오차 (m/s)</td>
+      </tr>
+      <tr>
+          <td>Average Attribute Error</td>
+          <td>AAE</td>
+          <td>속성 분류 오차 ($1 - \text{acc}$)</td>
+      </tr>
+  </tbody>
+</table>
+$$\text{mTP} = \frac{1}{|\mathbb{C}|} \sum_{c \in \mathbb{C}} \text{TP}_c$$<p><strong>수식 설명</strong></p>
+<ul>
+<li>각 클래스별 TP 오차를 평균하여 전체 TP 성능 산출</li>
+<li>매칭 거리는 $d = 2$m 고정 사용</li>
+</ul>
+<p><strong>nuScenes Detection Score (NDS)</strong></p>
+<p>mAP와 5개의 TP 메트릭을 하나의 스칼라로 통합:</p>
+$$\text{NDS} = \frac{1}{10} \left[ 5 \cdot \text{mAP} + \sum_{\text{mTP} \in \mathbb{TP}} (1 - \min(1, \text{mTP})) \right]$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>mAP</strong>에 가중치 5를 주어 탐지 정확도를 중시</li>
+<li>각 <strong>mTP</strong> 오차를 $1 - \text{오차}$ 형태로 변환 → 오차가 낮을수록 점수 높음</li>
+<li>$\min(1, \text{mTP})$로 최대 페널티를 1로 제한</li>
+<li>최종 NDS 범위: [0, 1]</li>
+</ul>
+<h3 id="32-tracking-추적">3.2 Tracking (추적)<a class="anchor" href="#32-tracking-%ec%b6%94%ec%a0%81">#</a></h3>
+<p><strong>sAMOTA (scaled Average Multi Object Tracking Accuracy)</strong></p>
+$$\text{sMOTA}_r = \max\left(0, 1 - \frac{IDS_r + FP_r + FN_r - (1-r)P}{rP}\right)$$$$\text{sAMOTA} = \frac{1}{|\mathcal{R}|} \sum_{r \in \mathcal{R}} \text{sMOTA}_r$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$IDS_r$</strong>: recall 임계값 $r$에서의 identity switch 수 (객체 ID가 바뀐 횟수)</li>
+<li><strong>$FP_r$</strong>: False Positive (잘못 탐지한 수)</li>
+<li><strong>$FN_r$</strong>: False Negative (놓친 객체 수)</li>
+<li><strong>$P$</strong>: Ground truth 객체 총 수</li>
+<li><strong>$(1-r)P$</strong>: recall 수준에 따른 보정 항 → 낮은 recall에서 FN 페널티를 완화</li>
+<li>$r \in \{0.1, 0.2, ..., 1.0\}$ 전 구간에 걸쳐 평균 → 특정 recall 설정에 종속되지 않음</li>
+</ul>
+<p><strong>TID &amp; LGD 메트릭</strong></p>
+<ul>
+<li><strong>TID (Track Initialization Duration)</strong>: 객체가 처음 등장한 시점부터 추적이 시작될 때까지 걸린 시간 (초)</li>
+<li><strong>LGD (Longest Gap Duration)</strong>: 추적 중 가장 긴 공백 구간 (초). 짧은 추적 단절이 긴 단절보다 용인 가능하다는 AV의 실용적 요구를 반영</li>
+</ul>
+<hr>
+<h2 id="section-4-experiments">Section 4: Experiments<a class="anchor" href="#section-4-experiments">#</a></h2>
+<p><strong>요약</strong></p>
+<p>탐지와 추적 베이스라인 결과를 제시하고 데이터셋 특성을 분석한다.</p>
+<h3 id="41-baselines">4.1 Baselines<a class="anchor" href="#41-baselines">#</a></h3>
+<p><strong>라이다 탐지 베이스라인 (PointPillars)</strong></p>
+<ul>
+<li>시간적 정보 활용: 여러 라이다 스윕을 누적하여 포인트클라우드를 풍부하게 만듦</li>
+<li>각 포인트에 키프레임으로부터의 시간 델타를 추가 특징으로 사용</li>
+<li>10개 스윕 사용 시 가장 좋은 성능, 하지만 수확 체감(diminishing returns) 발생</li>
+</ul>
+<p><strong>이미지 탐지 베이스라인 (OFT)</strong></p>
+<ul>
+<li>Orthographic Feature Transform을 6개 카메라 전체에 적용</li>
+<li>6개 카메라 이미지를 NMS로 통합하여 360° 예측</li>
+</ul>
+<p><strong>주요 발견</strong></p>
+<ol>
+<li>
+<p><strong>데이터 규모의 중요성</strong>: nuScenes에서 더 많은 데이터를 사용할수록 PointPillars 성능이 지속적으로 향상 (Figure 6)</p>
+</li>
+<li>
+<p><strong>매칭 함수의 중요성</strong>: IoU 매칭 사용 시 보행자·자전거 AP가 0에 가까워짐 → 중심점 거리 매칭이 이미지 기반 방법에도 공정</p>
+</li>
+<li>
+<p><strong>다중 라이다 스윕의 효과</strong></p>
+</li>
+</ol>
+<table>
+  <thead>
+      <tr>
+          <th>스윕 수</th>
+          <th>mAP (%)</th>
+          <th>NDS</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>1 (KITTI 방식)</td>
+          <td>30.5</td>
+          <td>-</td>
+      </tr>
+      <tr>
+          <td>5</td>
+          <td>45.3</td>
+          <td>-</td>
+      </tr>
+      <tr>
+          <td>10</td>
+          <td>47.8</td>
+          <td>0.59</td>
+      </tr>
+  </tbody>
+</table>
+<ol start="4">
+<li>
+<p><strong>사전학습(Pre-training)</strong>: 라이다 베이스라인은 ImageNet 사전학습이 KITTI와 동일한 패턴을 보임 (성능 향상)</p>
+</li>
+<li>
+<p><strong>클래스별 어려움</strong>: 자전거와 건설 차량이 가장 어려운 클래스 (형태 변이 크고 라이다 반사율 낮음)</p>
+</li>
+</ol>
+<p><strong>탐지 챌린지 결과 (Table 4)</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>방법</th>
+          <th>mAP</th>
+          <th>NDS</th>
+          <th>비고</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Megvii</td>
+          <td>52.8</td>
+          <td>63.3</td>
+          <td>라이다 기반, 1위</td>
+      </tr>
+      <tr>
+          <td>PointPillars</td>
+          <td>30.5</td>
+          <td>45.6</td>
+          <td>라이다 기반 베이스라인</td>
+      </tr>
+      <tr>
+          <td>MonoDIS</td>
+          <td>30.4</td>
+          <td>38.4</td>
+          <td>이미지 전용, 최고 성능</td>
+      </tr>
+      <tr>
+          <td>OFT</td>
+          <td>6%</td>
+          <td>-</td>
+          <td>이미지 기반 베이스라인</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>추적 챌린지 결과 (Table 8)</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>방법</th>
+          <th>sAMOTA (%)</th>
+          <th>AMOTP (m)</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Stan (1위)</td>
+          <td>55.0</td>
+          <td>0.80</td>
+      </tr>
+      <tr>
+          <td>PointPillars + AB3DMOT</td>
+          <td>2.9</td>
+          <td>1.70</td>
+      </tr>
+      <tr>
+          <td>MonoDIS + AB3DMOT</td>
+          <td>1.8</td>
+          <td>1.79</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="42-analysis">4.2 Analysis<a class="anchor" href="#42-analysis">#</a></h3>
+<p><strong>클래스 불균형 문제</strong>: 자전거는 PointPillars에서 45.7% AP이지만 MonoDIS에서 1.1% AP로 극단적 차이 → 이미지 기반 방법이 작은 객체 탐지에 매우 불리</p>
+<p><strong>시맨틱 맵 활용</strong>: 탐지 박스가 시맨틱 맵 도로에 가까울수록 AP가 높아짐 → 맵 사전 정보가 탐지 성능을 향상시킬 수 있음</p>
+<hr>
+<h2 id="핵심-개념-정리">핵심 개념 정리<a class="anchor" href="#%ed%95%b5%ec%8b%ac-%ea%b0%9c%eb%85%90-%ec%a0%95%eb%a6%ac">#</a></h2>
+<table>
+  <thead>
+      <tr>
+          <th>개념</th>
+          <th>설명</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>멀티모달 데이터셋</strong></td>
+          <td>카메라, 라이다, 레이더를 동시에 포함하는 데이터셋. 단일 센서의 한계를 상호 보완</td>
+      </tr>
+      <tr>
+          <td><strong>360° 커버리지</strong></td>
+          <td>자율주행차 주변 전 방향을 빠짐없이 감지. 기존 KITTI는 전방만 커버</td>
+      </tr>
+      <tr>
+          <td><strong>중심점 거리 매칭</strong></td>
+          <td>IoU 대신 3D 바운딩 박스의 2D 지면 투영 중심점 거리로 매칭. 소형 객체에 공정</td>
+      </tr>
+      <tr>
+          <td><strong>NDS (nuScenes Detection Score)</strong></td>
+          <td>mAP + 5개 TP 메트릭을 하나의 점수로 통합. AV 실용 요구를 반영한 종합 지표</td>
+      </tr>
+      <tr>
+          <td><strong>sAMOTA</strong></td>
+          <td>recall 임계값 전 구간에 걸친 MOTA 평균. 특정 신뢰도 임계값에 종속되지 않는 추적 지표</td>
+      </tr>
+      <tr>
+          <td><strong>TID / LGD</strong></td>
+          <td>추적 초기화 지연(TID)과 최대 추적 공백(LGD). AV에서 단기 추적 단절이 장기보다 허용 가능하다는 도메인 지식 반영</td>
+      </tr>
+      <tr>
+          <td><strong>다중 라이다 스윕 누적</strong></td>
+          <td>여러 시간 프레임의 포인트클라우드를 하나의 프레임에 합산. 포인트 밀도를 높여 성능 향상</td>
+      </tr>
+      <tr>
+          <td><strong>시맨틱 HD 맵</strong></td>
+          <td>도로, 인도, 교차로 등 11개 레이어의 정밀 지도. 탐지 사전 정보로 활용 가능</td>
+      </tr>
+      <tr>
+          <td><strong>클래스 불균형</strong></td>
+          <td>car:ambulance = 10000:1 수준의 극심한 불균형. nuScenes 커뮤니티가 해결해야 할 도전 과제</td>
+      </tr>
+      <tr>
+          <td><strong>도플러 속도</strong></td>
+          <td>레이더가 전파의 주파수 변화로 직접 측정한 객체 속도. 카메라나 라이다로는 얻기 어려운 직접 속도 정보</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="결론-및-시사점">결론 및 시사점<a class="anchor" href="#%ea%b2%b0%eb%a1%a0-%eb%b0%8f-%ec%8b%9c%ec%82%ac%ec%a0%90">#</a></h2>
+<p><strong>논문의 결론</strong></p>
+<p>nuScenes는 자율주행 연구를 위한 대규모 멀티모달 데이터셋을 제공한다. 주요 기여는:</p>
+<ol>
+<li><strong>최초의 완전한 센서 슈트</strong> 공개 데이터셋 (카메라 + 라이다 + 레이더)</li>
+<li><strong>새로운 3D 탐지·추적 메트릭</strong> 정의 (NDS, sAMOTA, TID, LGD)</li>
+<li><strong>대규모 어노테이션</strong>: KITTI 대비 7배 어노테이션, 100배 데이터</li>
+<li><strong>레이더 기반 연구</strong>의 길을 열어줌 (레이더 포함 공개 데이터셋 최초)</li>
+</ol>
+<p><strong>실무적 시사점</strong></p>
+<ul>
+<li><strong>IoU 메트릭의 한계</strong>: 소형 객체(보행자, 자전거)에서 IoU 기반 평가는 이미지 방법에 불공정. 중심점 거리가 더 적합</li>
+<li><strong>클래스 불균형 처리</strong>: 중요도 샘플링(importance sampling)이 nuScenes에서 핵심임이 실험으로 확인됨</li>
+<li><strong>센서 융합의 실질적 가치</strong>: 단일 센서 대비 멀티모달 접근이 어려운 조건(야간, 비)에서 강인성 제공</li>
+<li><strong>대규모 데이터의 중요성</strong>: KITTI 수준의 데이터에서 최적처럼 보이는 알고리즘이 더 큰 nuScenes에서 순위가 바뀜 → 데이터 규모가 알고리즘 평가의 신뢰성에 직접 영향</li>
+<li><strong>레이더 활용 가능성</strong>: 현재 베이스라인들은 레이더를 충분히 활용하지 못하고 있어, 레이더 기반 fusion 연구가 유망한 미래 방향</li>
+</ul>
+<hr>
+<p><em>관련 논문: <a href="/posts/papers/waymo-open-dataset/">Waymo Open Dataset</a>, <a href="/posts/papers/nuPlan/">nuPlan</a>, <a href="/posts/papers/CARLA-An-Open-Urban-Driving-Simulator/">CARLA</a>, <a href="/posts/papers/BEVFormer/">BEVFormer</a>, <a href="/posts/papers/uniad-planning-oriented-autonomous-driving/">UniAD</a></em></p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/paper/docs/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/" class="flex align-center">
+        <img src="/paper/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/paper/docs/waymo-open-dataset/" class="flex align-center">
+        <span>Scalability in Perception for Autonomous Driving: Waymo Open Dataset</span>
+        <img src="/paper/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#section-1-introduction">Section 1: Introduction</a></li>
+    <li><a href="#section-2-the-nuscenes-dataset">Section 2: The nuScenes Dataset</a></li>
+    <li><a href="#section-3-tasks--metrics">Section 3: Tasks &amp; Metrics</a>
+      <ul>
+        <li><a href="#31-detection-탐지">3.1 Detection (탐지)</a></li>
+        <li><a href="#32-tracking-추적">3.2 Tracking (추적)</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-4-experiments">Section 4: Experiments</a>
+      <ul>
+        <li><a href="#41-baselines">4.1 Baselines</a></li>
+        <li><a href="#42-analysis">4.2 Analysis</a></li>
+      </ul>
+    </li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

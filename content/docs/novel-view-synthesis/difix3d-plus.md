@@ -5,6 +5,9 @@ draft: false
 categories: ["Papers", "Novel View Synthesis"]
 tags: ["3D Gaussian Splatting", "NeRF", "Novel View Synthesis", "Diffusion", "3D Reconstruction"]
 year: 2025
+references:
+  - "3d-gaussian-splatting"
+  - "denoising-diffusion-probabilistic-models"
 ---
 
 ## 개요

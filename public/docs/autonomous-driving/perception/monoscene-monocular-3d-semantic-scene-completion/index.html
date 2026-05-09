@@ -1,0 +1,1651 @@
+<!DOCTYPE html>
+<html lang="ko-KR" dir="ltr">
+<head>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="개요# 저자: Anh-Quan Cao, Raoul de Charette (Inria) 발행년도: 2022 (arXiv 2021, CVPR 2022) 논문: arXiv:2112.00726 코드: github.com/cv-rits/MonoScene 주요 내용: 단일 RGB 이미지만으로 3D 공간의 기하(geometry)와 의미(semantics)를 동시에 추론하는 최초의 실내·실외 통합 3D Semantic Scene Completion(SSC) 프레임워크 한계 극복# 기존 한계 1 — 깊이/LiDAR 의존성: 기존 SSC 방법은 모두 depth map, point cloud, occupancy grid 등 2.5D/3D 입력을 필요로 했음. 비싼 센서이거나 별도의 깊이 추정 단계가 필요했음 기존 한계 2 — 실내/실외 분리 설계: 실내용(NYUv2) 또는 실외용(SemanticKITTI) 전용 모델로 설계되어 범용 적용이 불가능했음 기존 한계 3 — 문맥 인식 부족: 기존 SSC 학습은 cross-entropy loss로 각 복셀을 독립적으로 최적화하여 그룹 수준의 맥락 정보를 활용하지 못했음 이 논문의 접근 방식: 단일 RGB 이미지 → FLoSP(2D-3D 피처 투영) &#43; 3D CRP(맥락 관계 사전) &#43; 새로운 SSC 손실 함수로 2D 정보만으로 밀집한 3D 시맨틱 장면 완성 목차# Introduction Related Works Method 3.1 Features Line of Sight Projection (FLoSP) 3.2 3D Context Relation Prior (3D CRP) 3.3 Losses (Scene-Class Affinity Loss &#43; Frustum Proportion Loss) 3.4 Training Strategy Experiments Discussion (Limitations &amp; Broader Impact) Appendix 1. Introduction# 인간은 단일 시점의 이미지에서도 3D 장면의 구조와 의미를 자연스럽게 이해합니다. 이를 컴퓨터가 수행하는 것이 3D Semantic Scene Completion(SSC) — 이미지로부터 전체 3D 복셀 공간의 점유 여부와 의미 클래스를 동시에 예측하는 태스크입니다.
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://y30n9ju1v.github.io/paper/docs/autonomous-driving/perception/monoscene-monocular-3d-semantic-scene-completion/">
+  <meta property="og:site_name" content="Paper">
+  <meta property="og:title" content="MonoScene: Monocular 3D Semantic Scene Completion">
+  <meta property="og:description" content="개요# 저자: Anh-Quan Cao, Raoul de Charette (Inria) 발행년도: 2022 (arXiv 2021, CVPR 2022) 논문: arXiv:2112.00726 코드: github.com/cv-rits/MonoScene 주요 내용: 단일 RGB 이미지만으로 3D 공간의 기하(geometry)와 의미(semantics)를 동시에 추론하는 최초의 실내·실외 통합 3D Semantic Scene Completion(SSC) 프레임워크 한계 극복# 기존 한계 1 — 깊이/LiDAR 의존성: 기존 SSC 방법은 모두 depth map, point cloud, occupancy grid 등 2.5D/3D 입력을 필요로 했음. 비싼 센서이거나 별도의 깊이 추정 단계가 필요했음 기존 한계 2 — 실내/실외 분리 설계: 실내용(NYUv2) 또는 실외용(SemanticKITTI) 전용 모델로 설계되어 범용 적용이 불가능했음 기존 한계 3 — 문맥 인식 부족: 기존 SSC 학습은 cross-entropy loss로 각 복셀을 독립적으로 최적화하여 그룹 수준의 맥락 정보를 활용하지 못했음 이 논문의 접근 방식: 단일 RGB 이미지 → FLoSP(2D-3D 피처 투영) &#43; 3D CRP(맥락 관계 사전) &#43; 새로운 SSC 손실 함수로 2D 정보만으로 밀집한 3D 시맨틱 장면 완성 목차# Introduction Related Works Method 3.1 Features Line of Sight Projection (FLoSP) 3.2 3D Context Relation Prior (3D CRP) 3.3 Losses (Scene-Class Affinity Loss &#43; Frustum Proportion Loss) 3.4 Training Strategy Experiments Discussion (Limitations &amp; Broader Impact) Appendix 1. Introduction# 인간은 단일 시점의 이미지에서도 3D 장면의 구조와 의미를 자연스럽게 이해합니다. 이를 컴퓨터가 수행하는 것이 3D Semantic Scene Completion(SSC) — 이미지로부터 전체 3D 복셀 공간의 점유 여부와 의미 클래스를 동시에 예측하는 태스크입니다.">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:published_time" content="2026-04-19T21:00:00+09:00">
+    <meta property="article:modified_time" content="2026-04-19T21:00:00+09:00">
+    <meta property="article:tag" content="Occupancy Prediction">
+    <meta property="article:tag" content="Semantic Scene Completion">
+    <meta property="article:tag" content="NeRF">
+    <meta property="article:tag" content="BEV">
+    <meta property="article:tag" content="3D Understanding">
+
+
+  <meta itemprop="name" content="MonoScene: Monocular 3D Semantic Scene Completion">
+  <meta itemprop="description" content="개요# 저자: Anh-Quan Cao, Raoul de Charette (Inria) 발행년도: 2022 (arXiv 2021, CVPR 2022) 논문: arXiv:2112.00726 코드: github.com/cv-rits/MonoScene 주요 내용: 단일 RGB 이미지만으로 3D 공간의 기하(geometry)와 의미(semantics)를 동시에 추론하는 최초의 실내·실외 통합 3D Semantic Scene Completion(SSC) 프레임워크 한계 극복# 기존 한계 1 — 깊이/LiDAR 의존성: 기존 SSC 방법은 모두 depth map, point cloud, occupancy grid 등 2.5D/3D 입력을 필요로 했음. 비싼 센서이거나 별도의 깊이 추정 단계가 필요했음 기존 한계 2 — 실내/실외 분리 설계: 실내용(NYUv2) 또는 실외용(SemanticKITTI) 전용 모델로 설계되어 범용 적용이 불가능했음 기존 한계 3 — 문맥 인식 부족: 기존 SSC 학습은 cross-entropy loss로 각 복셀을 독립적으로 최적화하여 그룹 수준의 맥락 정보를 활용하지 못했음 이 논문의 접근 방식: 단일 RGB 이미지 → FLoSP(2D-3D 피처 투영) &#43; 3D CRP(맥락 관계 사전) &#43; 새로운 SSC 손실 함수로 2D 정보만으로 밀집한 3D 시맨틱 장면 완성 목차# Introduction Related Works Method 3.1 Features Line of Sight Projection (FLoSP) 3.2 3D Context Relation Prior (3D CRP) 3.3 Losses (Scene-Class Affinity Loss &#43; Frustum Proportion Loss) 3.4 Training Strategy Experiments Discussion (Limitations &amp; Broader Impact) Appendix 1. Introduction# 인간은 단일 시점의 이미지에서도 3D 장면의 구조와 의미를 자연스럽게 이해합니다. 이를 컴퓨터가 수행하는 것이 3D Semantic Scene Completion(SSC) — 이미지로부터 전체 3D 복셀 공간의 점유 여부와 의미 클래스를 동시에 예측하는 태스크입니다.">
+  <meta itemprop="datePublished" content="2026-04-19T21:00:00+09:00">
+  <meta itemprop="dateModified" content="2026-04-19T21:00:00+09:00">
+  <meta itemprop="wordCount" content="1374">
+  <meta itemprop="keywords" content="Occupancy Prediction,Semantic Scene Completion,NeRF,BEV,3D Understanding">
+
+<title>MonoScene: Monocular 3D Semantic Scene Completion | Paper</title>
+<link rel="icon" href="/paper/favicon.png" >
+<link rel="manifest" href="/paper/manifest.json">
+<link rel="canonical" href="https://y30n9ju1v.github.io/paper/docs/autonomous-driving/perception/monoscene-monocular-3d-semantic-scene-completion/">
+<link rel="stylesheet" href="/paper/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/paper/fuse.min.js"></script>
+  <script defer src="/paper/en.search.min.b1685711fcbce34e51ac4e2f3f34db3464d1f2809b936b8ce7ecb2014e6bf361.js" integrity="sha256-sWhXEfy8405RrE4vPzTbNGTR8oCbk2uM5&#43;yyAU5r82E=" crossorigin="anonymous"></script>
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '\\[', right: '\\]', display: true},
+      {left: '\\(', right: '\\)', display: false},
+      {left: '$', right: '$', display: false}
+    ]
+  });
+});
+</script>
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/paper/"><span>Paper</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-26dad33899f9ff5c8eb940bf3bc5c8c6" class="toggle"  />
+    <label for="section-26dad33899f9ff5c8eb940bf3bc5c8c6" class="flex">
+      <a role="button" class="">
+        Deep Learning</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/clip-learning-transferable-visual-models-from-natural-language-supervision/" class="">
+      CLIP: Learning Transferable Visual Models From Natural Language Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/pointnet-plus-plus-deep-hierarchical-feature-learning/" class="">
+      PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/vit-an-image-is-worth-16x16-words/" class="">
+      ViT: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/resnet-deep-residual-learning-for-image-recognition/" class="">
+      ResNet: Deep Residual Learning for Image Recognition</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/detr-end-to-end-object-detection-with-transformers/" class="">
+      DETR: End-to-End Object Detection with Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/attention-is-all-you-need/" class="">
+      Attention Is All You Need</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/proximal-policy-optimization/" class="">
+      Proximal Policy Optimization Algorithms (PPO)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/" class="">
+      PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/dqn-playing-atari-with-deep-reinforcement-learning/" class="">
+      Playing Atari with Deep Reinforcement Learning</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-55a967b32f0d01d82a62069db60bc9a4" class="toggle"  />
+    <label for="section-55a967b32f0d01d82a62069db60bc9a4" class="flex">
+      <a role="button" class="">
+        Novel View Synthesis</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/instant-ngp-multiresolution-hash-encoding/" class="">
+      Instant Neural Graphics Primitives with a Multiresolution Hash Encoding</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/4d-gaussian-splatting/" class="">
+      4D Gaussian Splatting for Real-Time Dynamic Scene Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3d-gaussian-splatting/" class="">
+      3D Gaussian Splatting for Real-Time Radiance Field Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3d-gaussian-ray-tracing/" class="">
+      3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/" class="">
+      3DGUT: Enabling Distorted Cameras and Secondary Rays in Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/difix3d-plus/" class="">
+      DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/" class="">
+      NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-bba278969cd1a39a02e4f40a6eceba0d" class="toggle"  />
+    <label for="section-bba278969cd1a39a02e4f40a6eceba0d" class="flex">
+      <a role="button" class="">
+        Generative Models</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/controlnet-adding-conditional-control-to-text-to-image-diffusion-models/" class="">
+      ControlNet: Adding Conditional Control to Text-to-Image Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/high-resolution-image-synthesis-with-latent-diffusion-models/" class="">
+      High-Resolution Image Synthesis with Latent Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/denoising-diffusion-probabilistic-models/" class="">
+      Denoising Diffusion Probabilistic Models (DDPM)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/drivearena/" class="">
+      DriveArena: A Closed-loop Generative Simulation Platform for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/magicdrive-street-view-generation-3d-geometry-control/" class="">
+      MagicDrive: Street View Generation with Diverse 3D Geometry Control</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/drivedreamer/" class="">
+      DriveDreamer: Towards Real-world-driven World Models for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/gaia-1/" class="">
+      GAIA-1: A Generative World Model for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-ba66afb2e4f86c05dd02e329f85a3a79" class="toggle" checked />
+    <label for="section-ba66afb2e4f86c05dd02e329f85a3a79" class="flex">
+      <a role="button" class="">
+        Autonomous Driving</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-d7ba9eb4570c2bfc131b9c6410bbe7ec" class="toggle" checked />
+    <label for="section-d7ba9eb4570c2bfc131b9c6410bbe7ec" class="flex">
+      <a role="button" class="">
+        Perception</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/" class="">
+      GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/" class="">
+      StreamMapNet: Streaming Mapping Network for Vectorized Online HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/vectormapnet-end-to-end-vectorized-hd-map-learning/" class="">
+      VectorMapNet: End-to-end Vectorized HD Map Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/maptr-structured-modeling-online-vectorized-hd-map-construction/" class="">
+      MapTR: Structured Modeling and Learning for Online Vectorized HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/pointpillars-fast-encoders-object-detection-point-clouds/" class="">
+      PointPillars: Fast Encoders for Object Detection from Point Clouds</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/centerpoint-center-based-3d-object-detection-and-tracking/" class="">
+      CenterPoint: Center-based 3D Object Detection and Tracking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/monoscene-monocular-3d-semantic-scene-completion/" class="active">
+      MonoScene: Monocular 3D Semantic Scene Completion</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/tpvformer-tri-perspective-view-3d-semantic-occupancy/" class="">
+      TPVFormer: Tri-Perspective View for Vision-Based 3D Semantic Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/surroundocc/" class="">
+      SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/detr3d-3d-object-detection-multi-view-images/" class="">
+      DETR3D: 3D Object Detection from Multi-view Images via 3D-to-2D Queries</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/occ3d-large-scale-3d-occupancy-prediction-benchmark/" class="">
+      Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevfusion-multi-task-multi-sensor-fusion/" class="">
+      BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/lift-splat-shoot/" class="">
+      Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevdepth/" class="">
+      BEVDepth: Acquisition of Reliable Depth for Multi-view 3D Object Detection</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevformer/" class="">
+      BEVFormer: Learning Bird&#39;s-Eye-View Representation from Multi-Camera Images via Spatiotemporal Transformers</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-7a9153220f9190837dca18e7bc97c48d" class="toggle"  />
+    <label for="section-7a9153220f9190837dca18e7bc97c48d" class="flex">
+      <a role="button" class="">
+        Simulation</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/lidarsim-realistic-lidar-simulation-by-leveraging-the-real-world/" class="">
+      LiDARsim: Realistic LiDAR Simulation by Leveraging the Real World</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/neurad-neural-rendering-for-autonomous-driving/" class="">
+      NeuRAD: Neural Rendering for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/omnire-omni-urban-scene-reconstruction/" class="">
+      OmniRe: Omni Urban Scene Reconstruction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/street-gaussians-modeling-dynamic-urban-scenes/" class="">
+      Street Gaussians: Modeling Dynamic Urban Scenes with Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/emernerf/" class="">
+      EmerNeRF: Emergent Spatial-Temporal Scene Decomposition via Self-Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/unisim-neural-closed-loop-sensor-simulator/" class="">
+      UniSim: A Neural Closed-Loop Sensor Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/driving-gaussian-composite-gaussian-splatting/" class="">
+      DrivingGaussian: Composite Gaussian Splatting for Surrounding Dynamic Autonomous Driving Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/carla-an-open-urban-driving-simulator/" class="">
+      CARLA: An Open Urban Driving Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/hugsim-real-time-photorealistic-closed-loop-simulator/" class="">
+      HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-e9f19cbf840aaca3029a9a86c6765e7f" class="toggle"  />
+    <label for="section-e9f19cbf840aaca3029a9a86c6765e7f" class="flex">
+      <a role="button" class="">
+        Planning</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/bench2drive-multi-ability-benchmarking-e2e-autonomous-driving/" class="">
+      Bench2Drive: Towards Multi-Ability Benchmarking of Closed-Loop End-To-End Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/navsim/" class="">
+      NAVSIM: Data-Driven Non-Reactive Autonomous Vehicle Simulation and Benchmarking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/transfuser/" class="">
+      TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/uniad-planning-oriented-autonomous-driving/" class="">
+      UniAD: Planning-oriented Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/vad/" class="">
+      VAD: Vectorized Scene Representation for Efficient Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-c1644e2152ae0bb887d703d1c6a373f2" class="toggle"  />
+    <label for="section-c1644e2152ae0bb887d703d1c6a373f2" class="flex">
+      <a role="button" class="">
+        Dataset &amp; Benchmark</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/nuplan/" class="">
+      nuPlan: A closed-loop ML-based planning benchmark for autonomous vehicles</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/nuscenes-multimodal-dataset-autonomous-driving/" class="">
+      nuScenes: A Multimodal Dataset for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/waymo-open-dataset/" class="">
+      Scalability in Perception for Autonomous Driving: Waymo Open Dataset</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/paper/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>MonoScene: Monocular 3D Semantic Scene Completion</h3>
+
+  <label for="toc-control">
+    
+    <img src="/paper/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#1-introduction">1. Introduction</a></li>
+    <li><a href="#2-related-works">2. Related Works</a></li>
+    <li><a href="#3-method">3. Method</a>
+      <ul>
+        <li><a href="#전체-파이프라인">전체 파이프라인</a></li>
+        <li><a href="#31-features-line-of-sight-projection-flosp">3.1 Features Line of Sight Projection (FLoSP)</a></li>
+        <li><a href="#32-3d-context-relation-prior-3d-crp">3.2 3D Context Relation Prior (3D CRP)</a></li>
+        <li><a href="#33-손실-함수-losses">3.3 손실 함수 (Losses)</a></li>
+      </ul>
+    </li>
+    <li><a href="#4-experiments">4. Experiments</a>
+      <ul>
+        <li><a href="#데이터셋">데이터셋</a></li>
+        <li><a href="#주요-결과">주요 결과</a></li>
+        <li><a href="#ablation-결과-nyuv2-test--semantickitti-val">Ablation 결과 (NYUv2 test / SemanticKITTI val)</a></li>
+        <li><a href="#fov-내외-성능-semantickitti-validation">FOV 내/외 성능 (SemanticKITTI validation)</a></li>
+      </ul>
+    </li>
+    <li><a href="#5-핵심-개념-정리">5. 핵심 개념 정리</a></li>
+    <li><a href="#6-결론-및-시사점">6. 결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h2 id="개요">개요<a class="anchor" href="#%ea%b0%9c%ec%9a%94">#</a></h2>
+<ul>
+<li><strong>저자</strong>: Anh-Quan Cao, Raoul de Charette (Inria)</li>
+<li><strong>발행년도</strong>: 2022 (arXiv 2021, CVPR 2022)</li>
+<li><strong>논문</strong>: <a href="https://arxiv.org/abs/2112.00726">arXiv:2112.00726</a></li>
+<li><strong>코드</strong>: <a href="https://github.com/cv-rits/MonoScene">github.com/cv-rits/MonoScene</a></li>
+<li><strong>주요 내용</strong>: 단일 RGB 이미지만으로 3D 공간의 기하(geometry)와 의미(semantics)를 동시에 추론하는 최초의 실내·실외 통합 3D Semantic Scene Completion(SSC) 프레임워크</li>
+</ul>
+<hr>
+<h2 id="한계-극복">한계 극복<a class="anchor" href="#%ed%95%9c%ea%b3%84-%ea%b7%b9%eb%b3%b5">#</a></h2>
+<ul>
+<li><strong>기존 한계 1 — 깊이/LiDAR 의존성</strong>: 기존 SSC 방법은 모두 depth map, point cloud, occupancy grid 등 2.5D/3D 입력을 필요로 했음. 비싼 센서이거나 별도의 깊이 추정 단계가 필요했음</li>
+<li><strong>기존 한계 2 — 실내/실외 분리 설계</strong>: 실내용(NYUv2) 또는 실외용(SemanticKITTI) 전용 모델로 설계되어 범용 적용이 불가능했음</li>
+<li><strong>기존 한계 3 — 문맥 인식 부족</strong>: 기존 SSC 학습은 cross-entropy loss로 각 복셀을 독립적으로 최적화하여 그룹 수준의 맥락 정보를 활용하지 못했음</li>
+<li><strong>이 논문의 접근 방식</strong>: 단일 RGB 이미지 → FLoSP(2D-3D 피처 투영) + 3D CRP(맥락 관계 사전) + 새로운 SSC 손실 함수로 2D 정보만으로 밀집한 3D 시맨틱 장면 완성</li>
+</ul>
+<hr>
+<h2 id="목차">목차<a class="anchor" href="#%eb%aa%a9%ec%b0%a8">#</a></h2>
+<ol>
+<li>Introduction</li>
+<li>Related Works</li>
+<li>Method
+<ul>
+<li>3.1 Features Line of Sight Projection (FLoSP)</li>
+<li>3.2 3D Context Relation Prior (3D CRP)</li>
+<li>3.3 Losses (Scene-Class Affinity Loss + Frustum Proportion Loss)</li>
+<li>3.4 Training Strategy</li>
+</ul>
+</li>
+<li>Experiments</li>
+<li>Discussion (Limitations &amp; Broader Impact)</li>
+<li>Appendix</li>
+</ol>
+<hr>
+<h2 id="1-introduction">1. Introduction<a class="anchor" href="#1-introduction">#</a></h2>
+<p>인간은 단일 시점의 이미지에서도 3D 장면의 구조와 의미를 자연스럽게 이해합니다. 이를 컴퓨터가 수행하는 것이 <strong>3D Semantic Scene Completion(SSC)</strong> — 이미지로부터 전체 3D 복셀 공간의 점유 여부와 의미 클래스를 동시에 예측하는 태스크입니다.</p>
+<p>기존 연구들은 모두 LiDAR, depth camera, 점령 격자(occupancy grid) 같은 3D 입력에 의존했습니다. MonoScene은 이 제약을 없애고 <strong>단일 RGB 이미지</strong>만으로 같은 태스크를 수행하는 첫 번째 방법입니다.</p>
+<p>핵심 도전 과제는 <strong>2D → 3D 공간 복원의 어려움</strong>: 카메라가 찍은 2D 이미지에서 깊이 정보가 소실되기 때문에 3D 복원이 근본적으로 ill-posed 문제입니다. MonoScene은 이를 광학(optics)에서 영감을 받은 시선(line of sight) 투영으로 해결합니다.</p>
+<hr>
+<h2 id="2-related-works">2. Related Works<a class="anchor" href="#2-related-works">#</a></h2>
+<p><strong>3D from a single image</strong>: 초기 딥러닝 연구들은 단일 객체 재구성에 집중했으며, 점차 전체 장면의 holistic 이해로 발전했습니다.</p>
+<p><strong>3D Semantic Scene Completion (SSC)</strong>: SSCNet이 처음 SSC 태스크를 정의했으며, 이후 depth, TSDF, point cloud, occupancy grid 입력 기반 방법들이 발전했습니다. 기존 방법들은 실내 또는 실외 전용으로 분리 설계되었습니다.</p>
+<p><strong>Contextual awareness</strong>: 2D 시맨틱 분할에서 맥락 학습(ASPP, self-attention 등)이 효과적으로 사용되었으며, MonoScene은 이를 3D SSC에 새롭게 도입합니다.</p>
+<hr>
+<h2 id="3-method">3. Method<a class="anchor" href="#3-method">#</a></h2>
+<h3 id="전체-파이프라인">전체 파이프라인<a class="anchor" href="#%ec%a0%84%ec%b2%b4-%ed%8c%8c%ec%9d%b4%ed%94%84%eb%9d%bc%ec%9d%b8">#</a></h3>
+<pre tabindex="0"><code>입력: RGB 이미지 x^rgb
+         │
+         ▼
+[2D UNet] — EfficientNetB7 백본 기반 멀티스케일 피처 추출
+         │
+         ▼ FLoSP (3.1)
+[2D-3D 피처 투영] — 시선(line of sight)을 따라 2D 피처를 3D 공간으로 투영
+         │
+         ▼
+[3D UNet] — 3D 공간 피처 인코딩-디코딩
+         │
+         ▼ 3D CRP (3.2)
+[3D Context Relation Prior] — 복셀 간 의미 관계 학습
+         │
+         ▼ Completion Head
+[ASPP + Softmax] → 출력: ŷ (3D 시맨틱 복셀 예측)</code></pre><h3 id="31-features-line-of-sight-projection-flosp">3.1 Features Line of Sight Projection (FLoSP)<a class="anchor" href="#31-features-line-of-sight-projection-flosp">#</a></h3>
+<p><strong>직관</strong>: 카메라에서 3D 복셀 중심점으로 향하는 시선(ray) 위의 2D 피처들이 해당 복셀 이해에 관련이 있습니다. 광학의 원리를 활용하여 2D-3D 정보 브릿지를 구성합니다.</p>
+<p><strong>동작 방식</strong>: 멀티스케일 2D 디코더 피처맵 $F_{2D}^{1:s}$ (스케일 $s \in \{1, 2, 4, 8\}$)에서, 각 3D 복셀 중심점 $x^c$를 카메라 투영 $\rho(\cdot)$으로 2D에 매핑한 뒤, 해당 위치의 피처를 샘플링하여 합산합니다.</p>
+$$\mathbf{F}_{3D} = \sum_{s \in S} \Phi_{\rho(x^c)}\!\left(F_{2D}^{1:s}\right)$$<p><strong>수식 설명</strong>:</p>
+<ul>
+<li><strong>$\mathbf{F}_{3D}$</strong>: 최종 3D 피처맵 (3D UNet의 입력)</li>
+<li><strong>$s$</strong>: 2D 피처맵의 스케일 (1, 2, 4, 8배 다운샘플)</li>
+<li><strong>$\rho(x^c)$</strong>: 3D 복셀 중심점 $x^c$를 카메라 내부 파라미터로 2D에 투영한 픽셀 좌표</li>
+<li><strong>$\Phi_a(b)$</strong>: 피처맵 $b$에서 좌표 $a$의 피처를 bilinear 샘플링</li>
+<li><strong>핵심 아이디어</strong>: 카메라 시선 위에 놓인 모든 3D 복셀이 같은 픽셀에 투영됨 → 깊이를 모르더라도 해당 시선의 2D 피처를 모든 깊이의 복셀에 공유</li>
+</ul>
+<p>이미지 FOV 밖의 복셀은 피처 벡터를 0으로 설정합니다. 이를 통해 <strong>FOV 외부 장면도 &ldquo;암묵적 추론&rdquo;</strong> 가능하게 됩니다.</p>
+<h3 id="32-3d-context-relation-prior-3d-crp">3.2 3D Context Relation Prior (3D CRP)<a class="anchor" href="#32-3d-context-relation-prior-3d-crp">#</a></h3>
+<p><strong>직관</strong>: SSC는 맥락에 매우 의존적입니다. 예를 들어 &ldquo;도로 옆은 인도일 가능성이 높다&rdquo;, &ldquo;차 옆에는 사람이 있을 수 있다&quot;는 공간 의미 관계(spatio-semantic relation)를 학습합니다.</p>
+<p><strong>구조</strong>: 3D UNet 병목(bottleneck)에 삽입. ASPP 컨볼루션으로 큰 수용야(receptive field)를 확보한 뒤, 복셀 간 <strong>n-way 관계 행렬</strong> $\hat{A}^m$을 예측합니다.</p>
+<p><strong>4가지 관계 유형</strong>:</p>
+<table>
+  <thead>
+      <tr>
+          <th>관계</th>
+          <th>설명</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>$\mathbf{f_s}$</td>
+          <td>둘 다 free(빈 공간), 의미 유사</td>
+      </tr>
+      <tr>
+          <td>$\mathbf{f_d}$</td>
+          <td>둘 다 free, 의미 다름</td>
+      </tr>
+      <tr>
+          <td>$\mathbf{o_s}$</td>
+          <td>둘 다 occupied(점유), 의미 유사</td>
+      </tr>
+      <tr>
+          <td>$\mathbf{o_d}$</td>
+          <td>둘 다 occupied, 의미 다름</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Supervoxel↔Voxel 관계</strong>: 메모리 효율을 위해 $s^3$ 이웃 복셀을 하나의 supervoxel로 묶어 관계 행렬 크기를 $N^2$에서 $\frac{N^2}{s^3}$으로 줄입니다.</p>
+<p><strong>관계 학습 손실</strong> (weighted multi-label binary cross-entropy):</p>
+$$\mathcal{L}_{rel} = -\sum_{m \in \mathcal{M}, i} \left[(1 - A_i^m)\log(1 - \hat{A}_i^m) + w_m A_i^m \log \hat{A}_i^m\right]$$<p><strong>수식 설명</strong>:</p>
+<ul>
+<li><strong>$A_i^m$</strong>: i번째 쌍에 대한 관계 $m$의 GT (0 또는 1)</li>
+<li><strong>$\hat{A}_i^m$</strong>: 예측된 관계 확률</li>
+<li><strong>$w_m = \frac{\sum_i(1 - A_i^m)}{\sum_i A_i^m}$</strong>: free/occupied 불균형(≈9:1)을 보정하는 클래스 가중치</li>
+<li><strong>효과</strong>: 관계 행렬이 supervision 없이도 self-attention처럼 작동 가능 (w/o $\mathcal{L}_{rel}$ 시 암묵적 어텐션으로 동작)</li>
+</ul>
+<h3 id="33-손실-함수-losses">3.3 손실 함수 (Losses)<a class="anchor" href="#33-%ec%86%90%ec%8b%a4-%ed%95%a8%ec%88%98-losses">#</a></h3>
+<h4 id="331-scene-class-affinity-loss-">3.3.1 Scene-Class Affinity Loss ($\mathcal{L}_{scal}$)<a class="anchor" href="#331-scene-class-affinity-loss-">#</a></h4>
+<p>기존 cross-entropy는 각 복셀을 독립적으로 최적화하여 <strong>전역 장면 수준 성능</strong>을 직접 최적화하지 못합니다. MonoScene은 클래스별 Precision, Recall, Specificity를 직접 최적화합니다.</p>
+$$P_c(\hat{p}, p) = \log \frac{\sum_i \hat{p}_{i,c}}{\sum_i \hat{p}_{i,c}}, \quad R_c(\hat{p}, p) = \log \frac{\sum_i \hat{p}_{i,c}\llbracket p_i = c \rrbracket}{\sum_i \llbracket p_i = c \rrbracket}$$$$\mathcal{L}_{scal}(\hat{p}, p) = -\frac{1}{C} \sum_{c=1}^{C}(P_c + R_c + S_c)$$<p><strong>수식 설명</strong>:</p>
+<ul>
+<li><strong>$\hat{p}_{i,c}$</strong>: 복셀 $i$가 클래스 $c$일 예측 확률</li>
+<li><strong>$p_i$</strong>: 복셀 $i$의 GT 클래스</li>
+<li><strong>$P_c$</strong>: 클래스 $c$ 예측 정밀도 (precision) — false positive 억제</li>
+<li><strong>$R_c$</strong>: 클래스 $c$ 재현율 (recall) — false negative 억제</li>
+<li><strong>$S_c$</strong>: 특이도 (specificity) — 다른 클래스 복셀을 잘못 예측하지 않도록</li>
+<li><strong>두 가지 버전</strong>: 시맨틱 GT로 계산하는 $\mathcal{L}_{scal}^{sem}$과 기하 GT로 계산하는 $\mathcal{L}_{scal}^{geo}$</li>
+</ul>
+<h4 id="332-frustum-proportion-loss-">3.3.2 Frustum Proportion Loss ($\mathcal{L}_{fp}$)<a class="anchor" href="#332-frustum-proportion-loss-">#</a></h4>
+<p><strong>직관</strong>: 단일 시점에서 가려진(occluded) 복셀은 같은 시선(frustum) 위의 앞 객체에 묻혀 예측되는 경향이 있습니다. 이를 frustum 내 클래스 분포 정렬로 해결합니다.</p>
+<p>이미지를 $\ell \times \ell$ 패치로 분할하면, 각 패치는 3D 장면의 하나의 frustum(절두체)에 대응됩니다. 해당 frustum의 예측 클래스 분포 $\hat{P}_k$와 GT 분포 $P_k$ 사이의 KL 발산을 최소화합니다.</p>
+$$\mathcal{L}_{fp} = \sum_{k=1}^{\ell^2} D_{KL}(P_k \| \hat{P}_k) = \sum_{k=1}^{\ell^2} \sum_{c \in C_k} P_k(c) \log \frac{P_k(c)}{\hat{P}_k(c)}$$<p><strong>수식 설명</strong>:</p>
+<ul>
+<li><strong>$k$</strong>: $\ell \times \ell$ 분할된 이미지 패치 인덱스 (기본 $\ell=8$)</li>
+<li><strong>$P_k(c)$</strong>: frustum $k$에서 클래스 $c$의 GT 비율</li>
+<li><strong>$\hat{P}_k(c)$</strong>: frustum $k$에서 클래스 $c$의 예측 비율</li>
+<li><strong>$C_k$</strong>: frustum $k$에 GT가 존재하는 클래스만 (KL이 undefined인 경우 제외)</li>
+<li><strong>효과</strong>: occlusion으로 가려진 복셀도 해당 frustum의 전체 클래스 분포로 간접 지도</li>
+</ul>
+<h4 id="최종-손실">최종 손실<a class="anchor" href="#%ec%b5%9c%ec%a2%85-%ec%86%90%ec%8b%a4">#</a></h4>
+$$\mathcal{L}_{total} = \mathcal{L}_{ce} + \mathcal{L}_{rel} + \mathcal{L}_{scal}^{sem} + \mathcal{L}_{scal}^{geo} + \mathcal{L}_{fp}$$<hr>
+<h2 id="4-experiments">4. Experiments<a class="anchor" href="#4-experiments">#</a></h2>
+<h3 id="데이터셋">데이터셋<a class="anchor" href="#%eb%8d%b0%ec%9d%b4%ed%84%b0%ec%85%8b">#</a></h3>
+<table>
+  <thead>
+      <tr>
+          <th>데이터셋</th>
+          <th>환경</th>
+          <th>복셀 그리드</th>
+          <th>클래스 수</th>
+          <th>입력 해상도</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>NYUv2</td>
+          <td>실내 (Kinect)</td>
+          <td>240×144×240</td>
+          <td>11 시맨틱 + 1 free + 1 unknown</td>
+          <td>640×480</td>
+      </tr>
+      <tr>
+          <td>SemanticKITTI</td>
+          <td>실외 (LiDAR scan)</td>
+          <td>256×256×32</td>
+          <td>19 시맨틱 + 1 free + 1 unknown</td>
+          <td>1226×370 (crop)</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="주요-결과">주요 결과<a class="anchor" href="#%ec%a3%bc%ec%9a%94-%ea%b2%b0%ea%b3%bc">#</a></h3>
+<p><strong>NYUv2 (test set)</strong> — mIoU 기준:</p>
+<table>
+  <thead>
+      <tr>
+          <th>방법</th>
+          <th>입력</th>
+          <th>IoU</th>
+          <th>mIoU</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>LMSCNet (RGB-inferred)</td>
+          <td>occ</td>
+          <td>33.93</td>
+          <td>15.88</td>
+      </tr>
+      <tr>
+          <td>3DSketch (RGB-inferred)</td>
+          <td>RGB+TSDF</td>
+          <td>38.64</td>
+          <td>22.91</td>
+      </tr>
+      <tr>
+          <td><strong>MonoScene (ours)</strong></td>
+          <td><strong>RGB only</strong></td>
+          <td><strong>42.51</strong></td>
+          <td><strong>26.94</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>SemanticKITTI (hidden test set)</strong> — mIoU 기준:</p>
+<table>
+  <thead>
+      <tr>
+          <th>방법</th>
+          <th>입력</th>
+          <th>IoU</th>
+          <th>mIoU</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>LMSCNet (RGB-inferred)</td>
+          <td>occ</td>
+          <td>31.38</td>
+          <td>7.07</td>
+      </tr>
+      <tr>
+          <td>AICNet (RGB-inferred)</td>
+          <td>RGB+depth</td>
+          <td>23.93</td>
+          <td>7.09</td>
+      </tr>
+      <tr>
+          <td><strong>MonoScene (ours)</strong></td>
+          <td><strong>RGB only</strong></td>
+          <td><strong>34.16</strong></td>
+          <td><strong>11.08</strong></td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="ablation-결과-nyuv2-test--semantickitti-val">Ablation 결과 (NYUv2 test / SemanticKITTI val)<a class="anchor" href="#ablation-%ea%b2%b0%ea%b3%bc-nyuv2-test--semantickitti-val">#</a></h3>
+<table>
+  <thead>
+      <tr>
+          <th>구성</th>
+          <th>NYUv2 IoU</th>
+          <th>NYUv2 mIoU</th>
+          <th>SemKITTI IoU</th>
+          <th>SemKITTI mIoU</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Full Model</td>
+          <td>42.51</td>
+          <td>26.94</td>
+          <td>37.12</td>
+          <td>11.50</td>
+      </tr>
+      <tr>
+          <td>w/o FLoSP</td>
+          <td>28.39</td>
+          <td>14.11</td>
+          <td>27.55</td>
+          <td>4.78</td>
+      </tr>
+      <tr>
+          <td>w/o 3D CRP</td>
+          <td>41.39</td>
+          <td>26.27</td>
+          <td>36.20</td>
+          <td>10.96</td>
+      </tr>
+      <tr>
+          <td>w/o $\mathcal{L}_{scal}^{sem}$</td>
+          <td>42.82</td>
+          <td>25.33</td>
+          <td>36.78</td>
+          <td>9.89</td>
+      </tr>
+      <tr>
+          <td>w/o $\mathcal{L}_{fp}$</td>
+          <td>41.90</td>
+          <td>26.37</td>
+          <td>36.74</td>
+          <td>11.11</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>FLoSP 제거 시 IoU가 14포인트 급락</strong> → 2D-3D 연결이 MonoScene의 핵심 요소임을 확인</p>
+<h3 id="fov-내외-성능-semantickitti-validation">FOV 내/외 성능 (SemanticKITTI validation)<a class="anchor" href="#fov-%eb%82%b4%ec%99%b8-%ec%84%b1%eb%8a%a5-semantickitti-validation">#</a></h3>
+<table>
+  <thead>
+      <tr>
+          <th>영역</th>
+          <th>IoU</th>
+          <th>mIoU</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>In-FOV</td>
+          <td>39.13</td>
+          <td>12.78</td>
+      </tr>
+      <tr>
+          <td>Out-FOV</td>
+          <td>31.60</td>
+          <td>7.45</td>
+      </tr>
+      <tr>
+          <td>Whole Scene</td>
+          <td>37.12</td>
+          <td>11.50</td>
+      </tr>
+  </tbody>
+</table>
+<p>카메라 FOV 밖의 장면도 일정 수준 예측 가능함을 확인 (hallucination 능력)</p>
+<hr>
+<h2 id="5-핵심-개념-정리">5. 핵심 개념 정리<a class="anchor" href="#5-%ed%95%b5%ec%8b%ac-%ea%b0%9c%eb%85%90-%ec%a0%95%eb%a6%ac">#</a></h2>
+<table>
+  <thead>
+      <tr>
+          <th>개념</th>
+          <th>설명</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>SSC (Semantic Scene Completion)</strong></td>
+          <td>이미지로부터 3D 복셀 전체 공간의 점유 여부 + 시맨틱 클래스를 동시에 예측하는 태스크</td>
+      </tr>
+      <tr>
+          <td><strong>FLoSP</strong></td>
+          <td>카메라 시선을 따라 2D 멀티스케일 피처를 3D 복셀로 투영하는 모듈. 2D-3D 정보 브릿지 역할</td>
+      </tr>
+      <tr>
+          <td><strong>3D CRP</strong></td>
+          <td>복셀 간 free/occupied × 의미유사/다름 4가지 관계를 학습하는 3D UNet 병목 레이어. 공간 맥락 인식</td>
+      </tr>
+      <tr>
+          <td><strong>Supervoxel</strong></td>
+          <td>$s^3$개 인접 복셀 그룹. 관계 행렬 메모리 효율화를 위해 복셀 대신 supervoxel 단위로 관계 예측</td>
+      </tr>
+      <tr>
+          <td><strong>Scene-Class Affinity Loss</strong></td>
+          <td>클래스별 Precision/Recall/Specificity를 직접 최적화하는 전역 손실. cross-entropy의 맥락 무시 문제 보완</td>
+      </tr>
+      <tr>
+          <td><strong>Frustum Proportion Loss</strong></td>
+          <td>이미지 패치-frustum 단위 클래스 분포 KL 발산 최소화. occlusion으로 인한 편향 예측 억제</td>
+      </tr>
+      <tr>
+          <td><strong>Hallucination</strong></td>
+          <td>카메라 FOV 밖의 장면도 통계적으로 그럴듯하게 예측하는 능력. FLoSP가 시선 방향에 따라 학습된 결과</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="6-결론-및-시사점">6. 결론 및 시사점<a class="anchor" href="#6-%ea%b2%b0%eb%a1%a0-%eb%b0%8f-%ec%8b%9c%ec%82%ac%ec%a0%90">#</a></h2>
+<p><strong>MonoScene의 의의</strong>:</p>
+<ul>
+<li>단일 RGB 이미지만으로 실내·실외 양쪽에서 3D SSC를 처음으로 수행</li>
+<li>LiDAR/depth 없이도 3D 입력 기반 일부 기법보다 높은 mIoU 달성</li>
+<li>FLoSP, 3D CRP, 새 손실 함수 — 세 가지 독립적 기여가 각각 유효함을 ablation으로 검증</li>
+</ul>
+<p><strong>한계</strong>:</p>
+<ul>
+<li>세밀한 기하(fine-grained geometry) 추론에 어려움 (작은 물체, 얇은 구조물)</li>
+<li>의미적으로 유사한 클래스 혼동 (의자/소파, 창문/물체 등)</li>
+<li>실외 장면에서 시선 방향으로 아티팩트 발생 (single viewpoint 한계)</li>
+<li>카메라 FOV가 훈련 데이터 설정과 다를 때 성능 저하</li>
+</ul>
+<p><strong>자율주행 로드맵 내 위치</strong>:</p>
+<ul>
+<li>TPVFormer, SurroundOcc 등 <strong>카메라 전용 3D 점유 예측</strong> 계보의 직접적 선행 연구</li>
+<li>&ldquo;깊이 센서 없이 3D 이해 가능하다&quot;는 패러다임을 처음 정립</li>
+<li>EmerNeRF의 자기지도 동적 장면 분해와 달리, 정적 장면 완성에 집중</li>
+<li>HUGS, UniSim 등 후속 Neural Simulation 연구들이 필요로 하는 &ldquo;카메라 전용 3D 씬 이해&quot;의 이론적 기반 제공</li>
+</ul>
+<hr>
+<p><em>관련 논문: <a href="/posts/papers/tpvformer-tri-perspective-view-3d-semantic-occupancy/">TPVFormer</a>, <a href="/posts/papers/SurroundOcc/">SurroundOcc</a>, <a href="/posts/papers/occ3d-large-scale-3d-occupancy-prediction-benchmark/">Occ3D</a>, <a href="/posts/papers/BEVFormer/">BEVFormer</a>, <a href="/posts/papers/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/">GaussianWorld</a></em></p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/paper/docs/autonomous-driving/perception/centerpoint-center-based-3d-object-detection-and-tracking/" class="flex align-center">
+        <img src="/paper/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>CenterPoint: Center-based 3D Object Detection and Tracking</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/paper/docs/autonomous-driving/perception/tpvformer-tri-perspective-view-3d-semantic-occupancy/" class="flex align-center">
+        <span>TPVFormer: Tri-Perspective View for Vision-Based 3D Semantic Occupancy Prediction</span>
+        <img src="/paper/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#1-introduction">1. Introduction</a></li>
+    <li><a href="#2-related-works">2. Related Works</a></li>
+    <li><a href="#3-method">3. Method</a>
+      <ul>
+        <li><a href="#전체-파이프라인">전체 파이프라인</a></li>
+        <li><a href="#31-features-line-of-sight-projection-flosp">3.1 Features Line of Sight Projection (FLoSP)</a></li>
+        <li><a href="#32-3d-context-relation-prior-3d-crp">3.2 3D Context Relation Prior (3D CRP)</a></li>
+        <li><a href="#33-손실-함수-losses">3.3 손실 함수 (Losses)</a></li>
+      </ul>
+    </li>
+    <li><a href="#4-experiments">4. Experiments</a>
+      <ul>
+        <li><a href="#데이터셋">데이터셋</a></li>
+        <li><a href="#주요-결과">주요 결과</a></li>
+        <li><a href="#ablation-결과-nyuv2-test--semantickitti-val">Ablation 결과 (NYUv2 test / SemanticKITTI val)</a></li>
+        <li><a href="#fov-내외-성능-semantickitti-validation">FOV 내/외 성능 (SemanticKITTI validation)</a></li>
+      </ul>
+    </li>
+    <li><a href="#5-핵심-개념-정리">5. 핵심 개념 정리</a></li>
+    <li><a href="#6-결론-및-시사점">6. 결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="ko-KR" dir="ltr">
+<head><script src="/paper/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=paper/livereload" data-no-instant defer></script>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="개요# 저자: Alexey Dosovitskiy, German Ros, Felipe Codevilla, Antonio López, Vladlen Koltun 소속: Intel Labs, Toyota Research Institute, Computer Vision Center Barcelona 발행년도: 2017 (CoRL 2017) 주요 내용: 자율주행 연구를 위한 오픈소스 도시 주행 시뮬레이터 CARLA를 소개하며, 모듈형 파이프라인, 모방 학습, 강화학습 세 가지 자율주행 접근법을 벤치마킹한 논문 목차# Section 1: Introduction Section 2: Simulation Engine Section 3: Autonomous Driving (3가지 접근법) Section 4: Experiments Section 5: Results Section 6: Conclusion Section 1: Introduction# 요약
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/paper/docs/carla-an-open-urban-driving-simulator/">
+  <meta property="og:site_name" content="Paper">
+  <meta property="og:title" content="CARLA: An Open Urban Driving Simulator">
+  <meta property="og:description" content="개요# 저자: Alexey Dosovitskiy, German Ros, Felipe Codevilla, Antonio López, Vladlen Koltun 소속: Intel Labs, Toyota Research Institute, Computer Vision Center Barcelona 발행년도: 2017 (CoRL 2017) 주요 내용: 자율주행 연구를 위한 오픈소스 도시 주행 시뮬레이터 CARLA를 소개하며, 모듈형 파이프라인, 모방 학습, 강화학습 세 가지 자율주행 접근법을 벤치마킹한 논문 목차# Section 1: Introduction Section 2: Simulation Engine Section 3: Autonomous Driving (3가지 접근법) Section 4: Experiments Section 5: Results Section 6: Conclusion Section 1: Introduction# 요약">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:published_time" content="2026-04-10T09:00:00+09:00">
+    <meta property="article:modified_time" content="2026-04-10T09:00:00+09:00">
+    <meta property="article:tag" content="Autonomous Driving">
+    <meta property="article:tag" content="Simulation">
+    <meta property="article:tag" content="CARLA">
+    <meta property="article:tag" content="Benchmark">
+
+
+  <meta itemprop="name" content="CARLA: An Open Urban Driving Simulator">
+  <meta itemprop="description" content="개요# 저자: Alexey Dosovitskiy, German Ros, Felipe Codevilla, Antonio López, Vladlen Koltun 소속: Intel Labs, Toyota Research Institute, Computer Vision Center Barcelona 발행년도: 2017 (CoRL 2017) 주요 내용: 자율주행 연구를 위한 오픈소스 도시 주행 시뮬레이터 CARLA를 소개하며, 모듈형 파이프라인, 모방 학습, 강화학습 세 가지 자율주행 접근법을 벤치마킹한 논문 목차# Section 1: Introduction Section 2: Simulation Engine Section 3: Autonomous Driving (3가지 접근법) Section 4: Experiments Section 5: Results Section 6: Conclusion Section 1: Introduction# 요약">
+  <meta itemprop="datePublished" content="2026-04-10T09:00:00+09:00">
+  <meta itemprop="dateModified" content="2026-04-10T09:00:00+09:00">
+  <meta itemprop="wordCount" content="1464">
+  <meta itemprop="keywords" content="Autonomous Driving,Simulation,CARLA,Benchmark">
+
+<title>CARLA: An Open Urban Driving Simulator | Paper</title>
+<link rel="icon" href="/paper/favicon.png" >
+<link rel="manifest" href="/paper/manifest.json">
+<link rel="canonical" href="http://localhost:1313/paper/docs/carla-an-open-urban-driving-simulator/">
+<link rel="stylesheet" href="/paper/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/paper/fuse.min.js"></script>
+  <script defer src="/paper/en.search.min.136303f53f731e7f187e59dca354807444ce24732e128843ea97e041d47b7d93.js" integrity="sha256-E2MD9T9zHn8Yflnco1SAdETOJHMuEohD6pfgQdR7fZM=" crossorigin="anonymous"></script>
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '\\[', right: '\\]', display: true},
+      {left: '\\(', right: '\\)', display: false},
+      {left: '$', right: '$', display: false}
+    ]
+  });
+});
+</script>
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/paper/"><span>Paper</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/controlnet-adding-conditional-control-to-text-to-image-diffusion-models/" class="">
+      ControlNet: Adding Conditional Control to Text-to-Image Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/clip-learning-transferable-visual-models-from-natural-language-supervision/" class="">
+      CLIP: Learning Transferable Visual Models From Natural Language Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointnet-plus-plus-deep-hierarchical-feature-learning/" class="">
+      PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/" class="">
+      GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/lidarsim-realistic-lidar-simulation-by-leveraging-the-real-world/" class="">
+      LiDARsim: Realistic LiDAR Simulation by Leveraging the Real World</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vit-an-image-is-worth-16x16-words/" class="">
+      ViT: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/resnet-deep-residual-learning-for-image-recognition/" class="">
+      ResNet: Deep Residual Learning for Image Recognition</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/" class="">
+      StreamMapNet: Streaming Mapping Network for Vectorized Online HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vectormapnet-end-to-end-vectorized-hd-map-learning/" class="">
+      VectorMapNet: End-to-end Vectorized HD Map Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/detr-end-to-end-object-detection-with-transformers/" class="">
+      DETR: End-to-End Object Detection with Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/attention-is-all-you-need/" class="">
+      Attention Is All You Need</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/maptr-structured-modeling-online-vectorized-hd-map-construction/" class="">
+      MapTR: Structured Modeling and Learning for Online Vectorized HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/high-resolution-image-synthesis-with-latent-diffusion-models/" class="">
+      High-Resolution Image Synthesis with Latent Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/proximal-policy-optimization/" class="">
+      Proximal Policy Optimization Algorithms (PPO)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/denoising-diffusion-probabilistic-models/" class="">
+      Denoising Diffusion Probabilistic Models (DDPM)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/" class="">
+      PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointpillars-fast-encoders-object-detection-point-clouds/" class="">
+      PointPillars: Fast Encoders for Object Detection from Point Clouds</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/centerpoint-center-based-3d-object-detection-and-tracking/" class="">
+      CenterPoint: Center-based 3D Object Detection and Tracking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/monoscene-monocular-3d-semantic-scene-completion/" class="">
+      MonoScene: Monocular 3D Semantic Scene Completion</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/tpvformer-tri-perspective-view-3d-semantic-occupancy/" class="">
+      TPVFormer: Tri-Perspective View for Vision-Based 3D Semantic Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/drivearena/" class="">
+      DriveArena: A Closed-loop Generative Simulation Platform for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/neurad-neural-rendering-for-autonomous-driving/" class="">
+      NeuRAD: Neural Rendering for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/omnire-omni-urban-scene-reconstruction/" class="">
+      OmniRe: Omni Urban Scene Reconstruction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/magicdrive-street-view-generation-3d-geometry-control/" class="">
+      MagicDrive: Street View Generation with Diverse 3D Geometry Control</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/surroundocc/" class="">
+      SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/drivedreamer/" class="">
+      DriveDreamer: Towards Real-world-driven World Models for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/street-gaussians-modeling-dynamic-urban-scenes/" class="">
+      Street Gaussians: Modeling Dynamic Urban Scenes with Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bench2drive-multi-ability-benchmarking-e2e-autonomous-driving/" class="">
+      Bench2Drive: Towards Multi-Ability Benchmarking of Closed-Loop End-To-End Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/emernerf/" class="">
+      EmerNeRF: Emergent Spatial-Temporal Scene Decomposition via Self-Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/detr3d-3d-object-detection-multi-view-images/" class="">
+      DETR3D: 3D Object Detection from Multi-view Images via 3D-to-2D Queries</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/occ3d-large-scale-3d-occupancy-prediction-benchmark/" class="">
+      Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/unisim-neural-closed-loop-sensor-simulator/" class="">
+      UniSim: A Neural Closed-Loop Sensor Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevfusion-multi-task-multi-sensor-fusion/" class="">
+      BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/instant-ngp-multiresolution-hash-encoding/" class="">
+      Instant Neural Graphics Primitives with a Multiresolution Hash Encoding</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/lift-splat-shoot/" class="">
+      Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevdepth/" class="">
+      BEVDepth: Acquisition of Reliable Depth for Multi-view 3D Object Detection</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/4d-gaussian-splatting/" class="">
+      4D Gaussian Splatting for Real-Time Dynamic Scene Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/gaia-1/" class="">
+      GAIA-1: A Generative World Model for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/dqn-playing-atari-with-deep-reinforcement-learning/" class="">
+      Playing Atari with Deep Reinforcement Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevformer/" class="">
+      BEVFormer: Learning Bird&#39;s-Eye-View Representation from Multi-Camera Images via Spatiotemporal Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/navsim/" class="">
+      NAVSIM: Data-Driven Non-Reactive Autonomous Vehicle Simulation and Benchmarking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nuplan/" class="">
+      nuPlan: A closed-loop ML-based planning benchmark for autonomous vehicles</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/transfuser/" class="">
+      TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3d-gaussian-splatting/" class="">
+      3D Gaussian Splatting for Real-Time Radiance Field Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/driving-gaussian-composite-gaussian-splatting/" class="">
+      DrivingGaussian: Composite Gaussian Splatting for Surrounding Dynamic Autonomous Driving Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3d-gaussian-ray-tracing/" class="">
+      3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/" class="">
+      3DGUT: Enabling Distorted Cameras and Secondary Rays in Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/carla-an-open-urban-driving-simulator/" class="active">
+      CARLA: An Open Urban Driving Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/difix3d-plus/" class="">
+      DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/hugsim-real-time-photorealistic-closed-loop-simulator/" class="">
+      HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/" class="">
+      NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nuscenes-multimodal-dataset-autonomous-driving/" class="">
+      nuScenes: A Multimodal Dataset for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/waymo-open-dataset/" class="">
+      Scalability in Perception for Autonomous Driving: Waymo Open Dataset</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/uniad-planning-oriented-autonomous-driving/" class="">
+      UniAD: Planning-oriented Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vad/" class="">
+      VAD: Vectorized Scene Representation for Efficient Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/paper/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>CARLA: An Open Urban Driving Simulator</h3>
+
+  <label for="toc-control">
+    
+    <img src="/paper/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#section-1-introduction">Section 1: Introduction</a></li>
+    <li><a href="#section-2-simulation-engine">Section 2: Simulation Engine</a></li>
+    <li><a href="#section-3-autonomous-driving">Section 3: Autonomous Driving</a>
+      <ul>
+        <li><a href="#31-모듈형-파이프라인-modular-pipeline">3.1 모듈형 파이프라인 (Modular Pipeline)</a></li>
+        <li><a href="#32-모방-학습-imitation-learning">3.2 모방 학습 (Imitation Learning)</a></li>
+        <li><a href="#33-강화학습-reinforcement-learning">3.3 강화학습 (Reinforcement Learning)</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-4-experiments">Section 4: Experiments</a></li>
+    <li><a href="#section-5-results">Section 5: Results</a></li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h2 id="개요">개요<a class="anchor" href="#%ea%b0%9c%ec%9a%94">#</a></h2>
+<ul>
+<li><strong>저자</strong>: Alexey Dosovitskiy, German Ros, Felipe Codevilla, Antonio López, Vladlen Koltun</li>
+<li><strong>소속</strong>: Intel Labs, Toyota Research Institute, Computer Vision Center Barcelona</li>
+<li><strong>발행년도</strong>: 2017 (CoRL 2017)</li>
+<li><strong>주요 내용</strong>: 자율주행 연구를 위한 오픈소스 도시 주행 시뮬레이터 CARLA를 소개하며, 모듈형 파이프라인, 모방 학습, 강화학습 세 가지 자율주행 접근법을 벤치마킹한 논문</li>
+</ul>
+<h2 id="목차">목차<a class="anchor" href="#%eb%aa%a9%ec%b0%a8">#</a></h2>
+<ul>
+<li>Section 1: Introduction</li>
+<li>Section 2: Simulation Engine</li>
+<li>Section 3: Autonomous Driving (3가지 접근법)</li>
+<li>Section 4: Experiments</li>
+<li>Section 5: Results</li>
+<li>Section 6: Conclusion</li>
+</ul>
+<hr>
+<h2 id="section-1-introduction">Section 1: Introduction<a class="anchor" href="#section-1-introduction">#</a></h2>
+<p><strong>요약</strong></p>
+<p>도시 환경에서의 자율주행은 복잡한 멀티에이전트 역학, 교통법규 준수, 희귀한 위험 상황 대응 등으로 인해 매우 어려운 문제입니다. 실제 도로에서의 연구는 비용과 안전 문제로 한계가 있으며, 기존 시뮬레이터(TORCS 같은 레이싱 시뮬레이터, GTA V 같은 상용 게임)는 도시 주행의 복잡성을 충분히 지원하지 못합니다.</p>
+<p>CARLA(Car Learning to Act)는 이러한 한계를 극복하기 위해 처음부터 자율주행 연구 목적으로 설계된 오픈소스 시뮬레이터입니다. 오픈소스 코드와 프로토콜뿐만 아니라, 도시 레이아웃, 건물, 차량 등 디지털 애셋도 무료로 제공합니다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>시뮬레이션의 필요성</strong>: 실제 자율주행 연구는 인프라 비용, 안전 위험, 데이터 수집 난이도로 인해 물리적 환경에서만 진행하기 어려움</li>
+<li><strong>기존 시뮬레이터의 한계</strong>: TORCS는 레이싱용으로 보행자/교차로/교통법규 없음; GTA V는 커스터마이징 불가, 폐쇄 소스</li>
+<li><strong>CARLA의 차별점</strong>: 완전 오픈소스, 도시 환경 특화, 유연한 센서 설정, 환경 조건 제어 가능</li>
+</ul>
+<hr>
+<h2 id="section-2-simulation-engine">Section 2: Simulation Engine<a class="anchor" href="#section-2-simulation-engine">#</a></h2>
+<p><strong>요약</strong></p>
+<p>CARLA는 Unreal Engine 4(UE4) 위에 오픈소스 레이어로 구현되어 있습니다. 클라이언트-서버 구조로 설계되어, 서버가 시뮬레이션을 실행하고 클라이언트(Python API)가 에이전트와 서버 간의 상호작용을 담당합니다.</p>
+<p>시뮬레이터는 두 개의 가상 도시(Town 1: 훈련용 2.9km 도로, Town 2: 테스트용 1.4km 도로)를 포함하며, 40개의 건물, 16개의 차량 모델, 50개의 보행자 모델을 보유합니다. 18가지 날씨/조명 조합(맑은 날, 비, 안개, 해질녘 등)을 지원합니다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>클라이언트-서버 구조</strong>: 서버는 물리 시뮬레이션과 렌더링을 담당, 클라이언트는 에이전트 제어 명령과 센서 데이터 수신을 담당</li>
+<li><strong>환경(Environment)</strong>: 건물, 식생, 신호등, 표지판 등 정적 객체와 차량, 보행자 등 동적 객체로 구성. 저해상도 기하학적 모델에 고품질 텍스처 적용</li>
+<li><strong>NPC 행동</strong>: UE4 표준 차량 모델(PhysXVehicles) 기반의 비플레이어 차량; 차선 유지, 신호등 준수, 교차로 의사결정 수행</li>
+<li><strong>보행자 내비게이션</strong>: 도시별 내비게이션 맵 기반으로 인도와 횡단보도를 따라 이동, 차량을 피하는 비용 함수 사용</li>
+<li><strong>센서 구성</strong>: RGB 카메라 + 의사센서(pseudo-sensors): 지면 진실 깊이(ground-truth depth), 의미론적 분할(semantic segmentation) 제공</li>
+<li><strong>의미론적 분할 클래스</strong>: 도로, 차선 표시, 교통 표지판, 인도, 울타리, 기둥, 벽, 건물, 식생, 차량, 보행자, 기타 12가지 클래스</li>
+<li><strong>측정 신호</strong>: 차량 위치/속도/가속도, 충돌 누적량, 반대 차선 침범 비율, 인도 침범 비율, 신호등 상태, 속도 제한 표지판 정보</li>
+</ul>
+<p><strong>명령어 체계</strong></p>
+<p>클라이언트가 서버로 보내는 제어 명령:</p>
+<ul>
+<li><strong>조향(Steering)</strong>: -1(완전 좌회전) ~ +1(완전 우회전) 범위의 실수</li>
+<li><strong>가속(Throttle)</strong>: 0 ~ 1 범위의 실수</li>
+<li><strong>제동(Brake)</strong>: 0 ~ 1 범위의 실수</li>
+<li><strong>핸드브레이크</strong>: 활성화/비활성화 불리언</li>
+<li><strong>후진 기어</strong>: 활성화/비활성화 불리언</li>
+</ul>
+<hr>
+<h2 id="section-3-autonomous-driving">Section 3: Autonomous Driving<a class="anchor" href="#section-3-autonomous-driving">#</a></h2>
+<p><strong>요약</strong></p>
+<p>CARLA로 세 가지 자율주행 접근법을 비교합니다. 공통적으로 고수준 위상학적 플래너(A* 알고리즘)가 현재 위치와 목표 위치를 입력받아 좌회전/우회전/직진 등의 고수준 계획을 제공합니다. 에이전트는 매 타임스텝 $t$마다 관찰 $o_t$를 받아 행동 $a_t$ (조향, 가속, 제동의 3차원 벡터)를 출력합니다.</p>
+<h3 id="31-모듈형-파이프라인-modular-pipeline">3.1 모듈형 파이프라인 (Modular Pipeline)<a class="anchor" href="#31-%eb%aa%a8%eb%93%88%ed%98%95-%ed%8c%8c%ec%9d%b4%ed%94%84%eb%9d%bc%ec%9d%b8-modular-pipeline">#</a></h3>
+<p><strong>요약</strong></p>
+<p>가장 전통적인 접근법으로, 인식 → 계획 → 제어의 세 단계로 분리됩니다.</p>
+<ul>
+<li><strong>인식(Perception)</strong>: RefineNet 기반 의미론적 분할 네트워크로 픽셀을 {도로, 인도, 차선 표시, 동적 객체, 기타 정적} 클래스로 분류. ImageNet으로 사전 훈련된 ResNet 백본, CARLA 생성 2,500개 레이블 이미지로 파인튜닝. AlexNet 기반 이진 분류기로 교차로 근접 여부 판별</li>
+<li><strong>지역 계획(Local Planner)</strong>: 상태 머신(차선 추종, 좌회전, 우회전, 교차로 직진, 위험 정지) 기반으로 웨이포인트 생성. 인식 모듈의 자차선 마스크와 전역 플래너 위상 정보를 결합하여 웨이포인트 합성</li>
+<li><strong>연속 제어(Continuous Controller)</strong>: PID 제어기로 조향, 가속, 제동 실행. 목표 속도 20km/h</li>
+</ul>
+<h3 id="32-모방-학습-imitation-learning">3.2 모방 학습 (Imitation Learning)<a class="anchor" href="#32-%eb%aa%a8%eb%b0%a9-%ed%95%99%ec%8a%b5-imitation-learning">#</a></h3>
+<p><strong>요약</strong></p>
+<p>조건부 모방 학습(Conditional Imitation Learning) 방식으로, 인간 운전자의 주행 데이터를 학습합니다. 데이터셋 $D = \{(o_i, c_i, a_i)\}$는 관찰, 명령(직진/좌회전/우회전/차선 유지), 행동으로 구성됩니다.</p>
+<p>네트워크는 4개 모듈로 구성:</p>
+<ol>
+<li>이미지 처리 인식 모듈 (200×88 입력 → 512차원 벡터)</li>
+<li>속도 입력 처리 측정 모듈 (128차원 벡터)</li>
+<li>인식+측정 결합 조인트 모듈 (512+128 → 512차원)</li>
+<li>명령 조건부 제어 모듈 (4개 브랜치 중 현재 명령에 해당하는 브랜치 선택)</li>
+</ol>
+<p>학습 강건성을 위해 훈련 중 조향각에 삼각파 형태의 노이즈를 주입합니다:</p>
+$$s_{perturb}(t) = \sigma\gamma \max\left(0, \left(1 - \left|\frac{2(t-t_0)}{\tau} - 1\right|\right)\right)$$<p><strong>수식 설명</strong>
+이 수식은 실제 주행 시 발생하는 조향 오차를 시뮬레이션하여 모델의 오류 복구 능력을 훈련시킵니다:</p>
+<ul>
+<li><strong>$s_{perturb}(t)$</strong>: 시각 $t$에서의 조향 노이즈 크기</li>
+<li><strong>$\sigma \in \{-1, +1\}$</strong>: 노이즈 방향 (왼쪽 또는 오른쪽 드리프트)</li>
+<li><strong>$\gamma \in \mathbb{R}^+$</strong>: 노이즈 강도 (실험에서 0.15 사용)</li>
+<li><strong>$t_0$</strong>: 노이즈 시작 시각</li>
+<li><strong>$\tau$</strong>: 노이즈 지속 시간 (0.5~2초 균일 분포)</li>
+<li><strong>삼각파 모양</strong>: 선형으로 증가했다가 선형으로 감소 → 갑작스러운 충격이 아닌 점진적 드리프트를 모사</li>
+</ul>
+<p>80%는 자동화 에이전트, 20%는 인간 운전자 데이터 사용. Adam 옵티마이저로 294,000 이터레이션 훈련.</p>
+<h3 id="33-강화학습-reinforcement-learning">3.3 강화학습 (Reinforcement Learning)<a class="anchor" href="#33-%ea%b0%95%ed%99%94%ed%95%99%ec%8a%b5-reinforcement-learning">#</a></h3>
+<p><strong>요약</strong></p>
+<p>보상 신호만으로 자율주행을 학습하는 end-to-end 방식. A3C(Asynchronous Advantage Actor-Critic) 알고리즘을 사용하며 10개의 병렬 액터 스레드로 총 1,000만 시뮬레이션 스텝 훈련(약 12일 소요).</p>
+<p>보상 함수:</p>
+$$r_t = 1000(d_{t-1} - d_t) + 0.05(v_t - v_{t-1}) - 0.00002(c_t - c_{t-1}) - 2(s_t - s_{t-1}) - 2(o_t - o_{t-1})$$<p><strong>수식 설명</strong>
+이 보상 함수는 좋은 운전 행동을 장려하고 나쁜 행동에 패널티를 부여합니다:</p>
+<ul>
+<li><strong>$1000(d_{t-1} - d_t)$</strong>: 목표를 향한 이동 거리 (km 단위) — 목표에 가까워질수록 양의 보상</li>
+<li><strong>$0.05(v_t - v_{t-1})$</strong>: 속도 증가 보너스 — 적절히 가속하도록 장려</li>
+<li><strong>$-0.00002(c_t - c_{t-1})$</strong>: 충돌 데미지 패널티 — 충돌 시 음의 보상</li>
+<li><strong>$-2(s_t - s_{t-1})$</strong>: 인도 침범 패널티 ($s$: 인도 위 차량 비율, 0~1)</li>
+<li><strong>$-2(o_t - o_{t-1})$</strong>: 반대 차선 침범 패널티 ($o$: 반대 차선 위 차량 비율, 0~1)</li>
+</ul>
+<p>입력: 가장 최근 2프레임의 84×84 이미지 + 측정 벡터(속도, 목표까지 거리, 충돌 데미지, 고수준 명령).</p>
+<hr>
+<h2 id="section-4-experiments">Section 4: Experiments<a class="anchor" href="#section-4-experiments">#</a></h2>
+<p><strong>요약</strong></p>
+<p>실험은 점점 어려워지는 4가지 내비게이션 과제로 구성되며, 훈련 도시(Town 1)와 테스트 도시(Town 2), 훈련/테스트 날씨 세트를 분리하여 일반화 능력을 평가합니다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>직진(Straight)</strong>: 목표가 출발점 정면, 동적 장애물 없음. Town 1 평균 거리 200m, Town 2 100m</li>
+<li><strong>한 번 회전(One turn)</strong>: 한 번의 회전 포함, 동적 장애물 없음. Town 1 400m, Town 2 170m</li>
+<li><strong>내비게이션(Navigation)</strong>: 방향 제한 없음, 동적 장애물 없음. Town 1 770m, Town 2 360m</li>
+<li><strong>동적 장애물 내비게이션(Nav. dynamic)</strong>: 위와 동일하지만 차량과 보행자 존재</li>
+<li><strong>훈련 날씨</strong>: 맑은 낮, 맑은 해질녘, 흐린 낮, 비 온 후 낮</li>
+<li><strong>테스트 날씨</strong>: 흐린 낮, 해질녘 소프트 비 (훈련 중 한 번도 사용하지 않음)</li>
+<li><strong>에피소드 성공 조건</strong>: 제한 시간 내 목표 도달 (최적 경로를 10km/h로 이동하는 시간 기준)</li>
+</ul>
+<hr>
+<h2 id="section-5-results">Section 5: Results<a class="anchor" href="#section-5-results">#</a></h2>
+<p><strong>요약</strong></p>
+<p>세 방법의 정량적 평가 결과(에피소드 성공률 %)와 위반 행동 분석을 제공합니다.</p>
+<p><strong>성능 요약 (Table 1: 성공률 %)</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>과제</th>
+          <th>MP(훈련)</th>
+          <th>IL(훈련)</th>
+          <th>RL(훈련)</th>
+          <th>MP(새도시)</th>
+          <th>IL(새도시)</th>
+          <th>RL(새도시)</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>직진</td>
+          <td>98</td>
+          <td>95</td>
+          <td>89</td>
+          <td>92</td>
+          <td><strong>97</strong></td>
+          <td>74</td>
+      </tr>
+      <tr>
+          <td>한 번 회전</td>
+          <td>82</td>
+          <td><strong>89</strong></td>
+          <td>34</td>
+          <td>61</td>
+          <td>59</td>
+          <td>12</td>
+      </tr>
+      <tr>
+          <td>내비게이션</td>
+          <td>80</td>
+          <td><strong>86</strong></td>
+          <td>14</td>
+          <td>24</td>
+          <td>40</td>
+          <td>3</td>
+      </tr>
+      <tr>
+          <td>동적 내비게이션</td>
+          <td>77</td>
+          <td><strong>83</strong></td>
+          <td>7</td>
+          <td>24</td>
+          <td><strong>38</strong></td>
+          <td>2</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>주요 발견</strong></p>
+<ul>
+<li><strong>훈련 환경에서도 완벽하지 않음</strong>: 훈련 조건의 직진 과제에서도 100% 달성 불가. 4가지 날씨에서의 다양한 시각 입력으로 인해 강건한 일반화가 필요하기 때문</li>
+<li><strong>과제 난이도 증가 시 성능 저하</strong>: 동적 장애물이 있는 도시 내비게이션에서 세 방법 모두 성능이 훈련 대비 최소 2배 이상 저하</li>
+<li><strong>일반화 패턴의 차이</strong>: 새 날씨 일반화(새 날씨 세트)는 상대적으로 쉬움. 새 도시 일반화가 훨씬 어려움 — 새 도시는 다른 텍스처와 3D 모델을 사용하기 때문</li>
+<li><strong>모듈형 파이프라인 vs 모방 학습</strong>: 성능이 대부분의 조건에서 10% 이내 차이. MP는 새 날씨에서 인식 모듈이 우연히 더 잘 작동하는 경우가 있으나, 새 도시에서는 인식 스택 실패 시 전체 시스템이 작동 불능(bimodal 특성). IL은 더 일관된 성능</li>
+<li><strong>강화학습의 저조한 성능</strong>: 모든 과제에서 IL보다 현저히 낮음. 이유: (1) RL은 희귀한 사건을 훈련에서 충분히 경험하지 못함 (2) IL처럼 데이터 증강이나 드롭아웃을 적용하지 않아 일반화 약함 (3) 현실적인 시뮬레이터에서의 하이퍼파라미터 탐색이 비효율적</li>
+</ul>
+<p><strong>위반 분석 (Table 2: 위반 사이 평균 거리 km, 높을수록 좋음)</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>위반 유형</th>
+          <th>MP(훈련)</th>
+          <th>IL(훈련)</th>
+          <th>RL(훈련)</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>반대 차선</td>
+          <td>10.2</td>
+          <td>33.4</td>
+          <td>0.18</td>
+      </tr>
+      <tr>
+          <td>인도</td>
+          <td><strong>18.3</strong></td>
+          <td>12.9</td>
+          <td>0.75</td>
+      </tr>
+      <tr>
+          <td>정적 충돌</td>
+          <td><strong>10.0</strong></td>
+          <td>3.38</td>
+          <td>0.44</td>
+      </tr>
+      <tr>
+          <td>차량 충돌</td>
+          <td>10.0</td>
+          <td><strong>16.1</strong></td>
+          <td>1.05</td>
+      </tr>
+      <tr>
+          <td>보행자 충돌</td>
+          <td>18.9</td>
+          <td>6.35</td>
+          <td>17.8</td>
+      </tr>
+  </tbody>
+</table>
+<ul>
+<li>IL은 반대 차선 침범이 가장 적음 (반대 차선 패널티를 보상 함수에서 학습한 결과)</li>
+<li>RL은 보행자 충돌이 적음 (보상 함수의 강한 보행자 충돌 패널티 덕분)</li>
+<li>MP는 전반적으로 정적 충돌에 강함</li>
+</ul>
+<hr>
+<h2 id="핵심-개념-정리">핵심 개념 정리<a class="anchor" href="#%ed%95%b5%ec%8b%ac-%ea%b0%9c%eb%85%90-%ec%a0%95%eb%a6%ac">#</a></h2>
+<ul>
+<li><strong>CARLA (Car Learning to Act)</strong>: Unreal Engine 4 기반의 오픈소스 도시 자율주행 시뮬레이터. 오픈소스 코드 + 디지털 애셋 무료 제공</li>
+<li><strong>클라이언트-서버 아키텍처</strong>: Python 클라이언트 API로 시뮬레이터 제어. 소켓 통신으로 명령 전송 및 센서 데이터 수신</li>
+<li><strong>의미론적 분할(Semantic Segmentation)</strong>: 픽셀 수준에서 도로/보행자/차량 등 12가지 클래스로 분류하는 컴퓨터 비전 기법</li>
+<li><strong>조건부 모방 학습(Conditional Imitation Learning)</strong>: 고수준 명령(좌/우/직진/유지)에 따라 다른 네트워크 브랜치를 선택하여 전문가 행동 모방</li>
+<li><strong>A3C (Asynchronous Advantage Actor-Critic)</strong>: 여러 환경에서 병렬로 경험을 수집하는 비동기 강화학습 알고리즘</li>
+<li><strong>PID 제어기</strong>: 비례-적분-미분 제어로 목표 속도와 웨이포인트를 추종하는 고전적 제어기</li>
+<li><strong>일반화(Generalization)</strong>: 훈련에 사용하지 않은 새 환경(도시, 날씨)에서도 성능을 유지하는 능력 — 실제 자율주행의 핵심 과제</li>
+<li><strong>위상학적 플래너(Topological Planner)</strong>: A* 알고리즘으로 출발지에서 목적지까지의 고수준 경로(좌/우/직진) 계획. 거리 정보(metric map) 없이 연결성(topology)만 활용</li>
+</ul>
+<hr>
+<h2 id="결론-및-시사점">결론 및 시사점<a class="anchor" href="#%ea%b2%b0%eb%a1%a0-%eb%b0%8f-%ec%8b%9c%ec%82%ac%ec%a0%90">#</a></h2>
+<p>CARLA는 자율주행 연구의 접근성을 높이는 중요한 오픈소스 플랫폼입니다. 세 가지 자율주행 접근법의 비교 실험을 통해 다음과 같은 실무적 시사점을 도출했습니다:</p>
+<ol>
+<li><strong>모방 학습이 강화학습보다 현실적으로 우수</strong>: 현실적인 시뮬레이터에서는 RL의 샘플 비효율성과 하이퍼파라미터 민감성이 큰 단점. 데이터 증강과 드롭아웃이 적용된 IL이 더 나은 일반화 달성</li>
+<li><strong>새 도시 일반화가 핵심 과제</strong>: 날씨 변화보다 새로운 도시(다른 텍스처/구조)에서의 일반화가 훨씬 어려움. 다양한 환경에서의 훈련이 필수</li>
+<li><strong>모듈형 vs End-to-end의 취약점</strong>: MP는 인식 모듈 실패 시 전체 시스템이 붕괴(bimodal). IL은 더 일관된 성능이지만 희귀 사건에 취약</li>
+<li><strong>시뮬레이터의 역할</strong>: 단순 훈련 환경을 넘어, 세밀한 위반 분석(반대 차선, 인도, 충돌 등)을 통해 시스템의 약점을 체계적으로 파악 가능</li>
+<li><strong>향후 방향</strong>: 더 다양한 환경에서의 훈련, 학습 알고리즘의 강건성 향상, 희귀 사건 처리 능력 개선이 필요</li>
+</ol>
+<hr>
+<p><em>관련 논문: <a href="/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/">nuScenes</a>, <a href="/posts/papers/nuPlan/">nuPlan</a>, <a href="/posts/papers/NAVSIM/">NAVSIM</a>, <a href="/posts/papers/bench2drive-multi-ability-benchmarking-e2e-autonomous-driving/">Bench2Drive</a>, <a href="/posts/papers/TransFuser/">TransFuser</a>, <a href="/posts/papers/uniad-planning-oriented-autonomous-driving/">UniAD</a></em></p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/paper/docs/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/" class="flex align-center">
+        <img src="/paper/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>3DGUT: Enabling Distorted Cameras and Secondary Rays in Gaussian Splatting</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/paper/docs/difix3d-plus/" class="flex align-center">
+        <span>DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models</span>
+        <img src="/paper/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#section-1-introduction">Section 1: Introduction</a></li>
+    <li><a href="#section-2-simulation-engine">Section 2: Simulation Engine</a></li>
+    <li><a href="#section-3-autonomous-driving">Section 3: Autonomous Driving</a>
+      <ul>
+        <li><a href="#31-모듈형-파이프라인-modular-pipeline">3.1 모듈형 파이프라인 (Modular Pipeline)</a></li>
+        <li><a href="#32-모방-학습-imitation-learning">3.2 모방 학습 (Imitation Learning)</a></li>
+        <li><a href="#33-강화학습-reinforcement-learning">3.3 강화학습 (Reinforcement Learning)</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-4-experiments">Section 4: Experiments</a></li>
+    <li><a href="#section-5-results">Section 5: Results</a></li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

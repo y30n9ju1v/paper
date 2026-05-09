@@ -1,0 +1,1602 @@
+<!DOCTYPE html>
+<html lang="ko-KR" dir="ltr">
+<head>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="개요# 저자: Yicheng Liu, Tianyuan Yuan, Yue Wang, Yilun Wang, Hang Zhao 소속: Shanghai Qi Zhi Institute, Tsinghua University, MIT, Li Auto 학회: ICML 2023 (Proceedings of the 40th International Conference on Machine Learning) arXiv: 2206.08920 주요 내용: 온보드 센서(카메라, LiDAR)로부터 벡터화된 HD 맵을 end-to-end로 직접 예측하는 최초의 학습 기반 파이프라인 한계 극복# 이 논문은 기존 HD 맵 생성 방법들의 근본적인 한계를 극복하기 위해 작성되었습니다.
+기존 한계 1 — 오프라인 수동 어노테이션: 기존 HD 맵은 사람이 직접 주석을 달아야 하므로 확장성이 매우 낮고 비용이 큼 기존 한계 2 — 래스터 기반 출력: HDMapNet 등의 학습 기반 방법은 픽셀 단위의 세그멘테이션 맵을 출력하므로 인스턴스 정보가 없고, 벡터 맵 변환을 위해 별도의 휴리스틱 후처리가 필요함 기존 한계 3 — 공간적 일관성 부재: 래스터 예측은 인접 픽셀 간에 모순된 기하 구조가 생길 수 있으며, 2D/3D 다운스트림 작업과 호환되지 않음 이 논문의 접근 방식: 맵 요소를 폴리라인(polyline) 집합으로 표현하고, 탐지(detection) &#43; 생성(generation) 두 단계로 구성된 end-to-end 파이프라인으로 벡터 맵을 직접 예측 목차# Chapter 1: Introduction Chapter 2: Related Works Chapter 3: VectorMapNet (방법론) 3.1 Method Overview 3.2 BEV Feature Extractor 3.3 Map Element Detector 3.4 Polyline Generator 3.5 Learning (손실 함수) Chapter 4: Experiments 4.1 Comparison with Baselines 4.2 Qualitative Analysis 4.3 Ablation Studies 4.4 Motion Forecasting with Vectorized HD Maps Chapter 5: Discussions Chapter 6: Conclusions Chapter 1: Introduction# 요약
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://y30n9ju1v.github.io/paper/docs/autonomous-driving/perception/vectormapnet-end-to-end-vectorized-hd-map-learning/">
+  <meta property="og:site_name" content="Paper">
+  <meta property="og:title" content="VectorMapNet: End-to-end Vectorized HD Map Learning">
+  <meta property="og:description" content="개요# 저자: Yicheng Liu, Tianyuan Yuan, Yue Wang, Yilun Wang, Hang Zhao 소속: Shanghai Qi Zhi Institute, Tsinghua University, MIT, Li Auto 학회: ICML 2023 (Proceedings of the 40th International Conference on Machine Learning) arXiv: 2206.08920 주요 내용: 온보드 센서(카메라, LiDAR)로부터 벡터화된 HD 맵을 end-to-end로 직접 예측하는 최초의 학습 기반 파이프라인 한계 극복# 이 논문은 기존 HD 맵 생성 방법들의 근본적인 한계를 극복하기 위해 작성되었습니다.
+기존 한계 1 — 오프라인 수동 어노테이션: 기존 HD 맵은 사람이 직접 주석을 달아야 하므로 확장성이 매우 낮고 비용이 큼 기존 한계 2 — 래스터 기반 출력: HDMapNet 등의 학습 기반 방법은 픽셀 단위의 세그멘테이션 맵을 출력하므로 인스턴스 정보가 없고, 벡터 맵 변환을 위해 별도의 휴리스틱 후처리가 필요함 기존 한계 3 — 공간적 일관성 부재: 래스터 예측은 인접 픽셀 간에 모순된 기하 구조가 생길 수 있으며, 2D/3D 다운스트림 작업과 호환되지 않음 이 논문의 접근 방식: 맵 요소를 폴리라인(polyline) 집합으로 표현하고, 탐지(detection) &#43; 생성(generation) 두 단계로 구성된 end-to-end 파이프라인으로 벡터 맵을 직접 예측 목차# Chapter 1: Introduction Chapter 2: Related Works Chapter 3: VectorMapNet (방법론) 3.1 Method Overview 3.2 BEV Feature Extractor 3.3 Map Element Detector 3.4 Polyline Generator 3.5 Learning (손실 함수) Chapter 4: Experiments 4.1 Comparison with Baselines 4.2 Qualitative Analysis 4.3 Ablation Studies 4.4 Motion Forecasting with Vectorized HD Maps Chapter 5: Discussions Chapter 6: Conclusions Chapter 1: Introduction# 요약">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:published_time" content="2026-04-20T20:00:00+09:00">
+    <meta property="article:modified_time" content="2026-04-20T20:00:00+09:00">
+    <meta property="article:tag" content="Autonomous Driving">
+    <meta property="article:tag" content="HD Map">
+    <meta property="article:tag" content="BEV">
+    <meta property="article:tag" content="Transformer">
+    <meta property="article:tag" content="DETR">
+    <meta property="article:tag" content="Polyline">
+
+
+  <meta itemprop="name" content="VectorMapNet: End-to-end Vectorized HD Map Learning">
+  <meta itemprop="description" content="개요# 저자: Yicheng Liu, Tianyuan Yuan, Yue Wang, Yilun Wang, Hang Zhao 소속: Shanghai Qi Zhi Institute, Tsinghua University, MIT, Li Auto 학회: ICML 2023 (Proceedings of the 40th International Conference on Machine Learning) arXiv: 2206.08920 주요 내용: 온보드 센서(카메라, LiDAR)로부터 벡터화된 HD 맵을 end-to-end로 직접 예측하는 최초의 학습 기반 파이프라인 한계 극복# 이 논문은 기존 HD 맵 생성 방법들의 근본적인 한계를 극복하기 위해 작성되었습니다.
+기존 한계 1 — 오프라인 수동 어노테이션: 기존 HD 맵은 사람이 직접 주석을 달아야 하므로 확장성이 매우 낮고 비용이 큼 기존 한계 2 — 래스터 기반 출력: HDMapNet 등의 학습 기반 방법은 픽셀 단위의 세그멘테이션 맵을 출력하므로 인스턴스 정보가 없고, 벡터 맵 변환을 위해 별도의 휴리스틱 후처리가 필요함 기존 한계 3 — 공간적 일관성 부재: 래스터 예측은 인접 픽셀 간에 모순된 기하 구조가 생길 수 있으며, 2D/3D 다운스트림 작업과 호환되지 않음 이 논문의 접근 방식: 맵 요소를 폴리라인(polyline) 집합으로 표현하고, 탐지(detection) &#43; 생성(generation) 두 단계로 구성된 end-to-end 파이프라인으로 벡터 맵을 직접 예측 목차# Chapter 1: Introduction Chapter 2: Related Works Chapter 3: VectorMapNet (방법론) 3.1 Method Overview 3.2 BEV Feature Extractor 3.3 Map Element Detector 3.4 Polyline Generator 3.5 Learning (손실 함수) Chapter 4: Experiments 4.1 Comparison with Baselines 4.2 Qualitative Analysis 4.3 Ablation Studies 4.4 Motion Forecasting with Vectorized HD Maps Chapter 5: Discussions Chapter 6: Conclusions Chapter 1: Introduction# 요약">
+  <meta itemprop="datePublished" content="2026-04-20T20:00:00+09:00">
+  <meta itemprop="dateModified" content="2026-04-20T20:00:00+09:00">
+  <meta itemprop="wordCount" content="1056">
+  <meta itemprop="keywords" content="Autonomous Driving,HD Map,BEV,Transformer,DETR,Polyline">
+
+<title>VectorMapNet: End-to-end Vectorized HD Map Learning | Paper</title>
+<link rel="icon" href="/paper/favicon.png" >
+<link rel="manifest" href="/paper/manifest.json">
+<link rel="canonical" href="https://y30n9ju1v.github.io/paper/docs/autonomous-driving/perception/vectormapnet-end-to-end-vectorized-hd-map-learning/">
+<link rel="stylesheet" href="/paper/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/paper/fuse.min.js"></script>
+  <script defer src="/paper/en.search.min.b1685711fcbce34e51ac4e2f3f34db3464d1f2809b936b8ce7ecb2014e6bf361.js" integrity="sha256-sWhXEfy8405RrE4vPzTbNGTR8oCbk2uM5&#43;yyAU5r82E=" crossorigin="anonymous"></script>
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '\\[', right: '\\]', display: true},
+      {left: '\\(', right: '\\)', display: false},
+      {left: '$', right: '$', display: false}
+    ]
+  });
+});
+</script>
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/paper/"><span>Paper</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-26dad33899f9ff5c8eb940bf3bc5c8c6" class="toggle"  />
+    <label for="section-26dad33899f9ff5c8eb940bf3bc5c8c6" class="flex">
+      <a role="button" class="">
+        Deep Learning</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/clip-learning-transferable-visual-models-from-natural-language-supervision/" class="">
+      CLIP: Learning Transferable Visual Models From Natural Language Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/pointnet-plus-plus-deep-hierarchical-feature-learning/" class="">
+      PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/vit-an-image-is-worth-16x16-words/" class="">
+      ViT: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/resnet-deep-residual-learning-for-image-recognition/" class="">
+      ResNet: Deep Residual Learning for Image Recognition</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/detr-end-to-end-object-detection-with-transformers/" class="">
+      DETR: End-to-End Object Detection with Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/attention-is-all-you-need/" class="">
+      Attention Is All You Need</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/proximal-policy-optimization/" class="">
+      Proximal Policy Optimization Algorithms (PPO)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/" class="">
+      PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/dqn-playing-atari-with-deep-reinforcement-learning/" class="">
+      Playing Atari with Deep Reinforcement Learning</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-55a967b32f0d01d82a62069db60bc9a4" class="toggle"  />
+    <label for="section-55a967b32f0d01d82a62069db60bc9a4" class="flex">
+      <a role="button" class="">
+        Novel View Synthesis</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/instant-ngp-multiresolution-hash-encoding/" class="">
+      Instant Neural Graphics Primitives with a Multiresolution Hash Encoding</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/4d-gaussian-splatting/" class="">
+      4D Gaussian Splatting for Real-Time Dynamic Scene Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3d-gaussian-splatting/" class="">
+      3D Gaussian Splatting for Real-Time Radiance Field Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3d-gaussian-ray-tracing/" class="">
+      3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/" class="">
+      3DGUT: Enabling Distorted Cameras and Secondary Rays in Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/difix3d-plus/" class="">
+      DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/" class="">
+      NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-bba278969cd1a39a02e4f40a6eceba0d" class="toggle"  />
+    <label for="section-bba278969cd1a39a02e4f40a6eceba0d" class="flex">
+      <a role="button" class="">
+        Generative Models</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/controlnet-adding-conditional-control-to-text-to-image-diffusion-models/" class="">
+      ControlNet: Adding Conditional Control to Text-to-Image Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/high-resolution-image-synthesis-with-latent-diffusion-models/" class="">
+      High-Resolution Image Synthesis with Latent Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/denoising-diffusion-probabilistic-models/" class="">
+      Denoising Diffusion Probabilistic Models (DDPM)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/drivearena/" class="">
+      DriveArena: A Closed-loop Generative Simulation Platform for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/magicdrive-street-view-generation-3d-geometry-control/" class="">
+      MagicDrive: Street View Generation with Diverse 3D Geometry Control</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/drivedreamer/" class="">
+      DriveDreamer: Towards Real-world-driven World Models for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/gaia-1/" class="">
+      GAIA-1: A Generative World Model for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-ba66afb2e4f86c05dd02e329f85a3a79" class="toggle" checked />
+    <label for="section-ba66afb2e4f86c05dd02e329f85a3a79" class="flex">
+      <a role="button" class="">
+        Autonomous Driving</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-d7ba9eb4570c2bfc131b9c6410bbe7ec" class="toggle" checked />
+    <label for="section-d7ba9eb4570c2bfc131b9c6410bbe7ec" class="flex">
+      <a role="button" class="">
+        Perception</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/" class="">
+      GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/" class="">
+      StreamMapNet: Streaming Mapping Network for Vectorized Online HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/vectormapnet-end-to-end-vectorized-hd-map-learning/" class="active">
+      VectorMapNet: End-to-end Vectorized HD Map Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/maptr-structured-modeling-online-vectorized-hd-map-construction/" class="">
+      MapTR: Structured Modeling and Learning for Online Vectorized HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/pointpillars-fast-encoders-object-detection-point-clouds/" class="">
+      PointPillars: Fast Encoders for Object Detection from Point Clouds</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/centerpoint-center-based-3d-object-detection-and-tracking/" class="">
+      CenterPoint: Center-based 3D Object Detection and Tracking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/monoscene-monocular-3d-semantic-scene-completion/" class="">
+      MonoScene: Monocular 3D Semantic Scene Completion</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/tpvformer-tri-perspective-view-3d-semantic-occupancy/" class="">
+      TPVFormer: Tri-Perspective View for Vision-Based 3D Semantic Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/surroundocc/" class="">
+      SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/detr3d-3d-object-detection-multi-view-images/" class="">
+      DETR3D: 3D Object Detection from Multi-view Images via 3D-to-2D Queries</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/occ3d-large-scale-3d-occupancy-prediction-benchmark/" class="">
+      Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevfusion-multi-task-multi-sensor-fusion/" class="">
+      BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/lift-splat-shoot/" class="">
+      Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevdepth/" class="">
+      BEVDepth: Acquisition of Reliable Depth for Multi-view 3D Object Detection</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevformer/" class="">
+      BEVFormer: Learning Bird&#39;s-Eye-View Representation from Multi-Camera Images via Spatiotemporal Transformers</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-7a9153220f9190837dca18e7bc97c48d" class="toggle"  />
+    <label for="section-7a9153220f9190837dca18e7bc97c48d" class="flex">
+      <a role="button" class="">
+        Simulation</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/lidarsim-realistic-lidar-simulation-by-leveraging-the-real-world/" class="">
+      LiDARsim: Realistic LiDAR Simulation by Leveraging the Real World</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/neurad-neural-rendering-for-autonomous-driving/" class="">
+      NeuRAD: Neural Rendering for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/omnire-omni-urban-scene-reconstruction/" class="">
+      OmniRe: Omni Urban Scene Reconstruction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/street-gaussians-modeling-dynamic-urban-scenes/" class="">
+      Street Gaussians: Modeling Dynamic Urban Scenes with Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/emernerf/" class="">
+      EmerNeRF: Emergent Spatial-Temporal Scene Decomposition via Self-Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/unisim-neural-closed-loop-sensor-simulator/" class="">
+      UniSim: A Neural Closed-Loop Sensor Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/driving-gaussian-composite-gaussian-splatting/" class="">
+      DrivingGaussian: Composite Gaussian Splatting for Surrounding Dynamic Autonomous Driving Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/carla-an-open-urban-driving-simulator/" class="">
+      CARLA: An Open Urban Driving Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/hugsim-real-time-photorealistic-closed-loop-simulator/" class="">
+      HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-e9f19cbf840aaca3029a9a86c6765e7f" class="toggle"  />
+    <label for="section-e9f19cbf840aaca3029a9a86c6765e7f" class="flex">
+      <a role="button" class="">
+        Planning</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/bench2drive-multi-ability-benchmarking-e2e-autonomous-driving/" class="">
+      Bench2Drive: Towards Multi-Ability Benchmarking of Closed-Loop End-To-End Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/navsim/" class="">
+      NAVSIM: Data-Driven Non-Reactive Autonomous Vehicle Simulation and Benchmarking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/transfuser/" class="">
+      TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/uniad-planning-oriented-autonomous-driving/" class="">
+      UniAD: Planning-oriented Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/vad/" class="">
+      VAD: Vectorized Scene Representation for Efficient Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-c1644e2152ae0bb887d703d1c6a373f2" class="toggle"  />
+    <label for="section-c1644e2152ae0bb887d703d1c6a373f2" class="flex">
+      <a role="button" class="">
+        Dataset &amp; Benchmark</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/nuplan/" class="">
+      nuPlan: A closed-loop ML-based planning benchmark for autonomous vehicles</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/nuscenes-multimodal-dataset-autonomous-driving/" class="">
+      nuScenes: A Multimodal Dataset for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/waymo-open-dataset/" class="">
+      Scalability in Perception for Autonomous Driving: Waymo Open Dataset</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/paper/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>VectorMapNet: End-to-end Vectorized HD Map Learning</h3>
+
+  <label for="toc-control">
+    
+    <img src="/paper/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#chapter-1-introduction">Chapter 1: Introduction</a></li>
+    <li><a href="#chapter-2-related-works">Chapter 2: Related Works</a></li>
+    <li><a href="#chapter-3-vectormapnet">Chapter 3: VectorMapNet</a>
+      <ul>
+        <li><a href="#31-문제-정의-및-방법-개요">3.1 문제 정의 및 방법 개요</a></li>
+        <li><a href="#32-bev-feature-extractor">3.2 BEV Feature Extractor</a></li>
+        <li><a href="#33-map-element-detector">3.3 Map Element Detector</a></li>
+        <li><a href="#34-polyline-generator">3.4 Polyline Generator</a></li>
+        <li><a href="#35-learning-학습-방법">3.5 Learning (학습 방법)</a></li>
+      </ul>
+    </li>
+    <li><a href="#chapter-4-experiments">Chapter 4: Experiments</a></li>
+    <li><a href="#chapter-5-discussions">Chapter 5: Discussions</a></li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h2 id="개요">개요<a class="anchor" href="#%ea%b0%9c%ec%9a%94">#</a></h2>
+<ul>
+<li><strong>저자</strong>: Yicheng Liu, Tianyuan Yuan, Yue Wang, Yilun Wang, Hang Zhao</li>
+<li><strong>소속</strong>: Shanghai Qi Zhi Institute, Tsinghua University, MIT, Li Auto</li>
+<li><strong>학회</strong>: ICML 2023 (Proceedings of the 40th International Conference on Machine Learning)</li>
+<li><strong>arXiv</strong>: 2206.08920</li>
+<li><strong>주요 내용</strong>: 온보드 센서(카메라, LiDAR)로부터 벡터화된 HD 맵을 end-to-end로 직접 예측하는 최초의 학습 기반 파이프라인</li>
+</ul>
+<h2 id="한계-극복">한계 극복<a class="anchor" href="#%ed%95%9c%ea%b3%84-%ea%b7%b9%eb%b3%b5">#</a></h2>
+<p>이 논문은 기존 HD 맵 생성 방법들의 근본적인 한계를 극복하기 위해 작성되었습니다.</p>
+<ul>
+<li><strong>기존 한계 1 — 오프라인 수동 어노테이션</strong>: 기존 HD 맵은 사람이 직접 주석을 달아야 하므로 확장성이 매우 낮고 비용이 큼</li>
+<li><strong>기존 한계 2 — 래스터 기반 출력</strong>: HDMapNet 등의 학습 기반 방법은 픽셀 단위의 세그멘테이션 맵을 출력하므로 인스턴스 정보가 없고, 벡터 맵 변환을 위해 별도의 휴리스틱 후처리가 필요함</li>
+<li><strong>기존 한계 3 — 공간적 일관성 부재</strong>: 래스터 예측은 인접 픽셀 간에 모순된 기하 구조가 생길 수 있으며, 2D/3D 다운스트림 작업과 호환되지 않음</li>
+<li><strong>이 논문의 접근 방식</strong>: 맵 요소를 폴리라인(polyline) 집합으로 표현하고, 탐지(detection) + 생성(generation) 두 단계로 구성된 end-to-end 파이프라인으로 벡터 맵을 직접 예측</li>
+</ul>
+<h2 id="목차">목차<a class="anchor" href="#%eb%aa%a9%ec%b0%a8">#</a></h2>
+<ul>
+<li>Chapter 1: Introduction</li>
+<li>Chapter 2: Related Works</li>
+<li>Chapter 3: VectorMapNet (방법론)
+<ul>
+<li>3.1 Method Overview</li>
+<li>3.2 BEV Feature Extractor</li>
+<li>3.3 Map Element Detector</li>
+<li>3.4 Polyline Generator</li>
+<li>3.5 Learning (손실 함수)</li>
+</ul>
+</li>
+<li>Chapter 4: Experiments
+<ul>
+<li>4.1 Comparison with Baselines</li>
+<li>4.2 Qualitative Analysis</li>
+<li>4.3 Ablation Studies</li>
+<li>4.4 Motion Forecasting with Vectorized HD Maps</li>
+</ul>
+</li>
+<li>Chapter 5: Discussions</li>
+<li>Chapter 6: Conclusions</li>
+</ul>
+<hr>
+<h2 id="chapter-1-introduction">Chapter 1: Introduction<a class="anchor" href="#chapter-1-introduction">#</a></h2>
+<p><strong>요약</strong></p>
+<p>자율주행 시스템은 차선, 보행자 횡단보도, 도로 경계 등 다양한 맵 요소를 담은 HD(High-Definition) 시맨틱 맵이 필요합니다. 기존에는 이러한 맵을 오프라인으로 사람이 직접 어노테이션했는데, 이는 확장성 문제가 심각합니다. 최근 학습 기반 방법들은 BEV(Bird&rsquo;s Eye View) 래스터 세그멘테이션으로 맵을 구성하지만, 이는 인스턴스 정보가 없고 후처리가 필요합니다.</p>
+<p>VectorMapNet은 이러한 한계를 극복하기 위해 온보드 센서 데이터(카메라 이미지, LiDAR 포인트)를 직접 입력받아 BEV 피처를 추출하고, 맵 요소의 위치를 탐지한 후, 각 요소를 폴리라인으로 생성하는 end-to-end 파이프라인입니다. nuScenes와 Argoverse2 데이터셋에서 기존 SOTA를 각각 14.2 mAP, 14.6 mAP 이상 뛰어넘었습니다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>HD Map (고정밀 지도)</strong>: 차선 경계, 차선 구분선, 보행자 횡단보도 등 cm 단위 정밀도의 맵. 자율주행의 측위 및 경로 계획에 필수</li>
+<li><strong>BEV (Bird&rsquo;s Eye View)</strong>: 차량 위에서 내려다본 시점으로 변환한 특징 맵. 카메라나 LiDAR의 여러 뷰를 통합하기 좋은 공간</li>
+<li><strong>Polyline (폴리라인)</strong>: 순서가 있는 정점(vertex)들의 집합으로 구성된 선분. 도로 경계처럼 임의 형태의 곡선을 잘 표현함</li>
+<li><strong>End-to-end Learning</strong>: 전처리·후처리 없이 입력에서 최종 출력까지 하나의 네트워크로 학습하는 방식</li>
+</ul>
+<hr>
+<h2 id="chapter-2-related-works">Chapter 2: Related Works<a class="anchor" href="#chapter-2-related-works">#</a></h2>
+<p><strong>요약</strong></p>
+<p>관련 연구는 크게 세 가지로 나뉩니다: (1) BEV 시맨틱 맵 학습, (2) 차선 탐지, (3) 기하 데이터 모델링.</p>
+<p>BEV 시맨틱 맵 학습은 주로 항공 이미지, LiDAR, 파노라마 등을 활용한 세그멘테이션 방식이며, HDMapNet이 가장 가까운 선행 연구입니다. 차선 탐지는 픽셀 수준 세그멘테이션 또는 베지어 곡선 등 핸드크래프트된 파라미터 기반 방법이 주를 이룹니다. 기하 데이터 모델링 분야에서는 폴리곤, 스트로크, SVG 프리미티브 등을 시퀀스로 생성하는 자기회귀 모델들이 연구되었으며, VectorMapNet은 이 접근법을 HD 맵으로 가져옵니다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>HDMapNet</strong>: 래스터 세그멘테이션 + 후처리로 벡터 맵을 생성하는 선행 연구. VectorMapNet의 주요 비교 대상</li>
+<li><strong>STSU (Can et al., 2021)</strong>: 단안 카메라로 BEV HD 맵을 직접 구성하는 방법. 고정 크기 세그먼트를 사용해 세밀한 기하 구조 포착이 어려움</li>
+<li><strong>PolyGen / DETR</strong>: 폴리곤 생성을 자기회귀 방식으로 학습하거나 집합 예측(set prediction) 문제로 다루는 접근법</li>
+</ul>
+<hr>
+<h2 id="chapter-3-vectormapnet">Chapter 3: VectorMapNet<a class="anchor" href="#chapter-3-vectormapnet">#</a></h2>
+<h3 id="31-문제-정의-및-방법-개요">3.1 문제 정의 및 방법 개요<a class="anchor" href="#31-%eb%ac%b8%ec%a0%9c-%ec%a0%95%ec%9d%98-%eb%b0%8f-%eb%b0%a9%eb%b2%95-%ea%b0%9c%ec%9a%94">#</a></h3>
+<p><strong>요약</strong></p>
+<p>VectorMapNet은 맵 구성 문제를 **희소 폴리라인 집합 예측 문제(sparse set detection problem)**로 정의합니다. 맵 $\mathcal{M}$은 $N$개의 폴리라인 $\mathcal{V}^{\text{poly}} = \{V_1^{\text{poly}}, \ldots, V_N^{\text{poly}}\}$로 표현되며, 각 폴리라인은 순서가 있는 정점들의 집합입니다.</p>
+<p>이 파이프라인은 세 가지 핵심 모듈로 구성됩니다:</p>
+<ol>
+<li><strong>BEV Feature Extractor</strong>: 카메라/LiDAR 입력을 공통 BEV 피처로 변환</li>
+<li><strong>Map Element Detector</strong>: BEV 피처에서 맵 요소의 위치(키포인트)와 클래스를 탐지</li>
+<li><strong>Polyline Generator</strong>: 탐지된 위치 정보를 바탕으로 실제 폴리라인 정점 시퀀스를 생성</li>
+</ol>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>폴리라인 표현의 장점 3가지</strong>:
+<ol>
+<li>점, 선, 곡선, 폴리곤 등 다양한 기하 구조를 하나의 형식으로 통합</li>
+<li>정점 순서가 자연스럽게 맵 요소의 방향 정보를 인코딩</li>
+<li>모션 예측 등 다운스트림 작업에서 폴리라인 형식을 직접 소비할 수 있음</li>
+</ol>
+</li>
+<li><strong>Ramer-Douglas-Peucker 알고리즘</strong>: 폴리곤을 폴리라인으로 근사 변환할 때 사용하는 곡선 단순화 알고리즘</li>
+</ul>
+<h3 id="32-bev-feature-extractor">3.2 BEV Feature Extractor<a class="anchor" href="#32-bev-feature-extractor">#</a></h3>
+<p><strong>요약</strong></p>
+<p>BEV Feature Extractor는 서로 다른 센서 모달리티(카메라, LiDAR)의 특징을 공통 BEV 공간으로 정렬·통합합니다. 최종 출력은 $\mathcal{F}_{\text{BEV}} \in \mathbb{R}^{W \times H \times (C_1 + C_2)}$ 형태의 BEV 피처 맵입니다.</p>
+<ul>
+<li><strong>카메라 브랜치</strong>: ResNet으로 이미지 피처 추출 후, IPM(Inverse Perspective Mapping)을 활용해 BEV 피처 $\mathcal{F}_{\text{BEV}}^{\mathcal{I}} \in \mathbb{R}^{W \times H \times C_1}$ 생성</li>
+<li><strong>LiDAR 브랜치</strong>: PointPillars(dynamic voxelization 변형)로 포인트 클라우드를 BEV 피처 $\mathcal{F}_{\text{BEV}}^{\mathcal{P}} \in \mathbb{R}^{W \times H \times C_2}$ 로 변환</li>
+<li><strong>Fusion</strong>: 두 피처를 채널 방향으로 concat하고 2층 컨볼루션 레이어로 처리</li>
+</ul>
+<p><strong>수식</strong></p>
+$$\mathcal{F}_{\text{BEV}} = \text{Conv}([\mathcal{F}_{\text{BEV}}^{\mathcal{I}}; \mathcal{F}_{\text{BEV}}^{\mathcal{P}}])$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$\mathcal{F}_{\text{BEV}}^{\mathcal{I}}$</strong>: 카메라로부터 얻은 BEV 피처 맵 (이미지 브랜치)</li>
+<li><strong>$\mathcal{F}_{\text{BEV}}^{\mathcal{P}}$</strong>: LiDAR로부터 얻은 BEV 피처 맵 (포인트 클라우드 브랜치)</li>
+<li><strong>$[;]$</strong>: 채널 방향 연결(concatenation)</li>
+<li><strong>$\text{Conv}(\cdot)$</strong>: 두 피처를 합쳐 하나로 정제하는 2층 컨볼루션 네트워크</li>
+</ul>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>IPM (Inverse Perspective Mapping)</strong>: 카메라의 원근 뷰를 기하학적 변환으로 조감도(BEV)로 바꾸는 방법. 바닥이 평평하다는 가정 하에 동작</li>
+<li><strong>PointPillars</strong>: 3D 공간을 기둥(pillar) 단위로 분할하고 포인트 클라우드를 2D BEV 피처로 빠르게 변환하는 LiDAR 인코더</li>
+</ul>
+<h3 id="33-map-element-detector">3.3 Map Element Detector<a class="anchor" href="#33-map-element-detector">#</a></h3>
+<p><strong>요약</strong></p>
+<p>Map Element Detector는 BEV 피처에서 각 맵 요소의 개략적인 위치(키포인트)와 클래스를 예측합니다. DETR(Detection Transformer) 구조를 맵 탐지에 맞게 적용했으며, 학습 가능한 <strong>Element Query</strong> $q_i^{\text{elem}} \in \mathbb{R}^{k \times d}$를 사용해 각 맵 요소를 표현합니다.</p>
+<p>각 요소 쿼리는 $k$개의 <strong>Keypoint Embedding</strong> $q_{i,j}^{\text{kp}}$로 구성되며, 이 키포인트들이 맵 요소의 전체적인 위치와 형태를 추상화합니다. Transformer Decoder가 self/cross-attention을 통해 BEV 피처와 상호작용하며 키포인트 위치 $\mathcal{A}_i \in \mathbb{R}^{k \times 2}$와 클래스 $l_i$를 예측합니다.</p>
+<p><strong>키포인트 표현 종류 (ablation에서 비교)</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>종류</th>
+          <th>k</th>
+          <th>설명</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Bounding Box (Bbox)</td>
+          <td>2</td>
+          <td>폴리라인을 감싸는 최소 박스의 우상단·좌하단 점</td>
+      </tr>
+      <tr>
+          <td>Start-Middle-End (SME)</td>
+          <td>3</td>
+          <td>폴리라인의 시작, 중간, 끝점</td>
+      </tr>
+      <tr>
+          <td>Extreme Points</td>
+          <td>4</td>
+          <td>가장 왼쪽, 오른쪽, 위쪽, 아래쪽 점</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>수식</strong></p>
+$$a_{i,j} = \text{MLP}_{kp}(q_{i,j}^{\text{kp}}), \quad l_i = \text{MLP}_{cls}([q_{i,1}^{\text{kp}}, \ldots, q_{i,k}^{\text{kp}}])$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$a_{i,j}$</strong>: $i$번째 맵 요소의 $j$번째 키포인트 위치 예측값 (2D 좌표)</li>
+<li><strong>$q_{i,j}^{\text{kp}}$</strong>: $i$번째 요소의 $j$번째 키포인트 임베딩 벡터</li>
+<li><strong>$\text{MLP}_{kp}$</strong>: 키포인트 위치를 회귀하는 MLP 헤드</li>
+<li><strong>$\text{MLP}_{cls}$</strong>: 모든 키포인트 임베딩을 concat해 클래스를 분류하는 MLP 헤드</li>
+<li><strong>$[\cdot]$</strong>: 벡터 연결(concatenation)</li>
+</ul>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Deformable Attention</strong>: 표준 cross-attention 대신 예측된 2D 위치 주변의 특정 포인트들에만 집중하는 어텐션. 수렴 속도가 빠르고 효율적</li>
+<li><strong>Bipartite Matching Loss</strong>: 예측 집합과 정답 집합 사이의 최적 매칭을 헝가리안 알고리즘으로 찾아 NMS 없이 훈련하는 DETR 방식의 손실</li>
+</ul>
+<h3 id="34-polyline-generator">3.4 Polyline Generator<a class="anchor" href="#34-polyline-generator">#</a></h3>
+<p><strong>요약</strong></p>
+<p>Polyline Generator는 Map Element Detector가 예측한 키포인트 위치 $\mathcal{A}_i$와 클래스 $l_i$를 조건으로, 각 폴리라인의 실제 정점 시퀀스를 자기회귀(autoregressive) 방식으로 생성합니다.</p>
+<p>정점 좌표를 <strong>이산(discrete) 변수</strong>로 처리합니다: 연속 좌표값을 양자화(quantize)해 이산 토큰으로 변환하고, 각 정점을 범주형 분포(categorical distribution)로 모델링합니다. 이렇게 하면 멀티모달, 비대칭적, 두꺼운 꼬리를 가진 복잡한 분포도 쉽게 표현할 수 있습니다.</p>
+<p>아키텍처는 Transformer이며, 각 정점 토큰은 세 가지 임베딩의 합으로 표현됩니다:</p>
+<ul>
+<li><strong>Coordinate Embedding</strong>: 현재 토큰이 $x$ 좌표인지 $y$ 좌표인지 구분</li>
+<li><strong>Position Embedding</strong>: 시퀀스에서 몇 번째 정점인지 표시</li>
+<li><strong>Value Embedding</strong>: 양자화된 좌표값 자체</li>
+</ul>
+<p><strong>수식</strong></p>
+$$p(\mathcal{V}_i^{\text{poly}} | \mathcal{A}_i, l_i, \mathcal{F}_{\text{BEV}}; \theta) = \prod_{n=1}^{2N_v} p(v_{i,n}^f | v_{i,<n}^f, \mathcal{A}_i, l_i, \mathcal{F}_{\text{BEV}})$$<p><strong>수식 설명</strong></p>
+<p>폴리라인의 모든 정점을 순서대로 예측하는 자기회귀 분해입니다:</p>
+<ul>
+<li><strong>$\mathcal{V}_i^{\text{poly}}$</strong>: $i$번째 맵 요소의 폴리라인 (예측 대상)</li>
+<li><strong>$N_v$</strong>: 폴리라인의 정점 수. 각 정점은 $(x, y)$ 2개의 좌표값을 가지므로 총 $2N_v$개의 토큰</li>
+<li><strong>$v_{i,n}^f$</strong>: $n$번째 좌표값 토큰 (평탄화된 시퀀스)</li>
+<li><strong>$v_{i,<n}^f$</strong>: $n$번째 이전까지 이미 예측된 좌표값들 (자기회귀 조건)</li>
+<li><strong>$\mathcal{A}_i, l_i$</strong>: 탐지기에서 넘겨받은 키포인트 위치와 클래스 레이블 (조건)</li>
+<li><strong>$\mathcal{F}_{\text{BEV}}$</strong>: BEV 피처 맵 (세부 기하 구조 파악에 활용)</li>
+<li><strong>$\prod$</strong>: 각 토큰을 독립적으로 조건부 예측하여 전체 시퀀스 확률을 곱으로 구성</li>
+</ul>
+<h3 id="35-learning-학습-방법">3.5 Learning (학습 방법)<a class="anchor" href="#35-learning-%ed%95%99%ec%8a%b5-%eb%b0%a9%eb%b2%95">#</a></h3>
+<p><strong>요약</strong></p>
+<p>총 손실은 탐지기 손실과 생성기 손실의 합입니다:</p>
+$$\mathcal{L} = \mathcal{L}_{det} + \mathcal{L}_{gen}$$<p><strong>탐지기 손실</strong> $\mathcal{L}_{det}$: DETR 방식의 bipartite matching loss. NMS 없이 집합 수준의 예측을 직접 학습</p>
+<p><strong>생성기 손실</strong> $\mathcal{L}_{gen}$: 폴리라인 정점의 negative log-likelihood</p>
+$$\mathcal{L}_{gen} = -\frac{1}{2N_v} \sum_{n=1}^{2N_v} \log \hat{p}(v_{i,n}^f | v_{i,<n}^f, \mathcal{A}_i, l_i, \mathcal{F}_{\text{BEV}})$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$\hat{p}(v_{i,n}^f | \ldots)$</strong>: 모델이 예측한 $n$번째 좌표 토큰의 조건부 확률</li>
+<li><strong>$\log$</strong>: 확률의 로그를 취해 곱셈을 덧셈으로 변환</li>
+<li><strong>$-\frac{1}{N_v}$</strong>: 정규화 계수. 정점 수가 다른 폴리라인들 간의 손실 크기를 균일하게 맞춤</li>
+<li>이 손실을 최소화하면 모델이 정답 좌표 시퀀스에 높은 확률을 부여하도록 학습됨</li>
+</ul>
+<p><strong>두 단계 학습 전략</strong>: Teacher forcing으로 먼저 학습한 후, 예측된 키포인트를 입력으로 fine-tuning. 이를 통해 exposure bias(훈련-추론 간 분포 차이)를 완화하고 성능을 향상시킴</p>
+<hr>
+<h2 id="chapter-4-experiments">Chapter 4: Experiments<a class="anchor" href="#chapter-4-experiments">#</a></h2>
+<p><strong>요약</strong></p>
+<p>nuScenes와 Argoverse2 두 데이터셋에서 실험. 평가 지표는 Chamfer AP(Chamfer distance 기반 평균 정밀도)와 Fréchet AP를 사용. 임계값 $\{0.5, 1.0, 1.5\}$m에서 AP를 계산해 mAP로 평균.</p>
+<p><strong>nuScenes 결과 (Table 1)</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>방법</th>
+          <th>AP_ped</th>
+          <th>AP_divider</th>
+          <th>AP_boundary</th>
+          <th>mAP</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>STSU (Camera)</td>
+          <td>7.0</td>
+          <td>11.6</td>
+          <td>16.5</td>
+          <td>11.7</td>
+      </tr>
+      <tr>
+          <td>HDMapNet (Fusion)</td>
+          <td>16.3</td>
+          <td>29.6</td>
+          <td>46.7</td>
+          <td>31.0</td>
+      </tr>
+      <tr>
+          <td><strong>VectorMapNet (Fusion)</strong></td>
+          <td>37.6</td>
+          <td>50.5</td>
+          <td>47.5</td>
+          <td>45.2</td>
+      </tr>
+      <tr>
+          <td><strong>VectorMapNet (Fusion) + fine-tune</strong></td>
+          <td><strong>48.2</strong></td>
+          <td><strong>60.1</strong></td>
+          <td><strong>53.0</strong></td>
+          <td><strong>53.7</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p>VectorMapNet은 HDMapNet 대비 +22.7 mAP를 달성. Sensor fusion이 단일 모달보다 각각 +4.3 mAP(Camera 대비), +11.2 mAP(LiDAR 대비) 향상.</p>
+<p><strong>정성적 분석</strong></p>
+<ul>
+<li><strong>폴리라인의 장점 1</strong>: 날카로운 코너(모서리)를 정확하게 표현. 래스터 방법은 코너가 흐릿해짐</li>
+<li><strong>폴리라인의 장점 2</strong>: 자기루프(self-looping) 오류 없음. 래스터 기반 방법은 반복되는 패턴에서 루프를 생성하는 오류 발생</li>
+<li><strong>탐지 방식의 장점</strong>: 모델이 어노테이션되지 않은 보행자 횡단보도도 발견(Figure 6) — 씬 이해 능력 보유</li>
+</ul>
+<p><strong>Ablation: 키포인트 표현 (Table 3)</strong></p>
+<p>Bounding Box(k=2)가 Fréchet mAP 52.4, Chamfer mAP 40.9로 가장 우수. SME, Extreme Points 대비 각각 +2.0, +7.3 Chamfer mAP 우세.</p>
+<p><strong>모션 예측 응용 (Table 4)</strong></p>
+<p>VectorMapNet으로 예측한 HD 맵을 모션 예측 모델(mmTransformer)에 입력하면, 궤적만 사용할 때보다 minADE −0.083, minFDE −0.100 개선. 정답 맵 사용 시와 성능 차이가 작음(MR −0.2%), 예측 맵의 실용성 검증.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Chamfer Distance</strong>: 두 점 집합 간 거리의 평균. 순서 무관하게 가장 가까운 점끼리 매칭</li>
+<li><strong>Fréchet Distance</strong>: 두 곡선 사이의 최대 거리를 최소화하는 방향(순서 고려). 폴리라인의 형태와 방향을 동시에 평가</li>
+<li><strong>minADE / minFDE</strong>: 여러 예측 궤적 중 가장 정답에 가까운 것의 평균/최종 변위 오차</li>
+</ul>
+<hr>
+<h2 id="chapter-5-discussions">Chapter 5: Discussions<a class="anchor" href="#chapter-5-discussions">#</a></h2>
+<p><strong>요약</strong></p>
+<p>VectorMapNet의 세 가지 한계:</p>
+<ol>
+<li><strong>시간 정보 부재</strong>: 단일 프레임 입력으로 시간적 일관성을 보장하지 못함. 프레임 간 예측 결과가 일관되지 않을 수 있음</li>
+<li><strong>Two-stage 불일치</strong>: 탐지기와 생성기 간 피처 공간 불일치. Teacher forcing으로 인해 fine-tuning 스케줄이 복잡함</li>
+<li><strong>환각(Hallucination) 능력</strong>: 폐색 영역에서도 맵 요소를 예측할 수 있어 씬 이해력을 보여주지만, 해석 가능성을 낮춤</li>
+</ol>
+<hr>
+<h2 id="핵심-개념-정리">핵심 개념 정리<a class="anchor" href="#%ed%95%b5%ec%8b%ac-%ea%b0%9c%eb%85%90-%ec%a0%95%eb%a6%ac">#</a></h2>
+<table>
+  <thead>
+      <tr>
+          <th>개념</th>
+          <th>설명</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>HD Map</strong></td>
+          <td>자율주행을 위한 cm 단위 정밀 시맨틱 지도</td>
+      </tr>
+      <tr>
+          <td><strong>BEV (Bird&rsquo;s Eye View)</strong></td>
+          <td>다양한 센서 뷰를 통합하는 조감도 특징 공간</td>
+      </tr>
+      <tr>
+          <td><strong>Polyline</strong></td>
+          <td>순서 있는 정점 집합으로 임의 형태의 맵 요소를 표현하는 기본 프리미티브</td>
+      </tr>
+      <tr>
+          <td><strong>DETR</strong></td>
+          <td>이분 매칭으로 NMS 없이 집합 예측을 학습하는 탐지 트랜스포머</td>
+      </tr>
+      <tr>
+          <td><strong>Deformable Attention</strong></td>
+          <td>예측 위치 주변 지점에만 집중해 효율적이고 빠르게 수렴하는 어텐션 메커니즘</td>
+      </tr>
+      <tr>
+          <td><strong>Autoregressive Generation</strong></td>
+          <td>이전 출력을 조건으로 다음 토큰을 순차 예측하는 생성 방식</td>
+      </tr>
+      <tr>
+          <td><strong>Teacher Forcing</strong></td>
+          <td>훈련 중 정답 시퀀스를 다음 스텝의 입력으로 사용하는 학습 기법</td>
+      </tr>
+      <tr>
+          <td><strong>Chamfer / Fréchet AP</strong></td>
+          <td>폴리라인 간 유사도를 측정하는 두 가지 거리 기반 평균 정밀도 지표</td>
+      </tr>
+      <tr>
+          <td><strong>IPM</strong></td>
+          <td>카메라 원근 뷰를 BEV로 변환하는 역 원근 매핑</td>
+      </tr>
+      <tr>
+          <td><strong>PointPillars</strong></td>
+          <td>LiDAR 포인트 클라우드를 2D BEV 피처로 변환하는 빠른 인코더</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="결론-및-시사점">결론 및 시사점<a class="anchor" href="#%ea%b2%b0%eb%a1%a0-%eb%b0%8f-%ec%8b%9c%ec%82%ac%ec%a0%90">#</a></h2>
+<p>VectorMapNet은 HD 맵 학습을 <strong>래스터 세그멘테이션 문제</strong>에서 <strong>희소 폴리라인 집합 예측 문제</strong>로 재정의한 첫 번째 end-to-end 접근법입니다.</p>
+<p><strong>핵심 성과</strong>:</p>
+<ul>
+<li>nuScenes에서 HDMapNet 대비 +22.7 mAP (Fusion + fine-tune 기준)</li>
+<li>후처리 없이 인스턴스 수준의 벡터 맵 직접 생성</li>
+<li>모션 예측 등 다운스트림 작업에 바로 적용 가능한 출력 형식</li>
+</ul>
+<p><strong>실무적 시사점</strong>:</p>
+<ul>
+<li>자율주행 합성 데이터 생성 시, 현실적인 맵 요소 형태를 폴리라인으로 표현하면 다운스트림 호환성이 높아짐</li>
+<li>탐지 + 생성 두 단계 분리는 각 모듈의 역할을 명확히 하고 디버깅을 용이하게 함</li>
+<li>향후 시계열 입력(multi-frame fusion)과 단일 스테이지 통합을 통한 개선 여지 존재</li>
+<li>MapTR, BeMapNet 등 후속 연구의 발판이 되는 핵심 기초 논문</li>
+</ul>
+<hr>
+<p><em>관련 논문: <a href="/posts/papers/detr-end-to-end-object-detection-with-transformers/">DETR</a>, <a href="/posts/papers/maptr-structured-modeling-online-vectorized-hd-map-construction/">MapTR</a>, <a href="/posts/papers/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/">StreamMapNet</a>, <a href="/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/">nuScenes</a></em></p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/paper/docs/autonomous-driving/perception/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/" class="flex align-center">
+        <img src="/paper/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>StreamMapNet: Streaming Mapping Network for Vectorized Online HD Map Construction</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/paper/docs/autonomous-driving/perception/maptr-structured-modeling-online-vectorized-hd-map-construction/" class="flex align-center">
+        <span>MapTR: Structured Modeling and Learning for Online Vectorized HD Map Construction</span>
+        <img src="/paper/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#chapter-1-introduction">Chapter 1: Introduction</a></li>
+    <li><a href="#chapter-2-related-works">Chapter 2: Related Works</a></li>
+    <li><a href="#chapter-3-vectormapnet">Chapter 3: VectorMapNet</a>
+      <ul>
+        <li><a href="#31-문제-정의-및-방법-개요">3.1 문제 정의 및 방법 개요</a></li>
+        <li><a href="#32-bev-feature-extractor">3.2 BEV Feature Extractor</a></li>
+        <li><a href="#33-map-element-detector">3.3 Map Element Detector</a></li>
+        <li><a href="#34-polyline-generator">3.4 Polyline Generator</a></li>
+        <li><a href="#35-learning-학습-방법">3.5 Learning (학습 방법)</a></li>
+      </ul>
+    </li>
+    <li><a href="#chapter-4-experiments">Chapter 4: Experiments</a></li>
+    <li><a href="#chapter-5-discussions">Chapter 5: Discussions</a></li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

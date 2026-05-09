@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html lang="ko-KR" dir="ltr">
+<head>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="개요# 저자: Kaiming He, Xiangyu Zhang, Shaoqing Ren, Jian Sun (Microsoft Research) 발행년도: 2015 (arXiv: 1512.03385) 주요 내용: 잔차 학습(Residual Learning) 프레임워크를 통해 수백 레이어 이상의 극도로 깊은 신경망을 효과적으로 학습시키는 방법을 제안. ILSVRC 2015에서 1위 달성. 한계 극복# 이 논문이 기존 연구의 어떤 한계를 극복하기 위해 작성되었는지 설명합니다.
+기존 한계 1 — 깊이 증가 시 성능 저하 (Degradation Problem): 단순히 레이어를 더 쌓으면 학습 오류가 오히려 증가하는 현상이 발생. 과적합이 아닌 최적화 어려움이 원인. 기존 한계 2 — Vanishing/Exploding Gradient: 깊은 네트워크는 역전파 시 그래디언트가 소실되거나 폭발하여 학습이 불안정해짐. 기존 한계 3 — 깊이와 성능의 비례 불가: VGG처럼 레이어를 단순 누적하는 방식은 16~19층 이상으로 깊어지면 오히려 성능이 떨어짐. 이 논문의 접근 방식: 각 레이어가 원하는 함수를 직접 학습하는 대신, **입력 대비 잔차(residual)**를 학습하도록 재정식화. 입력을 출력에 직접 더하는 Shortcut Connection을 통해 그래디언트가 깊은 네트워크를 자유롭게 흐를 수 있게 함. 목차# Section 1: Introduction — 깊은 네트워크의 degradation 문제와 해결 동기 Section 2: Related Work — 잔차 표현 및 Shortcut Connection 관련 선행 연구 Section 3: Deep Residual Learning — 잔차 학습 이론 및 네트워크 아키텍처 Section 4: Experiments — ImageNet, CIFAR-10, PASCAL VOC, MS COCO 실험 결과 Appendix: Object Detection Baselines &amp; Improvements, ImageNet Localization Section 1: Introduction# 요약
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://y30n9ju1v.github.io/paper/docs/deep-learning/resnet-deep-residual-learning-for-image-recognition/">
+  <meta property="og:site_name" content="Paper">
+  <meta property="og:title" content="ResNet: Deep Residual Learning for Image Recognition">
+  <meta property="og:description" content="개요# 저자: Kaiming He, Xiangyu Zhang, Shaoqing Ren, Jian Sun (Microsoft Research) 발행년도: 2015 (arXiv: 1512.03385) 주요 내용: 잔차 학습(Residual Learning) 프레임워크를 통해 수백 레이어 이상의 극도로 깊은 신경망을 효과적으로 학습시키는 방법을 제안. ILSVRC 2015에서 1위 달성. 한계 극복# 이 논문이 기존 연구의 어떤 한계를 극복하기 위해 작성되었는지 설명합니다.
+기존 한계 1 — 깊이 증가 시 성능 저하 (Degradation Problem): 단순히 레이어를 더 쌓으면 학습 오류가 오히려 증가하는 현상이 발생. 과적합이 아닌 최적화 어려움이 원인. 기존 한계 2 — Vanishing/Exploding Gradient: 깊은 네트워크는 역전파 시 그래디언트가 소실되거나 폭발하여 학습이 불안정해짐. 기존 한계 3 — 깊이와 성능의 비례 불가: VGG처럼 레이어를 단순 누적하는 방식은 16~19층 이상으로 깊어지면 오히려 성능이 떨어짐. 이 논문의 접근 방식: 각 레이어가 원하는 함수를 직접 학습하는 대신, **입력 대비 잔차(residual)**를 학습하도록 재정식화. 입력을 출력에 직접 더하는 Shortcut Connection을 통해 그래디언트가 깊은 네트워크를 자유롭게 흐를 수 있게 함. 목차# Section 1: Introduction — 깊은 네트워크의 degradation 문제와 해결 동기 Section 2: Related Work — 잔차 표현 및 Shortcut Connection 관련 선행 연구 Section 3: Deep Residual Learning — 잔차 학습 이론 및 네트워크 아키텍처 Section 4: Experiments — ImageNet, CIFAR-10, PASCAL VOC, MS COCO 실험 결과 Appendix: Object Detection Baselines &amp; Improvements, ImageNet Localization Section 1: Introduction# 요약">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:published_time" content="2026-04-24T10:00:00+09:00">
+    <meta property="article:modified_time" content="2026-04-24T10:00:00+09:00">
+    <meta property="article:tag" content="ResNet">
+    <meta property="article:tag" content="Residual Learning">
+    <meta property="article:tag" content="Skip Connection">
+    <meta property="article:tag" content="Image Classification">
+    <meta property="article:tag" content="CNN">
+    <meta property="article:tag" content="Microsoft Research">
+
+
+  <meta itemprop="name" content="ResNet: Deep Residual Learning for Image Recognition">
+  <meta itemprop="description" content="개요# 저자: Kaiming He, Xiangyu Zhang, Shaoqing Ren, Jian Sun (Microsoft Research) 발행년도: 2015 (arXiv: 1512.03385) 주요 내용: 잔차 학습(Residual Learning) 프레임워크를 통해 수백 레이어 이상의 극도로 깊은 신경망을 효과적으로 학습시키는 방법을 제안. ILSVRC 2015에서 1위 달성. 한계 극복# 이 논문이 기존 연구의 어떤 한계를 극복하기 위해 작성되었는지 설명합니다.
+기존 한계 1 — 깊이 증가 시 성능 저하 (Degradation Problem): 단순히 레이어를 더 쌓으면 학습 오류가 오히려 증가하는 현상이 발생. 과적합이 아닌 최적화 어려움이 원인. 기존 한계 2 — Vanishing/Exploding Gradient: 깊은 네트워크는 역전파 시 그래디언트가 소실되거나 폭발하여 학습이 불안정해짐. 기존 한계 3 — 깊이와 성능의 비례 불가: VGG처럼 레이어를 단순 누적하는 방식은 16~19층 이상으로 깊어지면 오히려 성능이 떨어짐. 이 논문의 접근 방식: 각 레이어가 원하는 함수를 직접 학습하는 대신, **입력 대비 잔차(residual)**를 학습하도록 재정식화. 입력을 출력에 직접 더하는 Shortcut Connection을 통해 그래디언트가 깊은 네트워크를 자유롭게 흐를 수 있게 함. 목차# Section 1: Introduction — 깊은 네트워크의 degradation 문제와 해결 동기 Section 2: Related Work — 잔차 표현 및 Shortcut Connection 관련 선행 연구 Section 3: Deep Residual Learning — 잔차 학습 이론 및 네트워크 아키텍처 Section 4: Experiments — ImageNet, CIFAR-10, PASCAL VOC, MS COCO 실험 결과 Appendix: Object Detection Baselines &amp; Improvements, ImageNet Localization Section 1: Introduction# 요약">
+  <meta itemprop="datePublished" content="2026-04-24T10:00:00+09:00">
+  <meta itemprop="dateModified" content="2026-04-24T10:00:00+09:00">
+  <meta itemprop="wordCount" content="1214">
+  <meta itemprop="keywords" content="ResNet,Residual Learning,Skip Connection,Image Classification,CNN,Microsoft Research,ILSVRC 2015">
+
+<title>ResNet: Deep Residual Learning for Image Recognition | Paper</title>
+<link rel="icon" href="/paper/favicon.png" >
+<link rel="manifest" href="/paper/manifest.json">
+<link rel="canonical" href="https://y30n9ju1v.github.io/paper/docs/deep-learning/resnet-deep-residual-learning-for-image-recognition/">
+<link rel="stylesheet" href="/paper/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/paper/fuse.min.js"></script>
+  <script defer src="/paper/en.search.min.b1685711fcbce34e51ac4e2f3f34db3464d1f2809b936b8ce7ecb2014e6bf361.js" integrity="sha256-sWhXEfy8405RrE4vPzTbNGTR8oCbk2uM5&#43;yyAU5r82E=" crossorigin="anonymous"></script>
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '\\[', right: '\\]', display: true},
+      {left: '\\(', right: '\\)', display: false},
+      {left: '$', right: '$', display: false}
+    ]
+  });
+});
+</script>
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/paper/"><span>Paper</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-26dad33899f9ff5c8eb940bf3bc5c8c6" class="toggle" checked />
+    <label for="section-26dad33899f9ff5c8eb940bf3bc5c8c6" class="flex">
+      <a role="button" class="">
+        Deep Learning</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/clip-learning-transferable-visual-models-from-natural-language-supervision/" class="">
+      CLIP: Learning Transferable Visual Models From Natural Language Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/pointnet-plus-plus-deep-hierarchical-feature-learning/" class="">
+      PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/vit-an-image-is-worth-16x16-words/" class="">
+      ViT: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/resnet-deep-residual-learning-for-image-recognition/" class="active">
+      ResNet: Deep Residual Learning for Image Recognition</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/detr-end-to-end-object-detection-with-transformers/" class="">
+      DETR: End-to-End Object Detection with Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/attention-is-all-you-need/" class="">
+      Attention Is All You Need</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/proximal-policy-optimization/" class="">
+      Proximal Policy Optimization Algorithms (PPO)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/" class="">
+      PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/dqn-playing-atari-with-deep-reinforcement-learning/" class="">
+      Playing Atari with Deep Reinforcement Learning</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-55a967b32f0d01d82a62069db60bc9a4" class="toggle"  />
+    <label for="section-55a967b32f0d01d82a62069db60bc9a4" class="flex">
+      <a role="button" class="">
+        Novel View Synthesis</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/instant-ngp-multiresolution-hash-encoding/" class="">
+      Instant Neural Graphics Primitives with a Multiresolution Hash Encoding</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/4d-gaussian-splatting/" class="">
+      4D Gaussian Splatting for Real-Time Dynamic Scene Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3d-gaussian-splatting/" class="">
+      3D Gaussian Splatting for Real-Time Radiance Field Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3d-gaussian-ray-tracing/" class="">
+      3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/" class="">
+      3DGUT: Enabling Distorted Cameras and Secondary Rays in Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/difix3d-plus/" class="">
+      DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/" class="">
+      NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-bba278969cd1a39a02e4f40a6eceba0d" class="toggle"  />
+    <label for="section-bba278969cd1a39a02e4f40a6eceba0d" class="flex">
+      <a role="button" class="">
+        Generative Models</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/controlnet-adding-conditional-control-to-text-to-image-diffusion-models/" class="">
+      ControlNet: Adding Conditional Control to Text-to-Image Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/high-resolution-image-synthesis-with-latent-diffusion-models/" class="">
+      High-Resolution Image Synthesis with Latent Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/denoising-diffusion-probabilistic-models/" class="">
+      Denoising Diffusion Probabilistic Models (DDPM)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/drivearena/" class="">
+      DriveArena: A Closed-loop Generative Simulation Platform for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/magicdrive-street-view-generation-3d-geometry-control/" class="">
+      MagicDrive: Street View Generation with Diverse 3D Geometry Control</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/drivedreamer/" class="">
+      DriveDreamer: Towards Real-world-driven World Models for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/gaia-1/" class="">
+      GAIA-1: A Generative World Model for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-ba66afb2e4f86c05dd02e329f85a3a79" class="toggle"  />
+    <label for="section-ba66afb2e4f86c05dd02e329f85a3a79" class="flex">
+      <a role="button" class="">
+        Autonomous Driving</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-d7ba9eb4570c2bfc131b9c6410bbe7ec" class="toggle"  />
+    <label for="section-d7ba9eb4570c2bfc131b9c6410bbe7ec" class="flex">
+      <a role="button" class="">
+        Perception</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/" class="">
+      GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/" class="">
+      StreamMapNet: Streaming Mapping Network for Vectorized Online HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/vectormapnet-end-to-end-vectorized-hd-map-learning/" class="">
+      VectorMapNet: End-to-end Vectorized HD Map Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/maptr-structured-modeling-online-vectorized-hd-map-construction/" class="">
+      MapTR: Structured Modeling and Learning for Online Vectorized HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/pointpillars-fast-encoders-object-detection-point-clouds/" class="">
+      PointPillars: Fast Encoders for Object Detection from Point Clouds</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/centerpoint-center-based-3d-object-detection-and-tracking/" class="">
+      CenterPoint: Center-based 3D Object Detection and Tracking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/monoscene-monocular-3d-semantic-scene-completion/" class="">
+      MonoScene: Monocular 3D Semantic Scene Completion</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/tpvformer-tri-perspective-view-3d-semantic-occupancy/" class="">
+      TPVFormer: Tri-Perspective View for Vision-Based 3D Semantic Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/surroundocc/" class="">
+      SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/detr3d-3d-object-detection-multi-view-images/" class="">
+      DETR3D: 3D Object Detection from Multi-view Images via 3D-to-2D Queries</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/occ3d-large-scale-3d-occupancy-prediction-benchmark/" class="">
+      Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevfusion-multi-task-multi-sensor-fusion/" class="">
+      BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/lift-splat-shoot/" class="">
+      Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevdepth/" class="">
+      BEVDepth: Acquisition of Reliable Depth for Multi-view 3D Object Detection</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevformer/" class="">
+      BEVFormer: Learning Bird&#39;s-Eye-View Representation from Multi-Camera Images via Spatiotemporal Transformers</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-7a9153220f9190837dca18e7bc97c48d" class="toggle"  />
+    <label for="section-7a9153220f9190837dca18e7bc97c48d" class="flex">
+      <a role="button" class="">
+        Simulation</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/lidarsim-realistic-lidar-simulation-by-leveraging-the-real-world/" class="">
+      LiDARsim: Realistic LiDAR Simulation by Leveraging the Real World</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/neurad-neural-rendering-for-autonomous-driving/" class="">
+      NeuRAD: Neural Rendering for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/omnire-omni-urban-scene-reconstruction/" class="">
+      OmniRe: Omni Urban Scene Reconstruction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/street-gaussians-modeling-dynamic-urban-scenes/" class="">
+      Street Gaussians: Modeling Dynamic Urban Scenes with Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/emernerf/" class="">
+      EmerNeRF: Emergent Spatial-Temporal Scene Decomposition via Self-Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/unisim-neural-closed-loop-sensor-simulator/" class="">
+      UniSim: A Neural Closed-Loop Sensor Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/driving-gaussian-composite-gaussian-splatting/" class="">
+      DrivingGaussian: Composite Gaussian Splatting for Surrounding Dynamic Autonomous Driving Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/carla-an-open-urban-driving-simulator/" class="">
+      CARLA: An Open Urban Driving Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/hugsim-real-time-photorealistic-closed-loop-simulator/" class="">
+      HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-e9f19cbf840aaca3029a9a86c6765e7f" class="toggle"  />
+    <label for="section-e9f19cbf840aaca3029a9a86c6765e7f" class="flex">
+      <a role="button" class="">
+        Planning</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/bench2drive-multi-ability-benchmarking-e2e-autonomous-driving/" class="">
+      Bench2Drive: Towards Multi-Ability Benchmarking of Closed-Loop End-To-End Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/navsim/" class="">
+      NAVSIM: Data-Driven Non-Reactive Autonomous Vehicle Simulation and Benchmarking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/transfuser/" class="">
+      TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/uniad-planning-oriented-autonomous-driving/" class="">
+      UniAD: Planning-oriented Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/vad/" class="">
+      VAD: Vectorized Scene Representation for Efficient Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-c1644e2152ae0bb887d703d1c6a373f2" class="toggle"  />
+    <label for="section-c1644e2152ae0bb887d703d1c6a373f2" class="flex">
+      <a role="button" class="">
+        Dataset &amp; Benchmark</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/nuplan/" class="">
+      nuPlan: A closed-loop ML-based planning benchmark for autonomous vehicles</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/nuscenes-multimodal-dataset-autonomous-driving/" class="">
+      nuScenes: A Multimodal Dataset for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/waymo-open-dataset/" class="">
+      Scalability in Perception for Autonomous Driving: Waymo Open Dataset</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/paper/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>ResNet: Deep Residual Learning for Image Recognition</h3>
+
+  <label for="toc-control">
+    
+    <img src="/paper/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#section-1-introduction">Section 1: Introduction</a></li>
+    <li><a href="#section-2-related-work">Section 2: Related Work</a></li>
+    <li><a href="#section-3-deep-residual-learning">Section 3: Deep Residual Learning</a>
+      <ul>
+        <li><a href="#31-잔차-학습-residual-learning">3.1 잔차 학습 (Residual Learning)</a></li>
+        <li><a href="#32-shortcut-connection에-의한-identity-mapping">3.2 Shortcut Connection에 의한 Identity Mapping</a></li>
+        <li><a href="#33-네트워크-아키텍처">3.3 네트워크 아키텍처</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-4-experiments">Section 4: Experiments</a>
+      <ul>
+        <li><a href="#41-imagenet-classification">4.1 ImageNet Classification</a></li>
+        <li><a href="#42-cifar-10-분석">4.2 CIFAR-10 분석</a></li>
+        <li><a href="#43-object-detection-pascal-voc--ms-coco">4.3 Object Detection (PASCAL VOC &amp; MS COCO)</a></li>
+      </ul>
+    </li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h2 id="개요">개요<a class="anchor" href="#%ea%b0%9c%ec%9a%94">#</a></h2>
+<ul>
+<li><strong>저자</strong>: Kaiming He, Xiangyu Zhang, Shaoqing Ren, Jian Sun (Microsoft Research)</li>
+<li><strong>발행년도</strong>: 2015 (arXiv: 1512.03385)</li>
+<li><strong>주요 내용</strong>: 잔차 학습(Residual Learning) 프레임워크를 통해 수백 레이어 이상의 극도로 깊은 신경망을 효과적으로 학습시키는 방법을 제안. ILSVRC 2015에서 1위 달성.</li>
+</ul>
+<h2 id="한계-극복">한계 극복<a class="anchor" href="#%ed%95%9c%ea%b3%84-%ea%b7%b9%eb%b3%b5">#</a></h2>
+<p>이 논문이 기존 연구의 어떤 한계를 극복하기 위해 작성되었는지 설명합니다.</p>
+<ul>
+<li><strong>기존 한계 1 — 깊이 증가 시 성능 저하 (Degradation Problem)</strong>: 단순히 레이어를 더 쌓으면 학습 오류가 오히려 증가하는 현상이 발생. 과적합이 아닌 최적화 어려움이 원인.</li>
+<li><strong>기존 한계 2 — Vanishing/Exploding Gradient</strong>: 깊은 네트워크는 역전파 시 그래디언트가 소실되거나 폭발하여 학습이 불안정해짐.</li>
+<li><strong>기존 한계 3 — 깊이와 성능의 비례 불가</strong>: VGG처럼 레이어를 단순 누적하는 방식은 16~19층 이상으로 깊어지면 오히려 성능이 떨어짐.</li>
+<li><strong>이 논문의 접근 방식</strong>: 각 레이어가 원하는 함수를 직접 학습하는 대신, **입력 대비 잔차(residual)**를 학습하도록 재정식화. 입력을 출력에 직접 더하는 <strong>Shortcut Connection</strong>을 통해 그래디언트가 깊은 네트워크를 자유롭게 흐를 수 있게 함.</li>
+</ul>
+<h2 id="목차">목차<a class="anchor" href="#%eb%aa%a9%ec%b0%a8">#</a></h2>
+<ul>
+<li>Section 1: Introduction — 깊은 네트워크의 degradation 문제와 해결 동기</li>
+<li>Section 2: Related Work — 잔차 표현 및 Shortcut Connection 관련 선행 연구</li>
+<li>Section 3: Deep Residual Learning — 잔차 학습 이론 및 네트워크 아키텍처</li>
+<li>Section 4: Experiments — ImageNet, CIFAR-10, PASCAL VOC, MS COCO 실험 결과</li>
+<li>Appendix: Object Detection Baselines &amp; Improvements, ImageNet Localization</li>
+</ul>
+<hr>
+<h2 id="section-1-introduction">Section 1: Introduction<a class="anchor" href="#section-1-introduction">#</a></h2>
+<p><strong>요약</strong></p>
+<p>딥러닝에서 네트워크 깊이는 성능의 핵심 요소입니다. VGG, GoogLeNet 등은 깊이가 깊을수록 좋은 성능을 보였습니다. 하지만 단순히 레이어를 더 많이 쌓으면 학습 오류가 오히려 증가하는 <strong>degradation 문제</strong>가 발생합니다. 이는 과적합 때문이 아닙니다 — 학습 오류 자체가 높아집니다.</p>
+<p>이상적으로는 더 깊은 모델이 더 얕은 모델보다 나빠서는 안 됩니다. 깊은 모델의 추가된 레이어가 단순히 identity mapping(입력을 그대로 통과)을 학습하면 되기 때문입니다. 그러나 실제 최적화기는 이를 제대로 찾지 못합니다.</p>
+<p>이 논문은 **잔차 학습(Residual Learning)**을 통해 이 문제를 해결합니다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Degradation Problem</strong>: 깊은 네트워크가 얕은 네트워크보다 학습 오류가 높아지는 현상. 과적합이 아닌 최적화 실패가 원인.</li>
+<li><strong>Identity Mapping</strong>: 추가된 레이어가 입력을 그대로 출력하는 동작. 이상적으로는 이게 가능해야 하지만 실제로는 어려움.</li>
+<li><strong>Residual Learning</strong>: 레이어가 원하는 함수 $\mathcal{H}(\mathbf{x})$ 전체를 배우는 대신, $\mathcal{F}(\mathbf{x}) := \mathcal{H}(\mathbf{x}) - \mathbf{x}$ (잔차)만 학습하도록 재정식화.</li>
+</ul>
+<hr>
+<h2 id="section-2-related-work">Section 2: Related Work<a class="anchor" href="#section-2-related-work">#</a></h2>
+<p><strong>요약</strong></p>
+<p>잔차 표현은 이미지 처리와 컴퓨터 비전에서 오랫동안 사용되어 왔습니다. VLAD, Fisher Vector 같은 인코딩 방식이 잔차 벡터를 활용합니다. Shortcut Connection 아이디어도 MLP에서 보조 분류기를 연결하거나, 중간 레이어를 직접 연결하는 형태로 존재했습니다.</p>
+<p>이 논문과 가장 관련 깊은 선행 연구는 <strong>Highway Networks</strong>입니다. Highway Networks도 shortcut을 가지지만, 게이팅 함수가 데이터에 의존적이고 파라미터를 가집니다. 반면 이 논문의 identity shortcut은 <strong>파라미터가 전혀 없고</strong>, 정보가 항상 완전히 통과됩니다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Highway Networks</strong>: 게이팅 shortcut을 가진 네트워크. 게이트가 닫히면 non-residual 함수가 됨. 100층 이상에서 성능 향상이 관찰되지 않음.</li>
+<li><strong>Identity Shortcut의 차별점</strong>: 파라미터 없음, 게이트 없음, 모든 정보 항상 전달. 잔차 함수가 항상 학습됨.</li>
+</ul>
+<hr>
+<h2 id="section-3-deep-residual-learning">Section 3: Deep Residual Learning<a class="anchor" href="#section-3-deep-residual-learning">#</a></h2>
+<p><strong>요약</strong></p>
+<h3 id="31-잔차-학습-residual-learning">3.1 잔차 학습 (Residual Learning)<a class="anchor" href="#31-%ec%9e%94%ec%b0%a8-%ed%95%99%ec%8a%b5-residual-learning">#</a></h3>
+<p>기존 방식은 레이어가 목표 함수 $\mathcal{H}(\mathbf{x})$를 직접 학습합니다. 잔차 학습은 동일한 레이어가 $\mathcal{F}(\mathbf{x}) := \mathcal{H}(\mathbf{x}) - \mathbf{x}$를 학습하도록 바꿉니다. 원래 함수는 $\mathcal{F}(\mathbf{x}) + \mathbf{x}$로 표현됩니다.</p>
+<p>만약 identity mapping이 최적이라면, 잔차를 0으로 만드는 것이 목표 함수를 identity로 학습하는 것보다 훨씬 쉽습니다. 실험에서도 학습된 잔차 함수들의 반응이 일반적으로 작게 나타나, identity mapping이 합리적인 기준점임을 시사합니다.</p>
+<h3 id="32-shortcut-connection에-의한-identity-mapping">3.2 Shortcut Connection에 의한 Identity Mapping<a class="anchor" href="#32-shortcut-connection%ec%97%90-%ec%9d%98%ed%95%9c-identity-mapping">#</a></h3>
+<p>빌딩 블록의 기본 공식:</p>
+$$\mathbf{y} = \mathcal{F}(\mathbf{x}, \{W_i\}) + \mathbf{x} \quad (1)$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$\mathbf{x}$</strong>: 블록의 입력 벡터</li>
+<li><strong>$\mathbf{y}$</strong>: 블록의 출력 벡터</li>
+<li><strong>$\mathcal{F}(\mathbf{x}, \{W_i\})$</strong>: 레이어들이 학습하는 잔차 함수 (예: 두 레이어의 경우 $W_2 \sigma(W_1 \mathbf{x})$, $\sigma$는 ReLU)</li>
+<li><strong>$+ \mathbf{x}$</strong>: Shortcut Connection. 입력을 출력에 그대로 더함</li>
+<li>이 덧셈은 element-wise 연산이며 파라미터도, 연산 복잡도도 추가하지 않음</li>
+</ul>
+<p>차원이 다를 경우 선형 투영으로 맞춤:</p>
+$$\mathbf{y} = \mathcal{F}(\mathbf{x}, \{W_i\}) + W_s\mathbf{x} \quad (2)$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$W_s$</strong>: 차원 맞춤을 위한 투영 행렬 (1×1 컨볼루션으로 구현)</li>
+<li>차원이 동일하면 identity shortcut ($W_s = I$)을 사용하여 파라미터를 아낌</li>
+<li>$W_s$는 차원이 달라질 때만 사용</li>
+</ul>
+<h3 id="33-네트워크-아키텍처">3.3 네트워크 아키텍처<a class="anchor" href="#33-%eb%84%a4%ed%8a%b8%ec%9b%8c%ed%81%ac-%ec%95%84%ed%82%a4%ed%85%8d%ec%b2%98">#</a></h3>
+<p><strong>Plain Network</strong>: VGG 철학에 기반. 3×3 필터 위주, 출력 크기가 같으면 필터 수 동일, 크기가 절반이 되면 필터 수 두 배.</p>
+<p><strong>Residual Network</strong>: Plain Network의 각 레이어 쌍에 shortcut 추가. 차원이 증가할 때는 (A) zero-padding 또는 (B) 1×1 투영 사용.</p>
+<p><strong>Bottleneck 아키텍처</strong>: 깊은 네트워크(50/101/152층)의 학습 시간을 줄이기 위해 2층 블록 대신 3층 블록 사용.</p>
+<ul>
+<li>1×1 컨볼루션: 차원 축소</li>
+<li>3×3 컨볼루션: 실제 특징 추출</li>
+<li>1×1 컨볼루션: 차원 복원</li>
+</ul>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Building Block</strong>: 두 개의 3×3 컨볼루션 레이어 + shortcut. ResNet-18, ResNet-34에 사용.</li>
+<li><strong>Bottleneck Block</strong>: 1×1, 3×3, 1×1 세 레이어 조합. ResNet-50/101/152에 사용. 시간 복잡도를 유지하면서 더 깊게 쌓을 수 있음.</li>
+<li><strong>Identity Shortcut의 중요성</strong>: Bottleneck에서 shortcut을 투영으로 바꾸면 시간 복잡도와 모델 크기가 두 배가 됨. 따라서 identity shortcut이 효율적인 모델 설계에 필수적.</li>
+</ul>
+<hr>
+<h2 id="section-4-experiments">Section 4: Experiments<a class="anchor" href="#section-4-experiments">#</a></h2>
+<p><strong>요약</strong></p>
+<h3 id="41-imagenet-classification">4.1 ImageNet Classification<a class="anchor" href="#41-imagenet-classification">#</a></h3>
+<p><strong>Plain Networks 비교</strong>: 34층 plain net이 18층 plain net보다 높은 검증 오류를 보임 → degradation 문제 확인. Batch Normalization을 사용하므로 gradient vanishing은 원인이 아님.</p>
+<p><strong>Residual Networks 비교</strong>: 34층 ResNet이 18층 ResNet보다 <strong>2.8% 더 낮은</strong> 오류를 기록. Depth가 성능 향상에 기여함을 확인.</p>
+<p><strong>Identity vs Projection Shortcuts</strong>:</p>
+<ul>
+<li>(A) 차원 증가 시 zero-padding: 파라미터 없음</li>
+<li>(B) 차원 증가 시 투영 shortcut, 나머지는 identity</li>
+<li>(C) 모든 shortcut에 투영 사용</li>
+<li>B가 A보다 약간 좋고, C가 B보다 약간 좋지만 차이가 미미. Projection shortcut이 필수적이지 않음을 보여줌. 논문은 B 옵션을 주로 사용.</li>
+</ul>
+<p><strong>Deeper Bottleneck Architectures 결과</strong>:</p>
+<table>
+  <thead>
+      <tr>
+          <th>모델</th>
+          <th>Top-1 오류</th>
+          <th>Top-5 오류</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>VGG-16</td>
+          <td>28.07%</td>
+          <td>9.33%</td>
+      </tr>
+      <tr>
+          <td>ResNet-34 B</td>
+          <td>24.52%</td>
+          <td>7.46%</td>
+      </tr>
+      <tr>
+          <td>ResNet-50</td>
+          <td>22.85%</td>
+          <td>6.71%</td>
+      </tr>
+      <tr>
+          <td>ResNet-101</td>
+          <td>21.75%</td>
+          <td>6.05%</td>
+      </tr>
+      <tr>
+          <td>ResNet-152</td>
+          <td><strong>21.43%</strong></td>
+          <td><strong>5.71%</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p>앙상블 결과: <strong>top-5 오류 3.57%</strong> → ILSVRC 2015 분류 1위</p>
+<h3 id="42-cifar-10-분석">4.2 CIFAR-10 분석<a class="anchor" href="#42-cifar-10-%eb%b6%84%ec%84%9d">#</a></h3>
+<p><strong>Plain vs ResNet</strong>: Plain은 깊어질수록 오류 증가. ResNet은 깊어질수록 성능 향상.</p>
+<p><strong>110층 ResNet</strong>: 6.43% (±0.16) 오류 달성. FitNet, Highway 등 선행 연구 대비 우수.</p>
+<p><strong>1202층 ResNet 탐색</strong>: 학습 오류 &lt;0.1% 달성. 그러나 테스트 오류는 110층보다 나쁨(7.93%). 이 작은 데이터셋에서는 과도하게 큰 모델이 과적합 가능성.</p>
+<p><strong>Layer Response 분석</strong>: ResNet의 레이어 반응(출력의 표준편차)이 plain net보다 전반적으로 작음 → 잔차 함수들이 0에 가까운 값을 학습, identity mapping이 합리적 기준점임을 뒷받침.</p>
+<h3 id="43-object-detection-pascal-voc--ms-coco">4.3 Object Detection (PASCAL VOC &amp; MS COCO)<a class="anchor" href="#43-object-detection-pascal-voc--ms-coco">#</a></h3>
+<p>Faster R-CNN의 backbone을 VGG-16에서 ResNet-101로 교체.</p>
+<p><strong>PASCAL VOC 결과</strong>:</p>
+<ul>
+<li>VGG-16: mAP 73.2% (VOC 07 test)</li>
+<li>ResNet-101: mAP <strong>76.4%</strong> (+3.2%p)</li>
+</ul>
+<p><strong>MS COCO 결과</strong>:</p>
+<ul>
+<li>VGG-16: mAP@[.5,.95] = 21.2%</li>
+<li>ResNet-101: mAP@[.5,.95] = <strong>27.2%</strong> (+6.0%p, 28% 상대적 향상)</li>
+</ul>
+<p>→ ILSVRC &amp; COCO 2015에서 ImageNet 분류/검출/위치추정, COCO 검출/세그멘테이션 전 부문 1위</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Top-1 / Top-5 오류율</strong>: ImageNet 평가 지표. Top-5는 모델의 상위 5개 예측 중 정답이 있으면 맞춘 것으로 간주.</li>
+<li><strong>mAP (mean Average Precision)</strong>: 물체 검출 성능 지표. mAP@[.5,.95]는 IoU 임계값 0.5~0.95 범위에서의 평균.</li>
+<li><strong>Faster R-CNN</strong>: Region Proposal Network(RPN)와 Fast R-CNN을 결합한 실시간 물체 검출 프레임워크. ResNet을 backbone으로 사용 시 성능 대폭 향상.</li>
+</ul>
+<hr>
+<h2 id="핵심-개념-정리">핵심 개념 정리<a class="anchor" href="#%ed%95%b5%ec%8b%ac-%ea%b0%9c%eb%85%90-%ec%a0%95%eb%a6%ac">#</a></h2>
+<ul>
+<li><strong>Residual Learning</strong>: 레이어가 목표 함수가 아닌 입력 대비 잔차를 학습. 수식: $\mathcal{F}(\mathbf{x}) = \mathcal{H}(\mathbf{x}) - \mathbf{x}$</li>
+<li><strong>Shortcut Connection (Skip Connection)</strong>: 레이어를 건너뛰어 입력을 출력에 직접 더하는 연결. 파라미터 없음, 연산 복잡도 없음.</li>
+<li><strong>Degradation Problem</strong>: 네트워크가 깊어질수록 학습 오류가 오히려 증가하는 현상. 과적합이 아닌 최적화 어려움이 원인.</li>
+<li><strong>Identity Mapping</strong>: 입력을 변환 없이 그대로 출력. Shortcut이 이를 구현.</li>
+<li><strong>Bottleneck Design</strong>: 1×1 → 3×3 → 1×1 컨볼루션 조합. 깊은 네트워크에서 연산 효율을 유지하면서 표현력 확보.</li>
+<li><strong>Batch Normalization</strong>: 각 컨볼루션 후 적용. 안정적인 학습을 가능하게 하며, gradient vanishing 문제 완화에 기여.</li>
+<li><strong>ResNet 계열</strong>: ResNet-18/34 (Building Block), ResNet-50/101/152 (Bottleneck Block). 깊어질수록 높은 성능.</li>
+</ul>
+<hr>
+<h2 id="결론-및-시사점">결론 및 시사점<a class="anchor" href="#%ea%b2%b0%eb%a1%a0-%eb%b0%8f-%ec%8b%9c%ec%82%ac%ec%a0%90">#</a></h2>
+<p>ResNet은 <strong>잔차 학습</strong>이라는 단순한 아이디어로 극도로 깊은 신경망 학습 문제를 해결했습니다.</p>
+<p><strong>주요 기여</strong>:</p>
+<ol>
+<li>Degradation 문제를 명확히 정의하고 잔차 학습으로 해결</li>
+<li>파라미터 추가 없이 shortcut connection으로 구현 가능</li>
+<li>152층까지 깊은 네트워크에서도 성능이 단조 향상</li>
+<li>이미지 분류 외 검출, 위치추정, 세그멘테이션 등 다양한 태스크에 범용 적용</li>
+</ol>
+<p><strong>실무적 시사점</strong>:</p>
+<ul>
+<li>Backbone 교체만으로도 downstream 태스크(검출, 세그멘테이션) 성능이 크게 향상됨</li>
+<li>Identity shortcut은 파라미터·연산 비용 없이 최적화를 돕는 효과적인 설계 원칙</li>
+<li>ResNet은 이후 DenseNet, EfficientNet, Vision Transformer 등 수많은 후속 아키텍처의 기반이 됨</li>
+<li>자율주행의 특징 추출 backbone, 물체 검출 네트워크(Faster R-CNN + ResNet) 등에 광범위하게 활용</li>
+</ul>
+<hr>
+<p><em>관련 논문: <a href="/posts/papers/attention-is-all-you-need/">Attention Is All You Need</a>, <a href="/posts/papers/vit-an-image-is-worth-16x16-words/">ViT</a>, <a href="/posts/papers/detr-end-to-end-object-detection-with-transformers/">DETR</a></em></p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/paper/docs/deep-learning/vit-an-image-is-worth-16x16-words/" class="flex align-center">
+        <img src="/paper/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>ViT: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/paper/docs/deep-learning/detr-end-to-end-object-detection-with-transformers/" class="flex align-center">
+        <span>DETR: End-to-End Object Detection with Transformers</span>
+        <img src="/paper/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#section-1-introduction">Section 1: Introduction</a></li>
+    <li><a href="#section-2-related-work">Section 2: Related Work</a></li>
+    <li><a href="#section-3-deep-residual-learning">Section 3: Deep Residual Learning</a>
+      <ul>
+        <li><a href="#31-잔차-학습-residual-learning">3.1 잔차 학습 (Residual Learning)</a></li>
+        <li><a href="#32-shortcut-connection에-의한-identity-mapping">3.2 Shortcut Connection에 의한 Identity Mapping</a></li>
+        <li><a href="#33-네트워크-아키텍처">3.3 네트워크 아키텍처</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-4-experiments">Section 4: Experiments</a>
+      <ul>
+        <li><a href="#41-imagenet-classification">4.1 ImageNet Classification</a></li>
+        <li><a href="#42-cifar-10-분석">4.2 CIFAR-10 분석</a></li>
+        <li><a href="#43-object-detection-pascal-voc--ms-coco">4.3 Object Detection (PASCAL VOC &amp; MS COCO)</a></li>
+      </ul>
+    </li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

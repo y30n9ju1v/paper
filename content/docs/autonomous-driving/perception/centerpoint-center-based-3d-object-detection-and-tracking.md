@@ -5,6 +5,8 @@ draft: false
 categories: ["Papers", "Autonomous Driving", "3D Object Detection"]
 tags: ["LiDAR", "3D Detection", "Object Tracking", "Point Cloud", "BEV"]
 year: 2021
+references:
+  - "pointpillars-fast-encoders-object-detection-point-clouds"
 ---
 
 ## 개요

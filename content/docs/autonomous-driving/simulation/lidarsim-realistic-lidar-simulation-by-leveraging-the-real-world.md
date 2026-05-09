@@ -5,6 +5,8 @@ draft: false
 categories: ["Papers", "Autonomous Driving", "Sensor Simulation"]
 tags: ["LiDAR", "Simulation", "Synthetic Data", "Point Cloud", "Domain Gap", "Ray Casting"]
 year: 2020
+references:
+  - "waymo-open-dataset"
 ---
 
 ## 개요

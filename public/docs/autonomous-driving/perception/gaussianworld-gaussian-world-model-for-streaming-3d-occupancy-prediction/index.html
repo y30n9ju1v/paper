@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="ko-KR" dir="ltr">
+<head>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="개요# 저자: Sicheng Zuo, Wenzhao Zheng, Yuanhui Huang, Jie Zhou, Jiwen Lu (Tsinghua University) 발행년도: 2024 arXiv: 2412.10373 주요 내용: 3D Gaussian을 장면 표현으로 채택한 World Model 기반 프레임워크. 3D occupancy 예측을 현재 센서 입력에 조건화된 4D occupancy 예측 문제로 재정의하고, 추가 연산 없이 단일 프레임 대비 mIoU 2% 이상 향상. 한계 극복# 기존 한계 1 — 단순 멀티 프레임 융합의 물리적 비일관성: BEVFormer 등 기존 시간적 퍼셉션 방법들은 각 프레임의 BEV/볼륨 피처를 독립적으로 추출한 뒤 정합·융합하는 방식을 사용. 이는 인접 프레임의 장면 표현이 자차 이동과 동적 객체 움직임으로부터 직접 진화한다는 자연스러운 연속성(continuity)과 단순성(simplicity)을 무시함. 기존 한계 2 — 추가 연산 비용: 시간적 융합을 위해 추가 인코딩·정합·융합 모듈이 필요하여 단일 프레임 대비 레이턴시·메모리가 크게 증가. 기존 한계 3 — 암묵적 동적 객체 모델링: StreamPETR 같은 객체 쿼리 기반 방법은 동적 객체의 움직임을 암묵적으로만 표현하여 밀집 occupancy 예측에 부적합. 이 논문의 접근 방식: 3D Gaussian으로 장면을 명시적으로 표현하고, 장면 진화를 세 요소(자차 정합·동적 객체 이동·신규 영역 완성)로 분해하여 World Model이 이를 학습. 단일 프레임 입력만으로 스트리밍 방식의 4D occupancy 예측 수행. 목차# Section 1: Introduction Section 2: Related Work Section 3: Proposed Approach 3.1 World Models for Perception 3.2 Explicit Scene Evolution Modeling 3.3 3D Gaussian World Model Section 4: Experiments Section 5: Conclusion Section 1 &amp; 2: Introduction &amp; Related Work# 요약
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://y30n9ju1v.github.io/paper/docs/autonomous-driving/perception/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/">
+  <meta property="og:site_name" content="Paper">
+  <meta property="og:title" content="GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction">
+  <meta property="og:description" content="개요# 저자: Sicheng Zuo, Wenzhao Zheng, Yuanhui Huang, Jie Zhou, Jiwen Lu (Tsinghua University) 발행년도: 2024 arXiv: 2412.10373 주요 내용: 3D Gaussian을 장면 표현으로 채택한 World Model 기반 프레임워크. 3D occupancy 예측을 현재 센서 입력에 조건화된 4D occupancy 예측 문제로 재정의하고, 추가 연산 없이 단일 프레임 대비 mIoU 2% 이상 향상. 한계 극복# 기존 한계 1 — 단순 멀티 프레임 융합의 물리적 비일관성: BEVFormer 등 기존 시간적 퍼셉션 방법들은 각 프레임의 BEV/볼륨 피처를 독립적으로 추출한 뒤 정합·융합하는 방식을 사용. 이는 인접 프레임의 장면 표현이 자차 이동과 동적 객체 움직임으로부터 직접 진화한다는 자연스러운 연속성(continuity)과 단순성(simplicity)을 무시함. 기존 한계 2 — 추가 연산 비용: 시간적 융합을 위해 추가 인코딩·정합·융합 모듈이 필요하여 단일 프레임 대비 레이턴시·메모리가 크게 증가. 기존 한계 3 — 암묵적 동적 객체 모델링: StreamPETR 같은 객체 쿼리 기반 방법은 동적 객체의 움직임을 암묵적으로만 표현하여 밀집 occupancy 예측에 부적합. 이 논문의 접근 방식: 3D Gaussian으로 장면을 명시적으로 표현하고, 장면 진화를 세 요소(자차 정합·동적 객체 이동·신규 영역 완성)로 분해하여 World Model이 이를 학습. 단일 프레임 입력만으로 스트리밍 방식의 4D occupancy 예측 수행. 목차# Section 1: Introduction Section 2: Related Work Section 3: Proposed Approach 3.1 World Models for Perception 3.2 Explicit Scene Evolution Modeling 3.3 3D Gaussian World Model Section 4: Experiments Section 5: Conclusion Section 1 &amp; 2: Introduction &amp; Related Work# 요약">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:published_time" content="2026-04-24T13:00:00+09:00">
+    <meta property="article:modified_time" content="2026-04-24T13:00:00+09:00">
+    <meta property="article:tag" content="3D Gaussian Splatting">
+    <meta property="article:tag" content="Occupancy Prediction">
+    <meta property="article:tag" content="World Model">
+    <meta property="article:tag" content="Temporal Modeling">
+    <meta property="article:tag" content="Streaming">
+    <meta property="article:tag" content="NuScenes">
+
+
+  <meta itemprop="name" content="GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction">
+  <meta itemprop="description" content="개요# 저자: Sicheng Zuo, Wenzhao Zheng, Yuanhui Huang, Jie Zhou, Jiwen Lu (Tsinghua University) 발행년도: 2024 arXiv: 2412.10373 주요 내용: 3D Gaussian을 장면 표현으로 채택한 World Model 기반 프레임워크. 3D occupancy 예측을 현재 센서 입력에 조건화된 4D occupancy 예측 문제로 재정의하고, 추가 연산 없이 단일 프레임 대비 mIoU 2% 이상 향상. 한계 극복# 기존 한계 1 — 단순 멀티 프레임 융합의 물리적 비일관성: BEVFormer 등 기존 시간적 퍼셉션 방법들은 각 프레임의 BEV/볼륨 피처를 독립적으로 추출한 뒤 정합·융합하는 방식을 사용. 이는 인접 프레임의 장면 표현이 자차 이동과 동적 객체 움직임으로부터 직접 진화한다는 자연스러운 연속성(continuity)과 단순성(simplicity)을 무시함. 기존 한계 2 — 추가 연산 비용: 시간적 융합을 위해 추가 인코딩·정합·융합 모듈이 필요하여 단일 프레임 대비 레이턴시·메모리가 크게 증가. 기존 한계 3 — 암묵적 동적 객체 모델링: StreamPETR 같은 객체 쿼리 기반 방법은 동적 객체의 움직임을 암묵적으로만 표현하여 밀집 occupancy 예측에 부적합. 이 논문의 접근 방식: 3D Gaussian으로 장면을 명시적으로 표현하고, 장면 진화를 세 요소(자차 정합·동적 객체 이동·신규 영역 완성)로 분해하여 World Model이 이를 학습. 단일 프레임 입력만으로 스트리밍 방식의 4D occupancy 예측 수행. 목차# Section 1: Introduction Section 2: Related Work Section 3: Proposed Approach 3.1 World Models for Perception 3.2 Explicit Scene Evolution Modeling 3.3 3D Gaussian World Model Section 4: Experiments Section 5: Conclusion Section 1 &amp; 2: Introduction &amp; Related Work# 요약">
+  <meta itemprop="datePublished" content="2026-04-24T13:00:00+09:00">
+  <meta itemprop="dateModified" content="2026-04-24T13:00:00+09:00">
+  <meta itemprop="wordCount" content="1420">
+  <meta itemprop="keywords" content="3D Gaussian Splatting,Occupancy Prediction,World Model,Temporal Modeling,Streaming,NuScenes">
+
+<title>GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction | Paper</title>
+<link rel="icon" href="/paper/favicon.png" >
+<link rel="manifest" href="/paper/manifest.json">
+<link rel="canonical" href="https://y30n9ju1v.github.io/paper/docs/autonomous-driving/perception/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/">
+<link rel="stylesheet" href="/paper/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/paper/fuse.min.js"></script>
+  <script defer src="/paper/en.search.min.b1685711fcbce34e51ac4e2f3f34db3464d1f2809b936b8ce7ecb2014e6bf361.js" integrity="sha256-sWhXEfy8405RrE4vPzTbNGTR8oCbk2uM5&#43;yyAU5r82E=" crossorigin="anonymous"></script>
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '\\[', right: '\\]', display: true},
+      {left: '\\(', right: '\\)', display: false},
+      {left: '$', right: '$', display: false}
+    ]
+  });
+});
+</script>
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/paper/"><span>Paper</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-26dad33899f9ff5c8eb940bf3bc5c8c6" class="toggle"  />
+    <label for="section-26dad33899f9ff5c8eb940bf3bc5c8c6" class="flex">
+      <a role="button" class="">
+        Deep Learning</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/clip-learning-transferable-visual-models-from-natural-language-supervision/" class="">
+      CLIP: Learning Transferable Visual Models From Natural Language Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/pointnet-plus-plus-deep-hierarchical-feature-learning/" class="">
+      PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/vit-an-image-is-worth-16x16-words/" class="">
+      ViT: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/resnet-deep-residual-learning-for-image-recognition/" class="">
+      ResNet: Deep Residual Learning for Image Recognition</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/detr-end-to-end-object-detection-with-transformers/" class="">
+      DETR: End-to-End Object Detection with Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/attention-is-all-you-need/" class="">
+      Attention Is All You Need</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/proximal-policy-optimization/" class="">
+      Proximal Policy Optimization Algorithms (PPO)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/" class="">
+      PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/dqn-playing-atari-with-deep-reinforcement-learning/" class="">
+      Playing Atari with Deep Reinforcement Learning</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-55a967b32f0d01d82a62069db60bc9a4" class="toggle"  />
+    <label for="section-55a967b32f0d01d82a62069db60bc9a4" class="flex">
+      <a role="button" class="">
+        Novel View Synthesis</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/instant-ngp-multiresolution-hash-encoding/" class="">
+      Instant Neural Graphics Primitives with a Multiresolution Hash Encoding</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/4d-gaussian-splatting/" class="">
+      4D Gaussian Splatting for Real-Time Dynamic Scene Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3d-gaussian-splatting/" class="">
+      3D Gaussian Splatting for Real-Time Radiance Field Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3d-gaussian-ray-tracing/" class="">
+      3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/" class="">
+      3DGUT: Enabling Distorted Cameras and Secondary Rays in Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/difix3d-plus/" class="">
+      DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/" class="">
+      NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-bba278969cd1a39a02e4f40a6eceba0d" class="toggle"  />
+    <label for="section-bba278969cd1a39a02e4f40a6eceba0d" class="flex">
+      <a role="button" class="">
+        Generative Models</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/controlnet-adding-conditional-control-to-text-to-image-diffusion-models/" class="">
+      ControlNet: Adding Conditional Control to Text-to-Image Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/high-resolution-image-synthesis-with-latent-diffusion-models/" class="">
+      High-Resolution Image Synthesis with Latent Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/denoising-diffusion-probabilistic-models/" class="">
+      Denoising Diffusion Probabilistic Models (DDPM)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/drivearena/" class="">
+      DriveArena: A Closed-loop Generative Simulation Platform for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/magicdrive-street-view-generation-3d-geometry-control/" class="">
+      MagicDrive: Street View Generation with Diverse 3D Geometry Control</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/drivedreamer/" class="">
+      DriveDreamer: Towards Real-world-driven World Models for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/gaia-1/" class="">
+      GAIA-1: A Generative World Model for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-ba66afb2e4f86c05dd02e329f85a3a79" class="toggle" checked />
+    <label for="section-ba66afb2e4f86c05dd02e329f85a3a79" class="flex">
+      <a role="button" class="">
+        Autonomous Driving</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-d7ba9eb4570c2bfc131b9c6410bbe7ec" class="toggle" checked />
+    <label for="section-d7ba9eb4570c2bfc131b9c6410bbe7ec" class="flex">
+      <a role="button" class="">
+        Perception</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/" class="active">
+      GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/" class="">
+      StreamMapNet: Streaming Mapping Network for Vectorized Online HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/vectormapnet-end-to-end-vectorized-hd-map-learning/" class="">
+      VectorMapNet: End-to-end Vectorized HD Map Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/maptr-structured-modeling-online-vectorized-hd-map-construction/" class="">
+      MapTR: Structured Modeling and Learning for Online Vectorized HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/pointpillars-fast-encoders-object-detection-point-clouds/" class="">
+      PointPillars: Fast Encoders for Object Detection from Point Clouds</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/centerpoint-center-based-3d-object-detection-and-tracking/" class="">
+      CenterPoint: Center-based 3D Object Detection and Tracking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/monoscene-monocular-3d-semantic-scene-completion/" class="">
+      MonoScene: Monocular 3D Semantic Scene Completion</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/tpvformer-tri-perspective-view-3d-semantic-occupancy/" class="">
+      TPVFormer: Tri-Perspective View for Vision-Based 3D Semantic Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/surroundocc/" class="">
+      SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/detr3d-3d-object-detection-multi-view-images/" class="">
+      DETR3D: 3D Object Detection from Multi-view Images via 3D-to-2D Queries</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/occ3d-large-scale-3d-occupancy-prediction-benchmark/" class="">
+      Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevfusion-multi-task-multi-sensor-fusion/" class="">
+      BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/lift-splat-shoot/" class="">
+      Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevdepth/" class="">
+      BEVDepth: Acquisition of Reliable Depth for Multi-view 3D Object Detection</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevformer/" class="">
+      BEVFormer: Learning Bird&#39;s-Eye-View Representation from Multi-Camera Images via Spatiotemporal Transformers</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-7a9153220f9190837dca18e7bc97c48d" class="toggle"  />
+    <label for="section-7a9153220f9190837dca18e7bc97c48d" class="flex">
+      <a role="button" class="">
+        Simulation</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/lidarsim-realistic-lidar-simulation-by-leveraging-the-real-world/" class="">
+      LiDARsim: Realistic LiDAR Simulation by Leveraging the Real World</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/neurad-neural-rendering-for-autonomous-driving/" class="">
+      NeuRAD: Neural Rendering for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/omnire-omni-urban-scene-reconstruction/" class="">
+      OmniRe: Omni Urban Scene Reconstruction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/street-gaussians-modeling-dynamic-urban-scenes/" class="">
+      Street Gaussians: Modeling Dynamic Urban Scenes with Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/emernerf/" class="">
+      EmerNeRF: Emergent Spatial-Temporal Scene Decomposition via Self-Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/unisim-neural-closed-loop-sensor-simulator/" class="">
+      UniSim: A Neural Closed-Loop Sensor Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/driving-gaussian-composite-gaussian-splatting/" class="">
+      DrivingGaussian: Composite Gaussian Splatting for Surrounding Dynamic Autonomous Driving Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/carla-an-open-urban-driving-simulator/" class="">
+      CARLA: An Open Urban Driving Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/hugsim-real-time-photorealistic-closed-loop-simulator/" class="">
+      HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-e9f19cbf840aaca3029a9a86c6765e7f" class="toggle"  />
+    <label for="section-e9f19cbf840aaca3029a9a86c6765e7f" class="flex">
+      <a role="button" class="">
+        Planning</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/bench2drive-multi-ability-benchmarking-e2e-autonomous-driving/" class="">
+      Bench2Drive: Towards Multi-Ability Benchmarking of Closed-Loop End-To-End Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/navsim/" class="">
+      NAVSIM: Data-Driven Non-Reactive Autonomous Vehicle Simulation and Benchmarking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/transfuser/" class="">
+      TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/uniad-planning-oriented-autonomous-driving/" class="">
+      UniAD: Planning-oriented Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/vad/" class="">
+      VAD: Vectorized Scene Representation for Efficient Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-c1644e2152ae0bb887d703d1c6a373f2" class="toggle"  />
+    <label for="section-c1644e2152ae0bb887d703d1c6a373f2" class="flex">
+      <a role="button" class="">
+        Dataset &amp; Benchmark</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/nuplan/" class="">
+      nuPlan: A closed-loop ML-based planning benchmark for autonomous vehicles</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/nuscenes-multimodal-dataset-autonomous-driving/" class="">
+      nuScenes: A Multimodal Dataset for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/waymo-open-dataset/" class="">
+      Scalability in Perception for Autonomous Driving: Waymo Open Dataset</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/paper/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction</h3>
+
+  <label for="toc-control">
+    
+    <img src="/paper/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#section-1--2-introduction--related-work">Section 1 &amp; 2: Introduction &amp; Related Work</a></li>
+    <li><a href="#section-3-proposed-approach">Section 3: Proposed Approach</a>
+      <ul>
+        <li><a href="#31-world-models-for-perception">3.1 World Models for Perception</a></li>
+        <li><a href="#32-explicit-scene-evolution-modeling">3.2 Explicit Scene Evolution Modeling</a></li>
+        <li><a href="#33-3d-gaussian-world-model">3.3 3D Gaussian World Model</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-4-experiments">Section 4: Experiments</a>
+      <ul>
+        <li><a href="#41-주요-결과-nuscenes-validation">4.1 주요 결과 (nuScenes validation)</a></li>
+        <li><a href="#42-시간적-모델링-방법-비교-효율성">4.2 시간적 모델링 방법 비교 (효율성)</a></li>
+        <li><a href="#43-ablation-장면-진화-세-요소의-기여">4.3 Ablation: 장면 진화 세 요소의 기여</a></li>
+        <li><a href="#44-스트리밍-시퀀스-길이와-성능">4.4 스트리밍 시퀀스 길이와 성능</a></li>
+      </ul>
+    </li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h2 id="개요">개요<a class="anchor" href="#%ea%b0%9c%ec%9a%94">#</a></h2>
+<ul>
+<li><strong>저자</strong>: Sicheng Zuo, Wenzhao Zheng, Yuanhui Huang, Jie Zhou, Jiwen Lu (Tsinghua University)</li>
+<li><strong>발행년도</strong>: 2024</li>
+<li><strong>arXiv</strong>: 2412.10373</li>
+<li><strong>주요 내용</strong>: 3D Gaussian을 장면 표현으로 채택한 World Model 기반 프레임워크. 3D occupancy 예측을 현재 센서 입력에 조건화된 4D occupancy 예측 문제로 재정의하고, 추가 연산 없이 단일 프레임 대비 mIoU 2% 이상 향상.</li>
+</ul>
+<h2 id="한계-극복">한계 극복<a class="anchor" href="#%ed%95%9c%ea%b3%84-%ea%b7%b9%eb%b3%b5">#</a></h2>
+<ul>
+<li><strong>기존 한계 1 — 단순 멀티 프레임 융합의 물리적 비일관성</strong>: BEVFormer 등 기존 시간적 퍼셉션 방법들은 각 프레임의 BEV/볼륨 피처를 독립적으로 추출한 뒤 정합·융합하는 방식을 사용. 이는 인접 프레임의 장면 표현이 자차 이동과 동적 객체 움직임으로부터 직접 진화한다는 자연스러운 연속성(continuity)과 단순성(simplicity)을 무시함.</li>
+<li><strong>기존 한계 2 — 추가 연산 비용</strong>: 시간적 융합을 위해 추가 인코딩·정합·융합 모듈이 필요하여 단일 프레임 대비 레이턴시·메모리가 크게 증가.</li>
+<li><strong>기존 한계 3 — 암묵적 동적 객체 모델링</strong>: StreamPETR 같은 객체 쿼리 기반 방법은 동적 객체의 움직임을 암묵적으로만 표현하여 밀집 occupancy 예측에 부적합.</li>
+<li><strong>이 논문의 접근 방식</strong>: 3D Gaussian으로 장면을 명시적으로 표현하고, 장면 진화를 세 요소(자차 정합·동적 객체 이동·신규 영역 완성)로 분해하여 World Model이 이를 학습. 단일 프레임 입력만으로 스트리밍 방식의 4D occupancy 예측 수행.</li>
+</ul>
+<h2 id="목차">목차<a class="anchor" href="#%eb%aa%a9%ec%b0%a8">#</a></h2>
+<ul>
+<li>Section 1: Introduction</li>
+<li>Section 2: Related Work</li>
+<li>Section 3: Proposed Approach
+<ul>
+<li>3.1 World Models for Perception</li>
+<li>3.2 Explicit Scene Evolution Modeling</li>
+<li>3.3 3D Gaussian World Model</li>
+</ul>
+</li>
+<li>Section 4: Experiments</li>
+<li>Section 5: Conclusion</li>
+</ul>
+<hr>
+<h2 id="section-1--2-introduction--related-work">Section 1 &amp; 2: Introduction &amp; Related Work<a class="anchor" href="#section-1--2-introduction--related-work">#</a></h2>
+<p><strong>요약</strong></p>
+<p>3D semantic occupancy prediction은 장면 내 모든 복셀의 점유 여부와 시맨틱 레이블을 예측하는 과제로, 자율주행의 안전한 경로 계획에 필수적입니다. 기존의 시간적 퍼셉션 방법들은 과거 프레임의 표현을 현재로 정합·융합하는 방식을 쓰지만, 이는 드라이빙 씬이 연속적으로 진화한다는 강한 사전 지식(prior)을 활용하지 못합니다.</p>
+<p>저자들은 <strong>World Model 기반 패러다임</strong>을 도입하여 장면 표현이 어떻게 진화하는지를 명시적으로 학습합니다. 3D Gaussian을 장면 표현으로 채택함으로써, BEV/Voxel 같은 암묵적 표현과 달리 객체의 위치·움직임을 연속적이고 명시적으로 모델링할 수 있습니다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>World Model</strong>: 미래 상태를 예측하는 생성 모델. 자율주행에서는 &ldquo;세상이 어떻게 작동하는지&quot;를 학습하여 센서 입력 없이 다음 상태를 예측하는 데 활용.</li>
+<li><strong>Streaming Prediction</strong>: 매 프레임마다 이전 프레임의 예측 결과를 조건으로 현재 상태를 갱신하는 온라인 방식. 고정된 시간 윈도우를 재처리하지 않아 효율적.</li>
+<li><strong>4D Occupancy Forecasting</strong>: 3D 공간 + 시간 축을 포함한 점유 예측. 현재 프레임의 센서 입력에 조건화되어 시공간적 장면을 예측하는 문제로 재정의.</li>
+</ul>
+<hr>
+<h2 id="section-3-proposed-approach">Section 3: Proposed Approach<a class="anchor" href="#section-3-proposed-approach">#</a></h2>
+<h3 id="31-world-models-for-perception">3.1 World Models for Perception<a class="anchor" href="#31-world-models-for-perception">#</a></h3>
+<p><strong>기존 시간적 퍼셉션 파이프라인 수식</strong></p>
+$$\mathbf{z}^n = P_{er}(\mathbf{x}^n),\quad \mathbf{a}^n = T_{trans}(\mathbf{z}^n, \mathbf{p}^n),\quad \mathbf{y}^T = F_{use}(\mathbf{a}^T, \ldots, \mathbf{a}^{T-t})$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$\mathbf{z}^n$</strong>: n번째 프레임의 장면 표현 (BEV 피처 또는 볼륨 피처)</li>
+<li><strong>$P_{er}$</strong>: 각 프레임을 독립적으로 인코딩하는 퍼셉션 모듈</li>
+<li><strong>$\mathbf{a}^n$</strong>: ego 궤적 $\mathbf{p}^n$을 이용해 현재 프레임 좌표계로 정합된 표현</li>
+<li><strong>$T_{trans}$</strong>: ego 자세 기반 좌표 변환 모듈</li>
+<li><strong>$F_{use}$</strong>: 과거 $t$개 프레임의 정합된 표현을 융합하는 모듈</li>
+<li><strong>직관</strong>: 각 프레임을 따로 처리한 뒤 뭉치는 방식 → 인접 프레임 간 연속성 사전 지식을 무시.</li>
+</ul>
+<p><strong>GaussianWorld의 World Model 수식</strong></p>
+$$\mathbf{z}^T = \mathbf{w}(\mathbf{z}^{T-1}, \mathbf{x}^T)$$$$\mathbf{y}^T = \mathbf{h}(\mathbf{w}(\mathbf{z}^{T-1}, \mathbf{x}^T))$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$\mathbf{z}^{T-1}$</strong>: 이전 프레임에서 예측된 3D Gaussian 집합</li>
+<li><strong>$\mathbf{x}^T$</strong>: 현재 프레임의 RGB 카메라 입력</li>
+<li><strong>$\mathbf{w}$</strong>: World Model — 이전 장면 표현과 현재 관측을 받아 현재 장면 표현을 예측</li>
+<li><strong>$\mathbf{h}$</strong>: 퍼셉션 헤드 — 3D Gaussian에서 occupancy로 변환</li>
+<li><strong>직관</strong>: 이전 Gaussian이 어떻게 이동·변형되는지를 학습하여 현재 장면을 예측. 추가 인코딩 없이 단 하나의 과거 프레임만 사용.</li>
+</ul>
+<h3 id="32-explicit-scene-evolution-modeling">3.2 Explicit Scene Evolution Modeling<a class="anchor" href="#32-explicit-scene-evolution-modeling">#</a></h3>
+<p><strong>요약</strong></p>
+<p>드라이빙 씬의 진화는 대부분 단순하고 연속적입니다. GaussianWorld는 이를 세 가지 독립적 요소로 분해하여 각각을 명시적으로 모델링합니다.</p>
+<p><strong>3D Gaussian 표현</strong></p>
+$$\mathbf{g} = \{\mathbf{p}, \mathbf{s}, \mathbf{r}, \mathbf{c}, \mathbf{f}\}$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$\mathbf{p}$</strong>: 3D 위치 (position)</li>
+<li><strong>$\mathbf{s}$</strong>: 크기 (scale)</li>
+<li><strong>$\mathbf{r}$</strong>: 회전 (rotation)</li>
+<li><strong>$\mathbf{c}$</strong>: 시맨틱 확률 (semantic probability) — 각 클래스에 속할 확률</li>
+<li><strong>$\mathbf{f}$</strong>: 시간적 피처 (temporal feature) — Gaussian의 역사적 정보를 담는 추가 속성</li>
+</ul>
+<p><strong>세 가지 장면 진화 요소</strong></p>
+<p><strong>① 자차 이동 정합 (Ego Motion Alignment)</strong></p>
+$$\mathbf{g}_A^T = A_{lign}(\mathbf{g}^{T-1}, \mathbf{M}_{ego}) = R_{ef}(\mathbf{g}^{T-1}; \mathbf{M}_{ego} \cdot A_{ttr}(\mathbf{g}^{T-1}; \mathbf{p}); \mathbf{p})$$<ul>
+<li>이전 프레임의 3D Gaussian 전체에 ego 궤적 기반 전역 아핀 변환을 적용</li>
+<li><strong>$\mathbf{M}_{ego}$</strong>: 이전 프레임에서 현재 프레임으로의 ego 이동 변환 행렬</li>
+<li><strong>직관</strong>: 자동차가 앞으로 이동하면 정적 건물들이 뒤로 밀리는 것처럼, 모든 Gaussian을 새 자차 좌표계로 평행이동·회전</li>
+</ul>
+<p><strong>② 동적 객체 이동 (Local Movements of Dynamic Objects)</strong></p>
+$$\mathbf{g}_M^T = M_{ove}(\mathbf{g}_A^T, \mathbf{x}_T) = R_{ef}(\mathbf{g}_A^T; E_{nc}(\mathbf{g}_A^T, \mathbf{x}_T) \cdot I(\mathbf{g}_A^T \in \{\mathbf{g}_D\}); \mathbf{p})$$<ul>
+<li>정합된 Gaussian을 동적($\{g_D\}$)과 정적($\{g_S\}$) 집합으로 분리</li>
+<li>동적 Gaussian의 시맨틱 확률을 소프트 가중치로 사용하여 위치만 업데이트</li>
+<li><strong>$I(\cdot)$</strong>: 동적 Gaussian 여부를 나타내는 지시 함수</li>
+<li><strong>직관</strong>: 주변 차량·보행자의 실제 이동을 RGB 관측으로부터 학습하여 반영</li>
+</ul>
+<p><strong>③ 신규 영역 완성 (Completion of Newly-Observed Areas)</strong></p>
+$$\mathbf{g}_C^T = P_{er}(\mathbf{g}_I^T, \mathbf{x}_T) = R_{ef}(\mathbf{g}_I^T; E_{nc}(\mathbf{g}_I^T, \mathbf{x}_T); \{\mathbf{p}, \mathbf{s}, \mathbf{r}, \mathbf{c}, \mathbf{f}\})$$<ul>
+<li>ego가 전진하면 일부 Gaussian은 인식 범위 밖으로 나가고, 새 영역이 보이게 됨</li>
+<li>새 영역에 랜덤 초기화 Gaussian $\mathbf{g}_I^T$를 배치하고 퍼셉션 레이어로 모든 속성 예측</li>
+<li><strong>직관</strong>: &ldquo;처음 보는 교차로&quot;를 현재 카메라 이미지로부터 채워 넣는 과정</li>
+</ul>
+<h3 id="33-3d-gaussian-world-model">3.3 3D Gaussian World Model<a class="anchor" href="#33-3d-gaussian-world-model">#</a></h3>
+<p><strong>요약</strong></p>
+<p>세 요소를 모델링하는 통합 프레임워크입니다. Motion Layer와 Perception Layer가 같은 아키텍처를 공유하여 계산 효율을 높입니다.</p>
+<p><strong>통합 Evolution Layer</strong></p>
+$$\mathbf{g}_{l+1}^T = E_{vol}(\mathbf{g}_l^T, \mathbf{x}_T) = \begin{cases} P_{er}(\mathbf{g}_l^T, \mathbf{x}_T) & \text{if new} \\ M_{ove}(\mathbf{g}_l^T, \mathbf{x}_T) & \text{otherwise} \end{cases}$$<ul>
+<li>새 Gaussian이면 Perception 모드(모든 속성 예측), 역사 Gaussian이면 Motion 모드(위치만 업데이트)</li>
+<li>$n_e$개 evolution layer를 스택하여 반복 정제</li>
+</ul>
+<p><strong>Unified Refinement Block</strong></p>
+<p>Evolution Layer 이후 추가 $n_r$개 정제 레이어를 사용:</p>
+$$\mathbf{g}_{n+1}^T = R_{efine}(\mathbf{g}_n^T, \mathbf{x}_T) = R_{ef}(\mathbf{g}_n^T; E_{nc}(\mathbf{g}_n^T, \mathbf{x}_T); \{\mathbf{p}, \mathbf{s}, \mathbf{r}, \mathbf{c}, \mathbf{f}\})$$<ul>
+<li>Evolution Layer와 달리 모든 Gaussian의 모든 속성을 업데이트</li>
+<li>3D Gaussian 표현과 실제 세계 간 정렬 오차를 보정</li>
+</ul>
+<p><strong>핵심 모듈 구성</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>모듈</th>
+          <th>역할</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Self-Encoding</td>
+          <td>3D Gaussian을 복셀화 후 3D sparse convolution으로 Gaussian 간 상호작용 학습</td>
+      </tr>
+      <tr>
+          <td>Cross-Attention</td>
+          <td>Deformable Attention으로 3D Gaussian과 멀티스케일 이미지 피처 간 상호작용</td>
+      </tr>
+      <tr>
+          <td>Unified Refinement Block</td>
+          <td>Motion / Perception 모드를 통합한 Gaussian 속성 예측 블록</td>
+      </tr>
+      <tr>
+          <td>GS-to-Occ</td>
+          <td>정제된 3D Gaussian에서 occupancy 복셀 그리드로 변환</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>스트리밍 학습 전략</strong></p>
+<p>초기에 짧은 시퀀스로 시작하여 점진적으로 길이를 늘리고, 일정 확률 $p$로 이전 프레임의 3D Gaussian 표현을 랜덤 폐기하여 긴 시퀀스에 적응:</p>
+<ul>
+<li>시퀀스 길이: [5, 10, 20, 30, 38] 단계적 증가</li>
+<li>확률적 모델링(Probabilistic Modeling): 다양한 길이의 시퀀스를 처리할 수 있도록 훈련 안정성 향상</li>
+<li><strong>직관</strong>: 처음에는 &ldquo;짧은 기억&quot;으로 학습하다가 점점 &ldquo;긴 기억&quot;으로 확장</li>
+</ul>
+<hr>
+<h2 id="section-4-experiments">Section 4: Experiments<a class="anchor" href="#section-4-experiments">#</a></h2>
+<p><strong>요약</strong></p>
+<p>nuScenes 데이터셋에서 기존 SOTA 방법들과 비교합니다. GaussianWorld는 추가 연산 없이 단일 프레임 베이스라인을 크게 상회합니다.</p>
+<h3 id="41-주요-결과-nuscenes-validation">4.1 주요 결과 (nuScenes validation)<a class="anchor" href="#41-%ec%a3%bc%ec%9a%94-%ea%b2%b0%ea%b3%bc-nuscenes-validation">#</a></h3>
+<table>
+  <thead>
+      <tr>
+          <th>Method</th>
+          <th>mIoU</th>
+          <th>IoU</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>MonoScene</td>
+          <td>7.31</td>
+          <td>23.96</td>
+      </tr>
+      <tr>
+          <td>BEVFormer</td>
+          <td>26.88</td>
+          <td>30.50</td>
+      </tr>
+      <tr>
+          <td>TPVFormer</td>
+          <td>11.66</td>
+          <td>11.51</td>
+      </tr>
+      <tr>
+          <td>SurroundOcc</td>
+          <td>20.30</td>
+          <td>31.49</td>
+      </tr>
+      <tr>
+          <td>OccFormer</td>
+          <td>19.03</td>
+          <td>31.39</td>
+      </tr>
+      <tr>
+          <td>GaussianFormer-B (단일 프레임)</td>
+          <td>19.10</td>
+          <td>29.83</td>
+      </tr>
+      <tr>
+          <td>GaussianFormer-T (시간 융합)</td>
+          <td>20.42</td>
+          <td>31.34</td>
+      </tr>
+      <tr>
+          <td><strong>GaussianWorld (ours)</strong></td>
+          <td><strong>22.13</strong></td>
+          <td><strong>33.40</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p>GaussianWorld는 단일 프레임 GaussianFormer-B 대비 <strong>mIoU +2.4%, IoU +2.7%</strong> 향상, 시간 융합 GaussianFormer-T 대비 <strong>mIoU +1.7%, IoU +2.0%</strong> 향상.</p>
+<h3 id="42-시간적-모델링-방법-비교-효율성">4.2 시간적 모델링 방법 비교 (효율성)<a class="anchor" href="#42-%ec%8b%9c%ea%b0%84%ec%a0%81-%eb%aa%a8%eb%8d%b8%eb%a7%81-%eb%b0%a9%eb%b2%95-%eb%b9%84%ea%b5%90-%ed%9a%a8%ec%9c%a8%ec%84%b1">#</a></h3>
+<table>
+  <thead>
+      <tr>
+          <th>방법</th>
+          <th>역사 프레임 수</th>
+          <th>레이턴시</th>
+          <th>메모리</th>
+          <th>mIoU</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Single-Frame</td>
+          <td>0</td>
+          <td>225 ms</td>
+          <td>6958 M</td>
+          <td>19.73</td>
+      </tr>
+      <tr>
+          <td>3D Gaussian Fusion</td>
+          <td>3</td>
+          <td>379 ms</td>
+          <td>9993 M</td>
+          <td>20.24</td>
+      </tr>
+      <tr>
+          <td>Perspective View Fusion</td>
+          <td>3</td>
+          <td>382 ms</td>
+          <td>10019 M</td>
+          <td>20.42</td>
+      </tr>
+      <tr>
+          <td><strong>GaussianWorld</strong></td>
+          <td><strong>1</strong></td>
+          <td><strong>228 ms</strong></td>
+          <td><strong>7030 M</strong></td>
+          <td><strong>21.87</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p>GaussianWorld는 역사 프레임 1개만 사용하면서 단일 프레임과 거의 같은 레이턴시·메모리로 시간 융합 방법들을 모두 상회.</p>
+<h3 id="43-ablation-장면-진화-세-요소의-기여">4.3 Ablation: 장면 진화 세 요소의 기여<a class="anchor" href="#43-ablation-%ec%9e%a5%eb%a9%b4-%ec%a7%84%ed%99%94-%ec%84%b8-%ec%9a%94%ec%86%8c%ec%9d%98-%ea%b8%b0%ec%97%ac">#</a></h3>
+<table>
+  <thead>
+      <tr>
+          <th>Ego 정합</th>
+          <th>동적 이동</th>
+          <th>신규 완성</th>
+          <th>mIoU</th>
+          <th>IoU</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>✗</td>
+          <td>✓</td>
+          <td>✓</td>
+          <td>18.47</td>
+          <td>28.88</td>
+      </tr>
+      <tr>
+          <td>✓</td>
+          <td>✗</td>
+          <td>✓</td>
+          <td>21.17</td>
+          <td>32.49</td>
+      </tr>
+      <tr>
+          <td>✓</td>
+          <td>✓</td>
+          <td>✗</td>
+          <td>학습 붕괴</td>
+          <td>학습 붕괴</td>
+      </tr>
+      <tr>
+          <td>✓</td>
+          <td>✓</td>
+          <td>✓</td>
+          <td><strong>21.50</strong></td>
+          <td><strong>32.72</strong></td>
+      </tr>
+  </tbody>
+</table>
+<ul>
+<li><strong>신규 영역 완성이 없으면 학습 자체가 붕괴</strong>: ego가 계속 전진하면 결국 모든 Gaussian이 인식 범위 밖으로 나가 장면 표현이 소실됨</li>
+<li><strong>ego 정합</strong>이 가장 큰 기여 (3.0% mIoU), <strong>동적 이동</strong> 모델링도 유의미한 향상</li>
+</ul>
+<h3 id="44-스트리밍-시퀀스-길이와-성능">4.4 스트리밍 시퀀스 길이와 성능<a class="anchor" href="#44-%ec%8a%a4%ed%8a%b8%eb%a6%ac%eb%b0%8d-%ec%8b%9c%ed%80%80%ec%8a%a4-%ea%b8%b8%ec%9d%b4%ec%99%80-%ec%84%b1%eb%8a%a5">#</a></h3>
+<p>스트리밍 프레임 수가 늘어날수록 성능이 향상되나, 약 20 프레임 이후 소폭 하락:</p>
+<ul>
+<li><strong>향상 이유</strong>: 더 많은 역사 프레임으로 장면 진화를 더 잘 모델링</li>
+<li><strong>하락 이유</strong>: 기존 3D occupancy GT가 멀티 프레임 LiDAR 누적으로 생성되어 가장자리가 희소하므로 긴 시퀀스에서 주석 품질 한계에 봉착</li>
+</ul>
+<hr>
+<h2 id="핵심-개념-정리">핵심 개념 정리<a class="anchor" href="#%ed%95%b5%ec%8b%ac-%ea%b0%9c%eb%85%90-%ec%a0%95%eb%a6%ac">#</a></h2>
+<table>
+  <thead>
+      <tr>
+          <th>개념</th>
+          <th>설명</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>GaussianWorld</strong></td>
+          <td>3D Gaussian World Model 기반 스트리밍 3D occupancy 예측 프레임워크</td>
+      </tr>
+      <tr>
+          <td><strong>장면 진화 3요소</strong></td>
+          <td>①자차 이동 정합(정적 배경), ②동적 객체 이동, ③신규 영역 완성</td>
+      </tr>
+      <tr>
+          <td><strong>Streaming Prediction</strong></td>
+          <td>이전 프레임의 3D Gaussian을 조건으로 현재 장면을 예측하는 온라인 방식</td>
+      </tr>
+      <tr>
+          <td><strong>Evolution Layer</strong></td>
+          <td>Motion / Perception 모드를 통합하여 역사·신규 Gaussian을 동시에 처리</td>
+      </tr>
+      <tr>
+          <td><strong>Unified Refinement Block</strong></td>
+          <td>Gaussian 표현과 실제 세계 간 정렬 오차를 보정하는 정제 블록</td>
+      </tr>
+      <tr>
+          <td><strong>확률적 시퀀스 모델링</strong></td>
+          <td>훈련 중 다양한 길이의 시퀀스를 처리하여 스트리밍 안정성 확보</td>
+      </tr>
+      <tr>
+          <td><strong>GS-to-Occ</strong></td>
+          <td>3D Gaussian → occupancy 복셀 변환 모듈</td>
+      </tr>
+      <tr>
+          <td><strong>mIoU / IoU</strong></td>
+          <td>시맨틱 클래스별 교집합/합집합 평균 / 전체 점유 기하 교집합/합집합</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="결론-및-시사점">결론 및 시사점<a class="anchor" href="#%ea%b2%b0%eb%a1%a0-%eb%b0%8f-%ec%8b%9c%ec%82%ac%ec%a0%90">#</a></h2>
+<p>GaussianWorld는 3D Gaussian의 명시적·연속적 장면 표현 특성을 활용하여 &ldquo;장면이 어떻게 진화하는가&quot;를 World Model로 학습합니다. 핵심 기여는 다음 세 가지입니다:</p>
+<ol>
+<li><strong>4D 점유 예측으로의 재정의</strong>: 3D occupancy를 이전 Gaussian + 현재 관측에 조건화된 예측 문제로 재구성하여 시간적 연속성을 자연스럽게 활용</li>
+<li><strong>추가 연산 없는 성능 향상</strong>: 단일 과거 프레임만 사용하면서 단일 프레임 대비 mIoU +2%, 기존 시간 융합 방법 대비 낮은 레이턴시·메모리로 우월한 성능</li>
+<li><strong>명시적 장면 진화 모델링</strong>: 자차 이동·동적 객체·신규 영역을 분리하여 각각을 물리적으로 타당한 방식으로 처리</li>
+</ol>
+<p><strong>로드맵 위치</strong>: 이 논문은 <strong>GaussianFormer</strong>(3DGS 기반 occupancy 표현)의 직접적 확장이며, <strong>3DGS → occupancy prediction</strong> 계보와 <strong>World Model(GAIA-1 등)</strong> 계보가 만나는 교차점입니다. 자율주행 합성 데이터 생성 관점에서는, 3D Gaussian으로 장면을 명시적으로 진화시키는 이 패러다임이 향후 클로즈드루프 센서 시뮬레이터의 장면 상태 관리에 직접 응용될 가능성이 있습니다.</p>
+<p><strong>한계</strong>: 동적 요소와 정적 요소의 분리가 완전하지 않아 정적 장면의 크로스 프레임 일관성을 완벽히 보장하지 못함.</p>
+<hr>
+<p><em>관련 논문: <a href="/posts/papers/3d-gaussian-splatting/">3D Gaussian Splatting</a>, <a href="/posts/papers/monoscene-monocular-3d-semantic-scene-completion/">MonoScene</a>, <a href="/posts/papers/tpvformer-tri-perspective-view-3d-semantic-occupancy/">TPVFormer</a>, <a href="/posts/papers/SurroundOcc/">SurroundOcc</a>, <a href="/posts/papers/GAIA-1/">GAIA-1</a>, <a href="/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/">nuScenes</a></em></p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/paper/docs/generative-models/gaia-1/" class="flex align-center">
+        <img src="/paper/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>GAIA-1: A Generative World Model for Autonomous Driving</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/paper/docs/autonomous-driving/perception/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/" class="flex align-center">
+        <span>StreamMapNet: Streaming Mapping Network for Vectorized Online HD Map Construction</span>
+        <img src="/paper/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#section-1--2-introduction--related-work">Section 1 &amp; 2: Introduction &amp; Related Work</a></li>
+    <li><a href="#section-3-proposed-approach">Section 3: Proposed Approach</a>
+      <ul>
+        <li><a href="#31-world-models-for-perception">3.1 World Models for Perception</a></li>
+        <li><a href="#32-explicit-scene-evolution-modeling">3.2 Explicit Scene Evolution Modeling</a></li>
+        <li><a href="#33-3d-gaussian-world-model">3.3 3D Gaussian World Model</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-4-experiments">Section 4: Experiments</a>
+      <ul>
+        <li><a href="#41-주요-결과-nuscenes-validation">4.1 주요 결과 (nuScenes validation)</a></li>
+        <li><a href="#42-시간적-모델링-방법-비교-효율성">4.2 시간적 모델링 방법 비교 (효율성)</a></li>
+        <li><a href="#43-ablation-장면-진화-세-요소의-기여">4.3 Ablation: 장면 진화 세 요소의 기여</a></li>
+        <li><a href="#44-스트리밍-시퀀스-길이와-성능">4.4 스트리밍 시퀀스 길이와 성능</a></li>
+      </ul>
+    </li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -5,6 +5,7 @@ draft: false
 categories: ["Papers", "Autonomous Driving"]
 tags: ["Autonomous Driving", "Simulation", "CARLA", "Benchmark"]
 year: 2017
+references: []
 ---
 
 ## 개요

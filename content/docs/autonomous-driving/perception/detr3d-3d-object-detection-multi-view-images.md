@@ -7,6 +7,9 @@ categories: ["Papers", "Autonomous Driving"]
 description: "카메라 이미지만으로 3D 바운딩 박스를 예측하는 top-down 방식의 멀티뷰 3D 객체 검출 프레임워크"
 math: true
 year: 2021
+references:
+  - "detr-end-to-end-object-detection-with-transformers"
+  - "nuscenes-multimodal-dataset-autonomous-driving"
 ---
 
 ## 개요

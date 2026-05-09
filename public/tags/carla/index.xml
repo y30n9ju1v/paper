@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>CARLA on Paper</title>
+    <link>https://y30n9ju1v.github.io/paper/tags/carla/</link>
+    <description>Recent content in CARLA on Paper</description>
+    <generator>Hugo</generator>
+    <language>ko-KR</language>
+    <lastBuildDate>Fri, 10 Apr 2026 09:00:00 +0900</lastBuildDate>
+    <atom:link href="https://y30n9ju1v.github.io/paper/tags/carla/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>CARLA: An Open Urban Driving Simulator</title>
+      <link>https://y30n9ju1v.github.io/paper/docs/autonomous-driving/simulation/carla-an-open-urban-driving-simulator/</link>
+      <pubDate>Fri, 10 Apr 2026 09:00:00 +0900</pubDate>
+      <guid>https://y30n9ju1v.github.io/paper/docs/autonomous-driving/simulation/carla-an-open-urban-driving-simulator/</guid>
+      <description>&lt;h2 id=&#34;개요&#34;&gt;개요&lt;a class=&#34;anchor&#34; href=&#34;#%ea%b0%9c%ec%9a%94&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;strong&gt;저자&lt;/strong&gt;: Alexey Dosovitskiy, German Ros, Felipe Codevilla, Antonio López, Vladlen Koltun&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;소속&lt;/strong&gt;: Intel Labs, Toyota Research Institute, Computer Vision Center Barcelona&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;발행년도&lt;/strong&gt;: 2017 (CoRL 2017)&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;주요 내용&lt;/strong&gt;: 자율주행 연구를 위한 오픈소스 도시 주행 시뮬레이터 CARLA를 소개하며, 모듈형 파이프라인, 모방 학습, 강화학습 세 가지 자율주행 접근법을 벤치마킹한 논문&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;목차&#34;&gt;목차&lt;a class=&#34;anchor&#34; href=&#34;#%eb%aa%a9%ec%b0%a8&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Section 1: Introduction&lt;/li&gt;&#xA;&lt;li&gt;Section 2: Simulation Engine&lt;/li&gt;&#xA;&lt;li&gt;Section 3: Autonomous Driving (3가지 접근법)&lt;/li&gt;&#xA;&lt;li&gt;Section 4: Experiments&lt;/li&gt;&#xA;&lt;li&gt;Section 5: Results&lt;/li&gt;&#xA;&lt;li&gt;Section 6: Conclusion&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;hr&gt;&#xA;&lt;h2 id=&#34;section-1-introduction&#34;&gt;Section 1: Introduction&lt;a class=&#34;anchor&#34; href=&#34;#section-1-introduction&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;p&gt;&lt;strong&gt;요약&lt;/strong&gt;&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

@@ -5,6 +5,9 @@ draft: false
 categories: ["Papers", "Autonomous Driving", "3D Occupancy"]
 tags: ["3D Occupancy", "BEV", "Autonomous Driving", "Transformer", "Semantic Scene Completion", "nuScenes"]
 year: 2023
+references:
+  - "BEVFormer"
+  - "nuscenes-multimodal-dataset-autonomous-driving"
 ---
 
 ## 개요

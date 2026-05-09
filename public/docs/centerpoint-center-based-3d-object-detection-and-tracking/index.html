@@ -1,0 +1,1541 @@
+<!DOCTYPE html>
+<html lang="ko-KR" dir="ltr">
+<head><script src="/paper/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=paper/livereload" data-no-instant defer></script>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="개요# 저자: Tianwei Yin, Xingyi Zhou, Philipp Krähenbühl (UT Austin) 발행년도: 2021 (arXiv 2020, CVPR 2021) 논문: arXiv:2006.11275 코드: github.com/tianweiy/CenterPoint 주요 내용: LiDAR 포인트 클라우드에서 3D 객체를 **중심점(center point)**으로 표현·탐지·추적하는 프레임워크. Waymo와 nuScenes 두 벤치마크에서 당시 SOTA 달성 한계 극복# 기존 한계 1 — Anchor 기반 표현의 방향 문제: 기존 3D 탐지기는 axis-aligned 바운딩 박스(anchor)를 사용. 차량이 회전하거나 자전거·보행자처럼 세로로 긴 객체를 탐지할 때 anchor가 맞지 않아 성능 저하 기존 한계 2 — IoU 기반 anchor 할당의 복잡성: 방향별로 anchor 수가 늘어나고 IoU threshold 튜닝이 필요해 복잡도 증가, false positive 증가 기존 한계 3 — 추적의 복잡성: 기존 3D 추적은 Kalman filter &#43; Mahalanobis 거리 등 복잡한 연산 필요 이 논문의 접근 방식: 객체를 3D 바운딩 박스 대신 **중심점(heatmap peak)**으로 표현 → 방향에 무관한 탐지, 중심점 velocity 예측으로 추적을 greedy closest-point matching으로 단순화 목차# Introduction Related Work Preliminaries (2D CenterNet, 3D Detection 정의) CenterPoint 4.1 Two-Stage CenterPoint 4.2 Architecture Experiments 5.1 Main Results 5.2 Ablation Studies Conclusion 3. Preliminaries# 2D CenterNet# CenterPoint의 직접적 전신인 2D CenterNet은 이미지 기반 객체 탐지를 키포인트 추정(keypoint estimation) 문제로 재정의합니다.
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/paper/docs/centerpoint-center-based-3d-object-detection-and-tracking/">
+  <meta property="og:site_name" content="Paper">
+  <meta property="og:title" content="CenterPoint: Center-based 3D Object Detection and Tracking">
+  <meta property="og:description" content="개요# 저자: Tianwei Yin, Xingyi Zhou, Philipp Krähenbühl (UT Austin) 발행년도: 2021 (arXiv 2020, CVPR 2021) 논문: arXiv:2006.11275 코드: github.com/tianweiy/CenterPoint 주요 내용: LiDAR 포인트 클라우드에서 3D 객체를 **중심점(center point)**으로 표현·탐지·추적하는 프레임워크. Waymo와 nuScenes 두 벤치마크에서 당시 SOTA 달성 한계 극복# 기존 한계 1 — Anchor 기반 표현의 방향 문제: 기존 3D 탐지기는 axis-aligned 바운딩 박스(anchor)를 사용. 차량이 회전하거나 자전거·보행자처럼 세로로 긴 객체를 탐지할 때 anchor가 맞지 않아 성능 저하 기존 한계 2 — IoU 기반 anchor 할당의 복잡성: 방향별로 anchor 수가 늘어나고 IoU threshold 튜닝이 필요해 복잡도 증가, false positive 증가 기존 한계 3 — 추적의 복잡성: 기존 3D 추적은 Kalman filter &#43; Mahalanobis 거리 등 복잡한 연산 필요 이 논문의 접근 방식: 객체를 3D 바운딩 박스 대신 **중심점(heatmap peak)**으로 표현 → 방향에 무관한 탐지, 중심점 velocity 예측으로 추적을 greedy closest-point matching으로 단순화 목차# Introduction Related Work Preliminaries (2D CenterNet, 3D Detection 정의) CenterPoint 4.1 Two-Stage CenterPoint 4.2 Architecture Experiments 5.1 Main Results 5.2 Ablation Studies Conclusion 3. Preliminaries# 2D CenterNet# CenterPoint의 직접적 전신인 2D CenterNet은 이미지 기반 객체 탐지를 키포인트 추정(keypoint estimation) 문제로 재정의합니다.">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:published_time" content="2026-04-19T22:00:00+09:00">
+    <meta property="article:modified_time" content="2026-04-19T22:00:00+09:00">
+    <meta property="article:tag" content="LiDAR">
+    <meta property="article:tag" content="3D Detection">
+    <meta property="article:tag" content="Object Tracking">
+    <meta property="article:tag" content="Point Cloud">
+    <meta property="article:tag" content="BEV">
+
+
+  <meta itemprop="name" content="CenterPoint: Center-based 3D Object Detection and Tracking">
+  <meta itemprop="description" content="개요# 저자: Tianwei Yin, Xingyi Zhou, Philipp Krähenbühl (UT Austin) 발행년도: 2021 (arXiv 2020, CVPR 2021) 논문: arXiv:2006.11275 코드: github.com/tianweiy/CenterPoint 주요 내용: LiDAR 포인트 클라우드에서 3D 객체를 **중심점(center point)**으로 표현·탐지·추적하는 프레임워크. Waymo와 nuScenes 두 벤치마크에서 당시 SOTA 달성 한계 극복# 기존 한계 1 — Anchor 기반 표현의 방향 문제: 기존 3D 탐지기는 axis-aligned 바운딩 박스(anchor)를 사용. 차량이 회전하거나 자전거·보행자처럼 세로로 긴 객체를 탐지할 때 anchor가 맞지 않아 성능 저하 기존 한계 2 — IoU 기반 anchor 할당의 복잡성: 방향별로 anchor 수가 늘어나고 IoU threshold 튜닝이 필요해 복잡도 증가, false positive 증가 기존 한계 3 — 추적의 복잡성: 기존 3D 추적은 Kalman filter &#43; Mahalanobis 거리 등 복잡한 연산 필요 이 논문의 접근 방식: 객체를 3D 바운딩 박스 대신 **중심점(heatmap peak)**으로 표현 → 방향에 무관한 탐지, 중심점 velocity 예측으로 추적을 greedy closest-point matching으로 단순화 목차# Introduction Related Work Preliminaries (2D CenterNet, 3D Detection 정의) CenterPoint 4.1 Two-Stage CenterPoint 4.2 Architecture Experiments 5.1 Main Results 5.2 Ablation Studies Conclusion 3. Preliminaries# 2D CenterNet# CenterPoint의 직접적 전신인 2D CenterNet은 이미지 기반 객체 탐지를 키포인트 추정(keypoint estimation) 문제로 재정의합니다.">
+  <meta itemprop="datePublished" content="2026-04-19T22:00:00+09:00">
+  <meta itemprop="dateModified" content="2026-04-19T22:00:00+09:00">
+  <meta itemprop="wordCount" content="1230">
+  <meta itemprop="keywords" content="LiDAR,3D Detection,Object Tracking,Point Cloud,BEV">
+
+<title>CenterPoint: Center-based 3D Object Detection and Tracking | Paper</title>
+<link rel="icon" href="/paper/favicon.png" >
+<link rel="manifest" href="/paper/manifest.json">
+<link rel="canonical" href="http://localhost:1313/paper/docs/centerpoint-center-based-3d-object-detection-and-tracking/">
+<link rel="stylesheet" href="/paper/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/paper/fuse.min.js"></script>
+  <script defer src="/paper/en.search.min.136303f53f731e7f187e59dca354807444ce24732e128843ea97e041d47b7d93.js" integrity="sha256-E2MD9T9zHn8Yflnco1SAdETOJHMuEohD6pfgQdR7fZM=" crossorigin="anonymous"></script>
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '\\[', right: '\\]', display: true},
+      {left: '\\(', right: '\\)', display: false},
+      {left: '$', right: '$', display: false}
+    ]
+  });
+});
+</script>
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/paper/"><span>Paper</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/controlnet-adding-conditional-control-to-text-to-image-diffusion-models/" class="">
+      ControlNet: Adding Conditional Control to Text-to-Image Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/clip-learning-transferable-visual-models-from-natural-language-supervision/" class="">
+      CLIP: Learning Transferable Visual Models From Natural Language Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointnet-plus-plus-deep-hierarchical-feature-learning/" class="">
+      PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/" class="">
+      GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/lidarsim-realistic-lidar-simulation-by-leveraging-the-real-world/" class="">
+      LiDARsim: Realistic LiDAR Simulation by Leveraging the Real World</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vit-an-image-is-worth-16x16-words/" class="">
+      ViT: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/resnet-deep-residual-learning-for-image-recognition/" class="">
+      ResNet: Deep Residual Learning for Image Recognition</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/" class="">
+      StreamMapNet: Streaming Mapping Network for Vectorized Online HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vectormapnet-end-to-end-vectorized-hd-map-learning/" class="">
+      VectorMapNet: End-to-end Vectorized HD Map Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/detr-end-to-end-object-detection-with-transformers/" class="">
+      DETR: End-to-End Object Detection with Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/attention-is-all-you-need/" class="">
+      Attention Is All You Need</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/maptr-structured-modeling-online-vectorized-hd-map-construction/" class="">
+      MapTR: Structured Modeling and Learning for Online Vectorized HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/high-resolution-image-synthesis-with-latent-diffusion-models/" class="">
+      High-Resolution Image Synthesis with Latent Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/proximal-policy-optimization/" class="">
+      Proximal Policy Optimization Algorithms (PPO)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/denoising-diffusion-probabilistic-models/" class="">
+      Denoising Diffusion Probabilistic Models (DDPM)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/" class="">
+      PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointpillars-fast-encoders-object-detection-point-clouds/" class="">
+      PointPillars: Fast Encoders for Object Detection from Point Clouds</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/centerpoint-center-based-3d-object-detection-and-tracking/" class="active">
+      CenterPoint: Center-based 3D Object Detection and Tracking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/monoscene-monocular-3d-semantic-scene-completion/" class="">
+      MonoScene: Monocular 3D Semantic Scene Completion</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/tpvformer-tri-perspective-view-3d-semantic-occupancy/" class="">
+      TPVFormer: Tri-Perspective View for Vision-Based 3D Semantic Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/drivearena/" class="">
+      DriveArena: A Closed-loop Generative Simulation Platform for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/neurad-neural-rendering-for-autonomous-driving/" class="">
+      NeuRAD: Neural Rendering for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/omnire-omni-urban-scene-reconstruction/" class="">
+      OmniRe: Omni Urban Scene Reconstruction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/magicdrive-street-view-generation-3d-geometry-control/" class="">
+      MagicDrive: Street View Generation with Diverse 3D Geometry Control</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/surroundocc/" class="">
+      SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/drivedreamer/" class="">
+      DriveDreamer: Towards Real-world-driven World Models for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/street-gaussians-modeling-dynamic-urban-scenes/" class="">
+      Street Gaussians: Modeling Dynamic Urban Scenes with Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bench2drive-multi-ability-benchmarking-e2e-autonomous-driving/" class="">
+      Bench2Drive: Towards Multi-Ability Benchmarking of Closed-Loop End-To-End Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/emernerf/" class="">
+      EmerNeRF: Emergent Spatial-Temporal Scene Decomposition via Self-Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/detr3d-3d-object-detection-multi-view-images/" class="">
+      DETR3D: 3D Object Detection from Multi-view Images via 3D-to-2D Queries</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/occ3d-large-scale-3d-occupancy-prediction-benchmark/" class="">
+      Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/unisim-neural-closed-loop-sensor-simulator/" class="">
+      UniSim: A Neural Closed-Loop Sensor Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevfusion-multi-task-multi-sensor-fusion/" class="">
+      BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/instant-ngp-multiresolution-hash-encoding/" class="">
+      Instant Neural Graphics Primitives with a Multiresolution Hash Encoding</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/lift-splat-shoot/" class="">
+      Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevdepth/" class="">
+      BEVDepth: Acquisition of Reliable Depth for Multi-view 3D Object Detection</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/4d-gaussian-splatting/" class="">
+      4D Gaussian Splatting for Real-Time Dynamic Scene Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/gaia-1/" class="">
+      GAIA-1: A Generative World Model for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/dqn-playing-atari-with-deep-reinforcement-learning/" class="">
+      Playing Atari with Deep Reinforcement Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevformer/" class="">
+      BEVFormer: Learning Bird&#39;s-Eye-View Representation from Multi-Camera Images via Spatiotemporal Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/navsim/" class="">
+      NAVSIM: Data-Driven Non-Reactive Autonomous Vehicle Simulation and Benchmarking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nuplan/" class="">
+      nuPlan: A closed-loop ML-based planning benchmark for autonomous vehicles</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/transfuser/" class="">
+      TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3d-gaussian-splatting/" class="">
+      3D Gaussian Splatting for Real-Time Radiance Field Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/driving-gaussian-composite-gaussian-splatting/" class="">
+      DrivingGaussian: Composite Gaussian Splatting for Surrounding Dynamic Autonomous Driving Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3d-gaussian-ray-tracing/" class="">
+      3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/" class="">
+      3DGUT: Enabling Distorted Cameras and Secondary Rays in Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/carla-an-open-urban-driving-simulator/" class="">
+      CARLA: An Open Urban Driving Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/difix3d-plus/" class="">
+      DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/hugsim-real-time-photorealistic-closed-loop-simulator/" class="">
+      HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/" class="">
+      NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nuscenes-multimodal-dataset-autonomous-driving/" class="">
+      nuScenes: A Multimodal Dataset for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/waymo-open-dataset/" class="">
+      Scalability in Perception for Autonomous Driving: Waymo Open Dataset</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/uniad-planning-oriented-autonomous-driving/" class="">
+      UniAD: Planning-oriented Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vad/" class="">
+      VAD: Vectorized Scene Representation for Efficient Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/paper/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>CenterPoint: Center-based 3D Object Detection and Tracking</h3>
+
+  <label for="toc-control">
+    
+    <img src="/paper/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#3-preliminaries">3. Preliminaries</a>
+      <ul>
+        <li><a href="#2d-centernet">2D CenterNet</a></li>
+        <li><a href="#3d-detection-문제-정의">3D Detection 문제 정의</a></li>
+      </ul>
+    </li>
+    <li><a href="#4-centerpoint">4. CenterPoint</a>
+      <ul>
+        <li><a href="#전체-파이프라인">전체 파이프라인</a></li>
+        <li><a href="#center-heatmap-head">Center Heatmap Head</a></li>
+        <li><a href="#regression-heads">Regression Heads</a></li>
+        <li><a href="#velocity-head와-추적">Velocity Head와 추적</a></li>
+        <li><a href="#41-two-stage-centerpoint">4.1 Two-Stage CenterPoint</a></li>
+      </ul>
+    </li>
+    <li><a href="#5-experiments">5. Experiments</a>
+      <ul>
+        <li><a href="#51-주요-결과">5.1 주요 결과</a></li>
+        <li><a href="#52-ablation-결과">5.2 Ablation 결과</a></li>
+      </ul>
+    </li>
+    <li><a href="#6-핵심-개념-정리">6. 핵심 개념 정리</a></li>
+    <li><a href="#7-결론-및-시사점">7. 결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h2 id="개요">개요<a class="anchor" href="#%ea%b0%9c%ec%9a%94">#</a></h2>
+<ul>
+<li><strong>저자</strong>: Tianwei Yin, Xingyi Zhou, Philipp Krähenbühl (UT Austin)</li>
+<li><strong>발행년도</strong>: 2021 (arXiv 2020, CVPR 2021)</li>
+<li><strong>논문</strong>: <a href="https://arxiv.org/abs/2006.11275">arXiv:2006.11275</a></li>
+<li><strong>코드</strong>: <a href="https://github.com/tianweiy/CenterPoint">github.com/tianweiy/CenterPoint</a></li>
+<li><strong>주요 내용</strong>: LiDAR 포인트 클라우드에서 3D 객체를 **중심점(center point)**으로 표현·탐지·추적하는 프레임워크. Waymo와 nuScenes 두 벤치마크에서 당시 SOTA 달성</li>
+</ul>
+<hr>
+<h2 id="한계-극복">한계 극복<a class="anchor" href="#%ed%95%9c%ea%b3%84-%ea%b7%b9%eb%b3%b5">#</a></h2>
+<ul>
+<li><strong>기존 한계 1 — Anchor 기반 표현의 방향 문제</strong>: 기존 3D 탐지기는 axis-aligned 바운딩 박스(anchor)를 사용. 차량이 회전하거나 자전거·보행자처럼 세로로 긴 객체를 탐지할 때 anchor가 맞지 않아 성능 저하</li>
+<li><strong>기존 한계 2 — IoU 기반 anchor 할당의 복잡성</strong>: 방향별로 anchor 수가 늘어나고 IoU threshold 튜닝이 필요해 복잡도 증가, false positive 증가</li>
+<li><strong>기존 한계 3 — 추적의 복잡성</strong>: 기존 3D 추적은 Kalman filter + Mahalanobis 거리 등 복잡한 연산 필요</li>
+<li><strong>이 논문의 접근 방식</strong>: 객체를 3D 바운딩 박스 대신 **중심점(heatmap peak)**으로 표현 → 방향에 무관한 탐지, 중심점 velocity 예측으로 추적을 greedy closest-point matching으로 단순화</li>
+</ul>
+<hr>
+<h2 id="목차">목차<a class="anchor" href="#%eb%aa%a9%ec%b0%a8">#</a></h2>
+<ol>
+<li>Introduction</li>
+<li>Related Work</li>
+<li>Preliminaries (2D CenterNet, 3D Detection 정의)</li>
+<li>CenterPoint
+<ul>
+<li>4.1 Two-Stage CenterPoint</li>
+<li>4.2 Architecture</li>
+</ul>
+</li>
+<li>Experiments
+<ul>
+<li>5.1 Main Results</li>
+<li>5.2 Ablation Studies</li>
+</ul>
+</li>
+<li>Conclusion</li>
+</ol>
+<hr>
+<h2 id="3-preliminaries">3. Preliminaries<a class="anchor" href="#3-preliminaries">#</a></h2>
+<h3 id="2d-centernet">2D CenterNet<a class="anchor" href="#2d-centernet">#</a></h3>
+<p>CenterPoint의 직접적 전신인 2D CenterNet은 이미지 기반 객체 탐지를 <strong>키포인트 추정(keypoint estimation)</strong> 문제로 재정의합니다.</p>
+<ul>
+<li>입력 이미지에서 $K$개 클래스별 <strong>heatmap</strong> $\hat{Y} \in [0,1]^{w \times h \times K}$ 예측</li>
+<li>heatmap의 각 **local maximum(peak)**이 탐지된 객체의 중심</li>
+<li>각 탐지 객체에 대해 크기, 오프셋 등 속성을 중심 위치에서 회귀</li>
+</ul>
+<h3 id="3d-detection-문제-정의">3D Detection 문제 정의<a class="anchor" href="#3d-detection-%eb%ac%b8%ec%a0%9c-%ec%a0%95%ec%9d%98">#</a></h3>
+<p>포인트 클라우드 $\mathcal{P} = \{(x, y, z, r)_i\}$에서 3D 바운딩 박스 집합 $\mathcal{B} = \{b_k\}$를 예측합니다.</p>
+<p>각 박스 $b = (u, v, d, w, l, h, \alpha)$:</p>
+<ul>
+<li><strong>$(u, v)$</strong>: bird&rsquo;s-eye view(BEV) 상의 중심 위치</li>
+<li><strong>$d$</strong>: 지면으로부터의 높이</li>
+<li><strong>$(w, l, h)$</strong>: 가로·세로·높이 크기</li>
+<li><strong>$\alpha$</strong>: yaw 회전각</li>
+</ul>
+<p>현대 3D 탐지기는 VoxelNet 또는 PointPillars 같은 <strong>3D 인코더</strong>로 포인트 클라우드를 voxel/pillar로 양자화하여 map-view 피처맵 $\mathbf{M} \in \mathbb{R}^{W \times L \times F}$을 생성합니다.</p>
+<hr>
+<h2 id="4-centerpoint">4. CenterPoint<a class="anchor" href="#4-centerpoint">#</a></h2>
+<h3 id="전체-파이프라인">전체 파이프라인<a class="anchor" href="#%ec%a0%84%ec%b2%b4-%ed%8c%8c%ec%9d%b4%ed%94%84%eb%9d%bc%ec%9d%b8">#</a></h3>
+<pre tabindex="0"><code>입력: LiDAR 포인트 클라우드
+         │
+         ▼
+[3D Backbone] — VoxelNet 또는 PointPillars
+         │  map-view 피처맵 M ∈ R^{W×L×F}
+         ▼
+[Detection Head (2D CNN)]
+  ├─ Center Heatmap Head → K채널 heatmap (클래스별 중심 확률)
+  ├─ Sub-voxel Offset Head → 양자화 오차 보정
+  ├─ Height-above-ground Head → 3D 높이
+  ├─ 3D Size Head → (w, l, h)
+  ├─ Rotation Head → (sin α, cos α)
+  └─ Velocity Head → (vx, vy) [추적용]
+         │
+         ▼ (Two-Stage: 선택적)
+[Point Feature Extraction at Box Faces]
+         │
+         ▼
+[MLP] → IoU-guided confidence score + box refinement
+         │
+         ▼
+출력: 3D 바운딩 박스 + 신뢰도 점수 + 속도 벡터</code></pre><h3 id="center-heatmap-head">Center Heatmap Head<a class="anchor" href="#center-heatmap-head">#</a></h3>
+<p>목표: 탐지된 객체의 중심 위치에 <strong>heatmap peak</strong> 생성.</p>
+<p>훈련 시, 3D 바운딩 박스 중심점을 BEV에 투영하고 <strong>2D Gaussian 커널</strong>로 렌더링하여 GT heatmap을 만듭니다.</p>
+<p>Gaussian 반경:</p>
+$$\sigma = \max(f(w \cdot l),\ \tau), \quad \tau = 2$$<ul>
+<li><strong>$w, l$</strong>: 객체의 가로·세로 크기 (BEV)</li>
+<li><strong>$f(\cdot)$</strong>: CornerNet의 반경 함수 — 박스 크기에 비례해 Gaussian을 넓게 설정</li>
+<li><strong>$\tau = 2$</strong>: 최소 Gaussian 반경 (작은 객체 보호)</li>
+<li><strong>직관</strong>: 큰 차량일수록 넓은 supervision 영역 → 학습 안정성 향상</li>
+</ul>
+<p>Focal loss로 최적화합니다 (heatmap이 매우 희소하므로 배경 억제 중요).</p>
+<h3 id="regression-heads">Regression Heads<a class="anchor" href="#regression-heads">#</a></h3>
+<p>각 탐지 객체에 대해 중심점 위치에서 다음 속성을 회귀합니다:</p>
+<table>
+  <thead>
+      <tr>
+          <th>출력</th>
+          <th>차원</th>
+          <th>설명</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>sub-voxel offset $o$</td>
+          <td>$\mathbb{R}^2$</td>
+          <td>voxel 양자화 오차 보정</td>
+      </tr>
+      <tr>
+          <td>height-above-ground $h_g$</td>
+          <td>$\mathbb{R}$</td>
+          <td>지면 기준 높이 (depth 복원)</td>
+      </tr>
+      <tr>
+          <td>3D size $s$</td>
+          <td>$\mathbb{R}^3$</td>
+          <td>$(w, l, h)$, log-scale 회귀</td>
+      </tr>
+      <tr>
+          <td>rotation</td>
+          <td>$\mathbb{R}^2$</td>
+          <td>$(\sin\alpha, \cos\alpha)$</td>
+      </tr>
+      <tr>
+          <td>velocity $\mathbf{v}$</td>
+          <td>$\mathbb{R}^2$</td>
+          <td>$(v_x, v_y)$, 추적에 사용</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>rotation을 $\sin/\cos$로 표현하는 이유</strong>: 각도는 $0°$와 $360°$가 같지만 수치상 멀어서 회귀가 불안정. $(\sin\alpha, \cos\alpha)$ 쌍은 연속적이고 순환 문제가 없음.</p>
+<p>모든 회귀 출력은 <strong>L1 loss</strong>로 학습합니다.</p>
+<h3 id="velocity-head와-추적">Velocity Head와 추적<a class="anchor" href="#velocity-head%ec%99%80-%ec%b6%94%ec%a0%81">#</a></h3>
+$$\mathbf{v} \in \mathbb{R}^2$$<p>: 현재 프레임과 직전 프레임 사이의 중심점 이동량.</p>
+<p>추적 알고리즘 (greedy closest-point matching):</p>
+<ol>
+<li>현재 프레임 탐지 결과에서 velocity $\mathbf{v}$로 중심을 이전 프레임으로 역투영</li>
+<li>이전 프레임 tracklet과 <strong>최근접점 거리</strong>로 매칭</li>
+<li>매칭 실패 tracklet은 최대 $T=3$ 프레임 유지 (이후 삭제)</li>
+<li>추적 시간 $T_{track} = 1\text{ms}$ — Kalman filter(73ms) 대비 73배 빠름</li>
+</ol>
+<p><strong>직관</strong>: 객체가 점이면 추적도 점 간 거리 매칭으로 충분. 박스 IoU 매칭보다 회전·크기에 무관하게 robust함.</p>
+<h3 id="41-two-stage-centerpoint">4.1 Two-Stage CenterPoint<a class="anchor" href="#41-two-stage-centerpoint">#</a></h3>
+<p>1단계(one-stage)에서 중심점 위치만으로 속성을 추론하면, 센서가 객체 측면만 보는 경우(자율주행 흔한 상황) 중심점 피처가 불충분할 수 있습니다.</p>
+<p><strong>2단계 보정</strong>:</p>
+<ul>
+<li>예측된 3D 바운딩 박스의 <strong>4개 outward-facing 면 중심점</strong> + <strong>객체 중심점</strong> = 총 5점</li>
+<li>각 점에서 backbone map-view 피처맵 $\mathbf{M}$을 bilinear interpolation으로 피처 추출</li>
+<li>5개 포인트 피처를 concat → MLP → IoU-guided confidence score + box refinement</li>
+</ul>
+<p><strong>IoU-guided confidence score</strong>:</p>
+$$I = \min(1,\ \max(0,\ 2 \times IoU_t - 0.5))$$$$L_{score} = -I_t \log(\hat{I}_t) - (1-I_t)\log(1-\hat{I}_t)$$<p><strong>수식 설명</strong>:</p>
+<ul>
+<li><strong>$IoU_t$</strong>: t번째 제안 박스와 GT 간의 3D IoU</li>
+<li><strong>$I_t$</strong>: IoU를 $[0,1]$ 범위로 정규화한 confidence target
+<ul>
+<li>IoU = 0.5 → $I$ = 0 (완전 잘못된 박스)</li>
+<li>IoU = 1.0 → $I$ = 1 (완벽한 박스)</li>
+</ul>
+</li>
+<li><strong>$\hat{I}_t$</strong>: 예측 confidence</li>
+<li><strong>직관</strong>: NMS 없이도 confidence score가 박스 품질을 직접 반영하게 학습</li>
+</ul>
+<p>최종 confidence:</p>
+$$\hat{Q}_t = \sqrt{\hat{Y}_t \cdot \hat{I}_t}$$<ul>
+<li>1단계 heatmap 점수 $\hat{Y}_t$와 2단계 IoU 점수 $\hat{I}_t$의 기하평균</li>
+</ul>
+<hr>
+<h2 id="5-experiments">5. Experiments<a class="anchor" href="#5-experiments">#</a></h2>
+<h3 id="51-주요-결과">5.1 주요 결과<a class="anchor" href="#51-%ec%a3%bc%ec%9a%94-%ea%b2%b0%ea%b3%bc">#</a></h3>
+<p><strong>Waymo Open Dataset — 3D Detection (test set, Level 2)</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>방법</th>
+          <th>Vehicle mAP</th>
+          <th>Vehicle mAPH</th>
+          <th>Ped. mAP</th>
+          <th>Ped. mAPH</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>PointPillars</td>
+          <td>55.6</td>
+          <td>55.1</td>
+          <td>45.1</td>
+          <td>—</td>
+      </tr>
+      <tr>
+          <td>PV-RCNN</td>
+          <td>65.1</td>
+          <td>64.7</td>
+          <td>—</td>
+          <td>—</td>
+      </tr>
+      <tr>
+          <td><strong>CenterPoint-Voxel (ours)</strong></td>
+          <td><strong>72.2</strong></td>
+          <td><strong>71.8</strong></td>
+          <td><strong>72.2</strong></td>
+          <td><strong>66.4</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>nuScenes — 3D Detection (test set)</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>방법</th>
+          <th>mAP</th>
+          <th>NDS</th>
+          <th>PKL</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>PointPillars</td>
+          <td>40.1</td>
+          <td>55.0</td>
+          <td>1.00</td>
+      </tr>
+      <tr>
+          <td>CBGS (이전 1위)</td>
+          <td>52.8</td>
+          <td>63.3</td>
+          <td>0.77</td>
+      </tr>
+      <tr>
+          <td><strong>CenterPoint (ours)</strong></td>
+          <td><strong>58.0</strong></td>
+          <td><strong>65.5</strong></td>
+          <td><strong>0.69</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>nuScenes — 3D Tracking (test set)</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>방법</th>
+          <th>AMOTA</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>AB3D</td>
+          <td>15.1</td>
+      </tr>
+      <tr>
+          <td>Chiu et al.</td>
+          <td>55.0</td>
+      </tr>
+      <tr>
+          <td><strong>CenterPoint (ours)</strong></td>
+          <td><strong>63.8</strong></td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="52-ablation-결과">5.2 Ablation 결과<a class="anchor" href="#52-ablation-%ea%b2%b0%ea%b3%bc">#</a></h3>
+<p><strong>Center-based vs Anchor-based (Waymo validation, Level 2 mAPH)</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>Encoder</th>
+          <th>방법</th>
+          <th>Vehicle</th>
+          <th>Pedestrian</th>
+          <th>평균</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>VoxelNet</td>
+          <td>Anchor-based</td>
+          <td>66.1</td>
+          <td>54.4</td>
+          <td>60.3</td>
+      </tr>
+      <tr>
+          <td>VoxelNet</td>
+          <td><strong>Center-based</strong></td>
+          <td><strong>66.5</strong></td>
+          <td><strong>62.7</strong></td>
+          <td><strong>64.6</strong></td>
+      </tr>
+      <tr>
+          <td>PointPillars</td>
+          <td>Anchor-based</td>
+          <td>64.1</td>
+          <td>50.8</td>
+          <td>57.5</td>
+      </tr>
+      <tr>
+          <td>PointPillars</td>
+          <td><strong>Center-based</strong></td>
+          <td><strong>66.5</strong></td>
+          <td><strong>57.4</strong></td>
+          <td><strong>62.0</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p>→ 단순히 anchor → center로 표현만 바꿔도 <strong>3-4 mAPH 향상</strong></p>
+<p><strong>회전각별 성능 (Waymo validation, Level 2 mAPH)</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>방법</th>
+          <th>Vehicle 0°-15°</th>
+          <th>15°-30°</th>
+          <th>30°-45°</th>
+          <th>Ped 0°-15°</th>
+          <th>15°-30°</th>
+          <th>30°-45°</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Anchor-based</td>
+          <td>67.1</td>
+          <td><strong>47.7</strong></td>
+          <td>45.4</td>
+          <td>55.9</td>
+          <td>32.0</td>
+          <td>26.5</td>
+      </tr>
+      <tr>
+          <td>Center-based</td>
+          <td><strong>67.8</strong></td>
+          <td>46.4</td>
+          <td><strong>51.6</strong></td>
+          <td><strong>64.0</strong></td>
+          <td><strong>42.1</strong></td>
+          <td><strong>35.7</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p>→ 특히 **회전된 객체(30°-45°)**에서 center-based가 크게 우세 — anchor의 방향 의존성 한계 입증</p>
+<p><strong>2단계 정제 효과 (Waymo validation)</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>Stage</th>
+          <th>Vehicle mAPH</th>
+          <th>Ped. mAPH</th>
+          <th>$T_{proposal}$</th>
+          <th>$T_{refine}$</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>First Stage</td>
+          <td>66.5</td>
+          <td>62.7</td>
+          <td>71ms</td>
+          <td>—</td>
+      </tr>
+      <tr>
+          <td>+ Box Center</td>
+          <td>68.0</td>
+          <td>64.9</td>
+          <td>71ms</td>
+          <td>5ms</td>
+      </tr>
+      <tr>
+          <td>+ Surface Center</td>
+          <td><strong>68.3</strong></td>
+          <td><strong>65.4</strong></td>
+          <td>71ms</td>
+          <td>6ms</td>
+      </tr>
+  </tbody>
+</table>
+<p>→ 2단계 추가 비용 5-6ms로 <strong>1.8 mAPH 향상</strong></p>
+<hr>
+<h2 id="6-핵심-개념-정리">6. 핵심 개념 정리<a class="anchor" href="#6-%ed%95%b5%ec%8b%ac-%ea%b0%9c%eb%85%90-%ec%a0%95%eb%a6%ac">#</a></h2>
+<table>
+  <thead>
+      <tr>
+          <th>개념</th>
+          <th>설명</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>Center-based 표현</strong></td>
+          <td>3D 객체를 바운딩 박스 대신 중심점으로 표현. 방향 불변성 확보, anchor 수·IoU threshold 튜닝 불필요</td>
+      </tr>
+      <tr>
+          <td><strong>Heatmap</strong></td>
+          <td>K채널 BEV 확률맵. 각 픽셀 값이 해당 위치에 객체 중심이 있을 확률. Local maximum이 탐지 결과</td>
+      </tr>
+      <tr>
+          <td><strong>Gaussian 렌더링</strong></td>
+          <td>GT 중심점 주변에 박스 크기 비례 Gaussian 분포로 supervision 영역 확장. 작은 객체도 안정적 학습</td>
+      </tr>
+      <tr>
+          <td><strong>Velocity Head</strong></td>
+          <td>두 연속 프레임의 중심 이동량을 직접 회귀. Kalman filter 없이 추적 가능하게 함</td>
+      </tr>
+      <tr>
+          <td><strong>Greedy Closest-Point Matching</strong></td>
+          <td>velocity로 역투영한 중심점과 이전 tracklet 중심점 간 최소 거리로 추적. 1ms의 극단적 속도</td>
+      </tr>
+      <tr>
+          <td><strong>Two-Stage Refinement</strong></td>
+          <td>박스 면 중심점 피처로 confidence 재추정 + box 보정. 추가 비용 5-8ms로 성능 향상</td>
+      </tr>
+      <tr>
+          <td><strong>IoU-guided Score</strong></td>
+          <td>2단계 confidence를 박스-GT IoU로 직접 지도. NMS 없이도 품질 반영 가능</td>
+      </tr>
+      <tr>
+          <td><strong>VoxelNet / PointPillars</strong></td>
+          <td>CenterPoint가 지원하는 3D 인코더. CenterPoint는 출력 표현(head)만 바꾸므로 어떤 인코더와도 호환</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="7-결론-및-시사점">7. 결론 및 시사점<a class="anchor" href="#7-%ea%b2%b0%eb%a1%a0-%eb%b0%8f-%ec%8b%9c%ec%82%ac%ec%a0%90">#</a></h2>
+<p><strong>CenterPoint의 의의</strong>:</p>
+<ul>
+<li>3D 탐지를 <strong>keypoint estimation으로 재정의</strong> — 방향 불변성, 단순한 파이프라인</li>
+<li>anchor → center 전환만으로 3-4 mAPH 향상, 회전 객체에서 특히 강함</li>
+<li>추적을 1ms greedy matching으로 단순화하면서 SOTA 추적 성능 달성</li>
+<li>VoxelNet·PointPillars 어느 backbone과도 호환 — plug-in head로 설계</li>
+</ul>
+<p><strong>자율주행 로드맵 내 위치</strong>:</p>
+<ul>
+<li><strong>BEVFusion의 LiDAR 브랜치 선행 연구</strong>: BEVFusion은 카메라 BEV + LiDAR BEV를 융합하는데, LiDAR BEV 처리에 CenterPoint 구조를 직접 차용</li>
+<li><strong>UniAD·VAD의 인식 upstream</strong>: E2E 계획 논문들이 탐지 결과를 downstream으로 받을 때 CenterPoint를 perception 기준으로 사용</li>
+<li>LiDAR 기반 3D 탐지의 사실상 표준 baseline으로, 이후 대부분의 비교 논문에서 참조됨</li>
+</ul>
+<p><strong>한계</strong>:</p>
+<ul>
+<li>LiDAR 전용 — 카메라 전용 또는 카메라+LiDAR 융합 탐지에는 직접 적용 불가</li>
+<li>PointPillars 백본 사용 시 보행자처럼 1픽셀 크기의 객체에서 2단계 정제 효과 제한적 (양자화 한계)</li>
+<li>velocity 예측이 비선형 기동(급회전 등)에서는 부정확할 수 있음</li>
+</ul>
+<hr>
+<p><em>관련 논문: <a href="/posts/papers/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/">PointNet</a>, <a href="/posts/papers/pointpillars-fast-encoders-object-detection-point-clouds/">PointPillars</a>, <a href="/posts/papers/bevfusion-multi-task-multi-sensor-fusion/">BEVFusion</a>, <a href="/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/">nuScenes</a>, <a href="/posts/papers/waymo-open-dataset/">Waymo Open Dataset</a></em></p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/paper/docs/pointpillars-fast-encoders-object-detection-point-clouds/" class="flex align-center">
+        <img src="/paper/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>PointPillars: Fast Encoders for Object Detection from Point Clouds</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/paper/docs/monoscene-monocular-3d-semantic-scene-completion/" class="flex align-center">
+        <span>MonoScene: Monocular 3D Semantic Scene Completion</span>
+        <img src="/paper/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#3-preliminaries">3. Preliminaries</a>
+      <ul>
+        <li><a href="#2d-centernet">2D CenterNet</a></li>
+        <li><a href="#3d-detection-문제-정의">3D Detection 문제 정의</a></li>
+      </ul>
+    </li>
+    <li><a href="#4-centerpoint">4. CenterPoint</a>
+      <ul>
+        <li><a href="#전체-파이프라인">전체 파이프라인</a></li>
+        <li><a href="#center-heatmap-head">Center Heatmap Head</a></li>
+        <li><a href="#regression-heads">Regression Heads</a></li>
+        <li><a href="#velocity-head와-추적">Velocity Head와 추적</a></li>
+        <li><a href="#41-two-stage-centerpoint">4.1 Two-Stage CenterPoint</a></li>
+      </ul>
+    </li>
+    <li><a href="#5-experiments">5. Experiments</a>
+      <ul>
+        <li><a href="#51-주요-결과">5.1 주요 결과</a></li>
+        <li><a href="#52-ablation-결과">5.2 Ablation 결과</a></li>
+      </ul>
+    </li>
+    <li><a href="#6-핵심-개념-정리">6. 핵심 개념 정리</a></li>
+    <li><a href="#7-결론-및-시사점">7. 결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

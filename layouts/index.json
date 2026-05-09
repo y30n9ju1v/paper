@@ -1,0 +1,26 @@
+{{- $pages := where .Site.RegularPages "Type" "docs" -}}
+{{- $nodes := slice -}}
+{{- $links := slice -}}
+
+{{- range $pages -}}
+  {{- $path := .File.Dir -}}
+  {{- $cat := "" -}}
+  {{- if in $path "deep-learning" }}{{- $cat = "deep-learning" -}}
+  {{- else if in $path "novel-view-synthesis" }}{{- $cat = "novel-view-synthesis" -}}
+  {{- else if in $path "generative-models" }}{{- $cat = "generative-models" -}}
+  {{- else if in $path "perception" }}{{- $cat = "perception" -}}
+  {{- else if in $path "simulation" }}{{- $cat = "simulation" -}}
+  {{- else if in $path "planning" }}{{- $cat = "planning" -}}
+  {{- else if in $path "dataset" }}{{- $cat = "dataset" -}}
+  {{- end -}}
+  {{- $slug := .File.ContentBaseName -}}
+  {{- $node := dict "id" $slug "title" .Title "category" $cat "year" (.Params.year | default 0) "url" .RelPermalink -}}
+  {{- $nodes = $nodes | append $node -}}
+
+  {{- range .Params.references -}}
+    {{- $link := dict "source" $slug "target" . -}}
+    {{- $links = $links | append $link -}}
+  {{- end -}}
+{{- end -}}
+
+{{- dict "nodes" $nodes "links" $links | jsonify -}}

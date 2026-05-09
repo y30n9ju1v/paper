@@ -5,6 +5,8 @@ draft: false
 categories: ["Papers", "Autonomous Driving", "Benchmark & Dataset"]
 tags: ["Autonomous Driving", "Benchmark", "Closed-Loop", "Planning", "Dataset"]
 year: 2022
+references:
+  - "nuscenes-multimodal-dataset-autonomous-driving"
 ---
 
 ## 개요

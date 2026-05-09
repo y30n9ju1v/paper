@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="ko-KR" dir="ltr">
+<head><script src="/paper/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=paper/livereload" data-no-instant defer></script>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="개요# 저자: Alex H. Lang, Sourabh Vora, Holger Caesar, Lubing Zhou, Jiong Yang, Oscar Beijbom (nuTonomy / APTIV) 발행년도: 2019 (arXiv 2018, CVPR 2019) 논문: arXiv:1812.05784 코드: github.com/nutonomy/second.pytorch 주요 내용: LiDAR 포인트 클라우드를 **수직 기둥(pillar)**으로 조직화하고 PointNet으로 피처를 학습하여 2D CNN만으로 3D 객체 탐지를 수행하는 인코더. 62Hz의 실시간 처리 속도로 KITTI 벤치마크 SOTA 달성 한계 극복# 기존 한계 1 — 3D 컨볼루션의 속도 문제: VoxelNet은 3D voxel별 PointNet &#43; 3D Conv를 사용하여 정확하지만 4.4Hz로 실시간 불가. SECOND가 희소 3D Conv로 20Hz까지 개선했지만 여전히 느림 기존 한계 2 — 고정 인코더의 표현력 한계: PIXOR, MV3D, Complex-YOLO 등은 수작업(hand-crafted) 피처 인코더를 사용. 새로운 포인트 클라우드 설정에 일반화 어려움 기존 한계 3 — Z축 binning 파라미터 튜닝: voxel 방식은 수직 방향 bin 크기를 수동 설정해야 함 이 논문의 접근 방식: 포인트 클라우드를 **pillar(수직 기둥)**로 분할 → PointNet으로 학습된 피처 인코딩 → 2D pseudo-image로 scatter → 표준 2D CNN &#43; SSD head. 3D Conv 완전 제거로 속도 62Hz 달성 목차# Introduction PointPillars Network 2.1 Pointcloud to Pseudo-Image (Pillar Feature Net) 2.2 Backbone (2D CNN) 2.3 Detection Head (SSD) Implementation Details Experimental Setup Results Realtime Inference Ablation Studies 2. PointPillars Network# 전체 파이프라인# 입력: LiDAR 포인트 클라우드 │ ▼ [Pillar Feature Net] 포인트 클라우드 → Stacked Pillars 텐서 (D, P, N) → 간소화된 PointNet (Linear &#43; BN &#43; ReLU &#43; MaxPool) → Learned Features (C, P) → 2D pseudo-image (C, H, W)로 scatter │ ▼ [Backbone (2D CNN)] Top-down 다중 스케일 피처 추출 → Upsampling &#43; Concatenation │ ▼ [Detection Head (SSD)] Anchor 기반 3D 바운딩 박스 회귀 &#43; 분류 │ ▼ 출력: 3D 회전 바운딩 박스 (차량, 보행자, 자전거)2.1 Pointcloud to Pseudo-Image# Step 1 — Pillar 생성
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/paper/docs/pointpillars-fast-encoders-object-detection-point-clouds/">
+  <meta property="og:site_name" content="Paper">
+  <meta property="og:title" content="PointPillars: Fast Encoders for Object Detection from Point Clouds">
+  <meta property="og:description" content="개요# 저자: Alex H. Lang, Sourabh Vora, Holger Caesar, Lubing Zhou, Jiong Yang, Oscar Beijbom (nuTonomy / APTIV) 발행년도: 2019 (arXiv 2018, CVPR 2019) 논문: arXiv:1812.05784 코드: github.com/nutonomy/second.pytorch 주요 내용: LiDAR 포인트 클라우드를 **수직 기둥(pillar)**으로 조직화하고 PointNet으로 피처를 학습하여 2D CNN만으로 3D 객체 탐지를 수행하는 인코더. 62Hz의 실시간 처리 속도로 KITTI 벤치마크 SOTA 달성 한계 극복# 기존 한계 1 — 3D 컨볼루션의 속도 문제: VoxelNet은 3D voxel별 PointNet &#43; 3D Conv를 사용하여 정확하지만 4.4Hz로 실시간 불가. SECOND가 희소 3D Conv로 20Hz까지 개선했지만 여전히 느림 기존 한계 2 — 고정 인코더의 표현력 한계: PIXOR, MV3D, Complex-YOLO 등은 수작업(hand-crafted) 피처 인코더를 사용. 새로운 포인트 클라우드 설정에 일반화 어려움 기존 한계 3 — Z축 binning 파라미터 튜닝: voxel 방식은 수직 방향 bin 크기를 수동 설정해야 함 이 논문의 접근 방식: 포인트 클라우드를 **pillar(수직 기둥)**로 분할 → PointNet으로 학습된 피처 인코딩 → 2D pseudo-image로 scatter → 표준 2D CNN &#43; SSD head. 3D Conv 완전 제거로 속도 62Hz 달성 목차# Introduction PointPillars Network 2.1 Pointcloud to Pseudo-Image (Pillar Feature Net) 2.2 Backbone (2D CNN) 2.3 Detection Head (SSD) Implementation Details Experimental Setup Results Realtime Inference Ablation Studies 2. PointPillars Network# 전체 파이프라인# 입력: LiDAR 포인트 클라우드 │ ▼ [Pillar Feature Net] 포인트 클라우드 → Stacked Pillars 텐서 (D, P, N) → 간소화된 PointNet (Linear &#43; BN &#43; ReLU &#43; MaxPool) → Learned Features (C, P) → 2D pseudo-image (C, H, W)로 scatter │ ▼ [Backbone (2D CNN)] Top-down 다중 스케일 피처 추출 → Upsampling &#43; Concatenation │ ▼ [Detection Head (SSD)] Anchor 기반 3D 바운딩 박스 회귀 &#43; 분류 │ ▼ 출력: 3D 회전 바운딩 박스 (차량, 보행자, 자전거)2.1 Pointcloud to Pseudo-Image# Step 1 — Pillar 생성">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:published_time" content="2026-04-19T22:30:00+09:00">
+    <meta property="article:modified_time" content="2026-04-19T22:30:00+09:00">
+    <meta property="article:tag" content="LiDAR">
+    <meta property="article:tag" content="Point Cloud">
+    <meta property="article:tag" content="3D Detection">
+    <meta property="article:tag" content="BEV">
+    <meta property="article:tag" content="Real-Time">
+
+
+  <meta itemprop="name" content="PointPillars: Fast Encoders for Object Detection from Point Clouds">
+  <meta itemprop="description" content="개요# 저자: Alex H. Lang, Sourabh Vora, Holger Caesar, Lubing Zhou, Jiong Yang, Oscar Beijbom (nuTonomy / APTIV) 발행년도: 2019 (arXiv 2018, CVPR 2019) 논문: arXiv:1812.05784 코드: github.com/nutonomy/second.pytorch 주요 내용: LiDAR 포인트 클라우드를 **수직 기둥(pillar)**으로 조직화하고 PointNet으로 피처를 학습하여 2D CNN만으로 3D 객체 탐지를 수행하는 인코더. 62Hz의 실시간 처리 속도로 KITTI 벤치마크 SOTA 달성 한계 극복# 기존 한계 1 — 3D 컨볼루션의 속도 문제: VoxelNet은 3D voxel별 PointNet &#43; 3D Conv를 사용하여 정확하지만 4.4Hz로 실시간 불가. SECOND가 희소 3D Conv로 20Hz까지 개선했지만 여전히 느림 기존 한계 2 — 고정 인코더의 표현력 한계: PIXOR, MV3D, Complex-YOLO 등은 수작업(hand-crafted) 피처 인코더를 사용. 새로운 포인트 클라우드 설정에 일반화 어려움 기존 한계 3 — Z축 binning 파라미터 튜닝: voxel 방식은 수직 방향 bin 크기를 수동 설정해야 함 이 논문의 접근 방식: 포인트 클라우드를 **pillar(수직 기둥)**로 분할 → PointNet으로 학습된 피처 인코딩 → 2D pseudo-image로 scatter → 표준 2D CNN &#43; SSD head. 3D Conv 완전 제거로 속도 62Hz 달성 목차# Introduction PointPillars Network 2.1 Pointcloud to Pseudo-Image (Pillar Feature Net) 2.2 Backbone (2D CNN) 2.3 Detection Head (SSD) Implementation Details Experimental Setup Results Realtime Inference Ablation Studies 2. PointPillars Network# 전체 파이프라인# 입력: LiDAR 포인트 클라우드 │ ▼ [Pillar Feature Net] 포인트 클라우드 → Stacked Pillars 텐서 (D, P, N) → 간소화된 PointNet (Linear &#43; BN &#43; ReLU &#43; MaxPool) → Learned Features (C, P) → 2D pseudo-image (C, H, W)로 scatter │ ▼ [Backbone (2D CNN)] Top-down 다중 스케일 피처 추출 → Upsampling &#43; Concatenation │ ▼ [Detection Head (SSD)] Anchor 기반 3D 바운딩 박스 회귀 &#43; 분류 │ ▼ 출력: 3D 회전 바운딩 박스 (차량, 보행자, 자전거)2.1 Pointcloud to Pseudo-Image# Step 1 — Pillar 생성">
+  <meta itemprop="datePublished" content="2026-04-19T22:30:00+09:00">
+  <meta itemprop="dateModified" content="2026-04-19T22:30:00+09:00">
+  <meta itemprop="wordCount" content="1261">
+  <meta itemprop="keywords" content="LiDAR,Point Cloud,3D Detection,BEV,Real-Time">
+
+<title>PointPillars: Fast Encoders for Object Detection from Point Clouds | Paper</title>
+<link rel="icon" href="/paper/favicon.png" >
+<link rel="manifest" href="/paper/manifest.json">
+<link rel="canonical" href="http://localhost:1313/paper/docs/pointpillars-fast-encoders-object-detection-point-clouds/">
+<link rel="stylesheet" href="/paper/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/paper/fuse.min.js"></script>
+  <script defer src="/paper/en.search.min.136303f53f731e7f187e59dca354807444ce24732e128843ea97e041d47b7d93.js" integrity="sha256-E2MD9T9zHn8Yflnco1SAdETOJHMuEohD6pfgQdR7fZM=" crossorigin="anonymous"></script>
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '\\[', right: '\\]', display: true},
+      {left: '\\(', right: '\\)', display: false},
+      {left: '$', right: '$', display: false}
+    ]
+  });
+});
+</script>
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/paper/"><span>Paper</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/controlnet-adding-conditional-control-to-text-to-image-diffusion-models/" class="">
+      ControlNet: Adding Conditional Control to Text-to-Image Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/clip-learning-transferable-visual-models-from-natural-language-supervision/" class="">
+      CLIP: Learning Transferable Visual Models From Natural Language Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointnet-plus-plus-deep-hierarchical-feature-learning/" class="">
+      PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/" class="">
+      GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/lidarsim-realistic-lidar-simulation-by-leveraging-the-real-world/" class="">
+      LiDARsim: Realistic LiDAR Simulation by Leveraging the Real World</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vit-an-image-is-worth-16x16-words/" class="">
+      ViT: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/resnet-deep-residual-learning-for-image-recognition/" class="">
+      ResNet: Deep Residual Learning for Image Recognition</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/" class="">
+      StreamMapNet: Streaming Mapping Network for Vectorized Online HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vectormapnet-end-to-end-vectorized-hd-map-learning/" class="">
+      VectorMapNet: End-to-end Vectorized HD Map Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/detr-end-to-end-object-detection-with-transformers/" class="">
+      DETR: End-to-End Object Detection with Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/attention-is-all-you-need/" class="">
+      Attention Is All You Need</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/maptr-structured-modeling-online-vectorized-hd-map-construction/" class="">
+      MapTR: Structured Modeling and Learning for Online Vectorized HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/high-resolution-image-synthesis-with-latent-diffusion-models/" class="">
+      High-Resolution Image Synthesis with Latent Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/proximal-policy-optimization/" class="">
+      Proximal Policy Optimization Algorithms (PPO)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/denoising-diffusion-probabilistic-models/" class="">
+      Denoising Diffusion Probabilistic Models (DDPM)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/" class="">
+      PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointpillars-fast-encoders-object-detection-point-clouds/" class="active">
+      PointPillars: Fast Encoders for Object Detection from Point Clouds</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/centerpoint-center-based-3d-object-detection-and-tracking/" class="">
+      CenterPoint: Center-based 3D Object Detection and Tracking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/monoscene-monocular-3d-semantic-scene-completion/" class="">
+      MonoScene: Monocular 3D Semantic Scene Completion</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/tpvformer-tri-perspective-view-3d-semantic-occupancy/" class="">
+      TPVFormer: Tri-Perspective View for Vision-Based 3D Semantic Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/drivearena/" class="">
+      DriveArena: A Closed-loop Generative Simulation Platform for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/neurad-neural-rendering-for-autonomous-driving/" class="">
+      NeuRAD: Neural Rendering for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/omnire-omni-urban-scene-reconstruction/" class="">
+      OmniRe: Omni Urban Scene Reconstruction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/magicdrive-street-view-generation-3d-geometry-control/" class="">
+      MagicDrive: Street View Generation with Diverse 3D Geometry Control</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/surroundocc/" class="">
+      SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/drivedreamer/" class="">
+      DriveDreamer: Towards Real-world-driven World Models for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/street-gaussians-modeling-dynamic-urban-scenes/" class="">
+      Street Gaussians: Modeling Dynamic Urban Scenes with Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bench2drive-multi-ability-benchmarking-e2e-autonomous-driving/" class="">
+      Bench2Drive: Towards Multi-Ability Benchmarking of Closed-Loop End-To-End Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/emernerf/" class="">
+      EmerNeRF: Emergent Spatial-Temporal Scene Decomposition via Self-Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/detr3d-3d-object-detection-multi-view-images/" class="">
+      DETR3D: 3D Object Detection from Multi-view Images via 3D-to-2D Queries</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/occ3d-large-scale-3d-occupancy-prediction-benchmark/" class="">
+      Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/unisim-neural-closed-loop-sensor-simulator/" class="">
+      UniSim: A Neural Closed-Loop Sensor Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevfusion-multi-task-multi-sensor-fusion/" class="">
+      BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/instant-ngp-multiresolution-hash-encoding/" class="">
+      Instant Neural Graphics Primitives with a Multiresolution Hash Encoding</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/lift-splat-shoot/" class="">
+      Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevdepth/" class="">
+      BEVDepth: Acquisition of Reliable Depth for Multi-view 3D Object Detection</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/4d-gaussian-splatting/" class="">
+      4D Gaussian Splatting for Real-Time Dynamic Scene Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/gaia-1/" class="">
+      GAIA-1: A Generative World Model for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/dqn-playing-atari-with-deep-reinforcement-learning/" class="">
+      Playing Atari with Deep Reinforcement Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevformer/" class="">
+      BEVFormer: Learning Bird&#39;s-Eye-View Representation from Multi-Camera Images via Spatiotemporal Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/navsim/" class="">
+      NAVSIM: Data-Driven Non-Reactive Autonomous Vehicle Simulation and Benchmarking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nuplan/" class="">
+      nuPlan: A closed-loop ML-based planning benchmark for autonomous vehicles</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/transfuser/" class="">
+      TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3d-gaussian-splatting/" class="">
+      3D Gaussian Splatting for Real-Time Radiance Field Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/driving-gaussian-composite-gaussian-splatting/" class="">
+      DrivingGaussian: Composite Gaussian Splatting for Surrounding Dynamic Autonomous Driving Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3d-gaussian-ray-tracing/" class="">
+      3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/" class="">
+      3DGUT: Enabling Distorted Cameras and Secondary Rays in Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/carla-an-open-urban-driving-simulator/" class="">
+      CARLA: An Open Urban Driving Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/difix3d-plus/" class="">
+      DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/hugsim-real-time-photorealistic-closed-loop-simulator/" class="">
+      HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/" class="">
+      NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nuscenes-multimodal-dataset-autonomous-driving/" class="">
+      nuScenes: A Multimodal Dataset for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/waymo-open-dataset/" class="">
+      Scalability in Perception for Autonomous Driving: Waymo Open Dataset</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/uniad-planning-oriented-autonomous-driving/" class="">
+      UniAD: Planning-oriented Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vad/" class="">
+      VAD: Vectorized Scene Representation for Efficient Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/paper/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>PointPillars: Fast Encoders for Object Detection from Point Clouds</h3>
+
+  <label for="toc-control">
+    
+    <img src="/paper/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#2-pointpillars-network">2. PointPillars Network</a>
+      <ul>
+        <li><a href="#전체-파이프라인">전체 파이프라인</a></li>
+        <li><a href="#21-pointcloud-to-pseudo-image">2.1 Pointcloud to Pseudo-Image</a></li>
+        <li><a href="#22-backbone-2d-cnn">2.2 Backbone (2D CNN)</a></li>
+        <li><a href="#23-detection-head-ssd">2.3 Detection Head (SSD)</a></li>
+      </ul>
+    </li>
+    <li><a href="#5-주요-결과">5. 주요 결과</a>
+      <ul>
+        <li><a href="#kitti-test-bev-detection-benchmark">KITTI test BEV Detection benchmark</a></li>
+        <li><a href="#kitti-test-3d-detection-benchmark">KITTI test 3D Detection benchmark</a></li>
+        <li><a href="#인코더-유형별-비교-kitti-val-bev-map">인코더 유형별 비교 (KITTI val BEV mAP)</a></li>
+      </ul>
+    </li>
+    <li><a href="#6-realtime-inference-분석">6. Realtime Inference 분석</a></li>
+    <li><a href="#7-ablation-studies-요약">7. Ablation Studies 요약</a></li>
+    <li><a href="#8-핵심-개념-정리">8. 핵심 개념 정리</a></li>
+    <li><a href="#9-결론-및-시사점">9. 결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h2 id="개요">개요<a class="anchor" href="#%ea%b0%9c%ec%9a%94">#</a></h2>
+<ul>
+<li><strong>저자</strong>: Alex H. Lang, Sourabh Vora, Holger Caesar, Lubing Zhou, Jiong Yang, Oscar Beijbom (nuTonomy / APTIV)</li>
+<li><strong>발행년도</strong>: 2019 (arXiv 2018, CVPR 2019)</li>
+<li><strong>논문</strong>: <a href="https://arxiv.org/abs/1812.05784">arXiv:1812.05784</a></li>
+<li><strong>코드</strong>: <a href="https://github.com/nutonomy/second.pytorch">github.com/nutonomy/second.pytorch</a></li>
+<li><strong>주요 내용</strong>: LiDAR 포인트 클라우드를 **수직 기둥(pillar)**으로 조직화하고 PointNet으로 피처를 학습하여 <strong>2D CNN만으로</strong> 3D 객체 탐지를 수행하는 인코더. 62Hz의 실시간 처리 속도로 KITTI 벤치마크 SOTA 달성</li>
+</ul>
+<hr>
+<h2 id="한계-극복">한계 극복<a class="anchor" href="#%ed%95%9c%ea%b3%84-%ea%b7%b9%eb%b3%b5">#</a></h2>
+<ul>
+<li><strong>기존 한계 1 — 3D 컨볼루션의 속도 문제</strong>: VoxelNet은 3D voxel별 PointNet + 3D Conv를 사용하여 정확하지만 4.4Hz로 실시간 불가. SECOND가 희소 3D Conv로 20Hz까지 개선했지만 여전히 느림</li>
+<li><strong>기존 한계 2 — 고정 인코더의 표현력 한계</strong>: PIXOR, MV3D, Complex-YOLO 등은 수작업(hand-crafted) 피처 인코더를 사용. 새로운 포인트 클라우드 설정에 일반화 어려움</li>
+<li><strong>기존 한계 3 — Z축 binning 파라미터 튜닝</strong>: voxel 방식은 수직 방향 bin 크기를 수동 설정해야 함</li>
+<li><strong>이 논문의 접근 방식</strong>: 포인트 클라우드를 **pillar(수직 기둥)**로 분할 → PointNet으로 학습된 피처 인코딩 → 2D pseudo-image로 scatter → 표준 2D CNN + SSD head. 3D Conv 완전 제거로 속도 62Hz 달성</li>
+</ul>
+<hr>
+<h2 id="목차">목차<a class="anchor" href="#%eb%aa%a9%ec%b0%a8">#</a></h2>
+<ol>
+<li>Introduction</li>
+<li>PointPillars Network
+<ul>
+<li>2.1 Pointcloud to Pseudo-Image (Pillar Feature Net)</li>
+<li>2.2 Backbone (2D CNN)</li>
+<li>2.3 Detection Head (SSD)</li>
+</ul>
+</li>
+<li>Implementation Details</li>
+<li>Experimental Setup</li>
+<li>Results</li>
+<li>Realtime Inference</li>
+<li>Ablation Studies</li>
+</ol>
+<hr>
+<h2 id="2-pointpillars-network">2. PointPillars Network<a class="anchor" href="#2-pointpillars-network">#</a></h2>
+<h3 id="전체-파이프라인">전체 파이프라인<a class="anchor" href="#%ec%a0%84%ec%b2%b4-%ed%8c%8c%ec%9d%b4%ed%94%84%eb%9d%bc%ec%9d%b8">#</a></h3>
+<pre tabindex="0"><code>입력: LiDAR 포인트 클라우드
+         │
+         ▼
+[Pillar Feature Net]
+  포인트 클라우드 → Stacked Pillars 텐서 (D, P, N)
+  → 간소화된 PointNet (Linear + BN + ReLU + MaxPool)
+  → Learned Features (C, P)
+  → 2D pseudo-image (C, H, W)로 scatter
+         │
+         ▼
+[Backbone (2D CNN)]
+  Top-down 다중 스케일 피처 추출
+  → Upsampling + Concatenation
+         │
+         ▼
+[Detection Head (SSD)]
+  Anchor 기반 3D 바운딩 박스 회귀 + 분류
+         │
+         ▼
+출력: 3D 회전 바운딩 박스 (차량, 보행자, 자전거)</code></pre><h3 id="21-pointcloud-to-pseudo-image">2.1 Pointcloud to Pseudo-Image<a class="anchor" href="#21-pointcloud-to-pseudo-image">#</a></h3>
+<p><strong>Step 1 — Pillar 생성</strong></p>
+<p>포인트 클라우드를 x-y 평면에 고정 간격(기본 0.16m × 0.16m) 그리드로 분할합니다. 각 그리드 셀이 하나의 <strong>pillar</strong>입니다.</p>
+<ul>
+<li>z축 binning <strong>불필요</strong> — pillar는 바닥부터 하늘까지 수직으로 무한 확장</li>
+<li>빈 pillar는 대부분(~97%)으로, 비어 있지 않은 pillar만 처리</li>
+</ul>
+<p><strong>Step 2 — 포인트 장식(decoration)</strong></p>
+<p>각 pillar 안의 포인트 $l$에 9차원 피처 벡터를 부여합니다:</p>
+$$l = (x,\ y,\ z,\ r,\ x_c,\ y_c,\ z_c,\ x_p,\ y_p)$$<p><strong>변수 설명</strong>:</p>
+<ul>
+<li><strong>$(x, y, z)$</strong>: 포인트의 3D 좌표</li>
+<li><strong>$r$</strong>: 반사율(reflectance)</li>
+<li><strong>$(x_c, y_c, z_c)$</strong>: 포인트와 pillar 내 모든 포인트의 <strong>산술 평균</strong> 간의 거리 — 포인트가 pillar 중심에서 얼마나 떨어져 있는지</li>
+<li><strong>$(x_p, y_p)$</strong>: 포인트와 pillar의 <strong>x, y 중심</strong> 간의 오프셋</li>
+</ul>
+<p><strong>직관</strong>: 원본 좌표만 쓰면 pillar 내에서 포인트의 상대 위치를 알 수 없습니다. $x_c, y_c, z_c$는 포인트가 객체 표면의 어느 부분에 있는지(중심부 vs 가장자리), $x_p, y_p$는 pillar 격자 내에서 정확한 위치를 제공합니다.</p>
+<p><strong>텐서 구성</strong>: 샘플당 최대 $P$개 비어 있지 않은 pillar, pillar당 최대 $N$개 포인트 → $(D, P, N) = (9, 12000, 100)$ 크기 텐서. 넘치면 랜덤 샘플링, 모자라면 zero padding.</p>
+<p><strong>Step 3 — PointNet으로 피처 학습</strong></p>
+<p>간소화된 PointNet (단일 Linear layer):</p>
+$$\text{Linear}(D \to C) \to \text{BatchNorm} \to \text{ReLU} \to \text{MaxPool over } N$$<p>출력: $(C, P)$ 크기 피처 텐서 (pillar당 하나의 $C$차원 벡터)</p>
+<p><strong>Step 4 — Pseudo-image로 scatter</strong></p>
+<p>각 pillar의 피처 벡터를 원래 x-y 위치에 배치 → $(C, H, W)$ 크기의 <strong>2D pseudo-image</strong> 생성</p>
+<p>이후 모든 연산은 표준 2D CNN — GPU 효율 극대화.</p>
+<h3 id="22-backbone-2d-cnn">2.2 Backbone (2D CNN)<a class="anchor" href="#22-backbone-2d-cnn">#</a></h3>
+<p>FPN(Feature Pyramid Network) 스타일의 top-down + upsampling 구조:</p>
+<pre tabindex="0"><code>Pseudo-image (C, H, W)
+    │
+    ├─ Block1(S=2, L, 4C) — stride 2로 다운샘플 + L개 3×3 Conv
+    ├─ Block2(S=4, L, 2C) — stride 4
+    └─ Block3(S=8, L, 2C) — stride 8
+         │
+    Up1(S→1, 2C), Up2(S→1, 2C), Up3(S→1, 2C)  — transposed conv로 업샘플
+         │
+    Concat → 6C 채널 피처맵</code></pre><ul>
+<li><strong>Block(S, L, F)</strong>: 스트라이드 $S$, $L$개 레이어, $F$ 출력 채널</li>
+<li>서로 다른 스케일의 피처를 업샘플하여 합침 → 다중 스케일 맥락 통합</li>
+</ul>
+<h3 id="23-detection-head-ssd">2.3 Detection Head (SSD)<a class="anchor" href="#23-detection-head-ssd">#</a></h3>
+<p>Single Shot Detector(SSD) 방식으로 anchor 기반 3D 박스를 예측합니다.</p>
+<p><strong>Anchor 설계</strong>:</p>
+<ul>
+<li>차량: 1.6×3.9×1.5m, z=-1m, 0°/90° 두 방향</li>
+<li>보행자: 0.6×0.8×1.73m, z=-0.6m</li>
+<li>자전거: 0.6×1.76×1.73m, z=-0.6m</li>
+</ul>
+<p><strong>Localization 회귀 타겟</strong>:</p>
+$$\Delta x = \frac{x^{gt} - x^a}{d^a}, \quad \Delta y = \frac{y^{gt} - y^a}{d^a}, \quad \Delta z = \frac{z^{gt} - z^a}{h^a}$$$$\Delta w = \log\frac{w^{gt}}{w^a}, \quad \Delta l = \log\frac{l^{gt}}{l^a}, \quad \Delta h = \log\frac{h^{gt}}{h^a}$$$$\Delta\theta = \sin(\theta^{gt} - \theta^a)$$<p><strong>수식 설명</strong>:</p>
+<ul>
+<li><strong>위치 $(x, y, z)$</strong>: GT와 anchor 간 차이를 대각선 크기 $d^a = \sqrt{(w^a)^2 + (l^a)^2}$로 정규화 → 스케일 불변</li>
+<li><strong>크기 $(w, l, h)$</strong>: log 스케일로 회귀 → 다양한 크기 객체를 균일하게 학습</li>
+<li><strong>각도 $\theta$</strong>: $\sin$ 변환으로 $[-\pi, \pi]$ 범위를 연속적으로 표현</li>
+<li><strong>$\Delta\theta$ 한계</strong>: $\sin$은 $0°$와 $180°$를 구분 못함 → 별도 방향 분류 손실 $\mathcal{L}_{dir}$ 추가</li>
+</ul>
+<p><strong>총 손실</strong>:</p>
+$$\mathcal{L} = \frac{1}{N_{pos}} \left(\beta_{loc}\mathcal{L}_{loc} + \beta_{cls}\mathcal{L}_{cls} + \beta_{dir}\mathcal{L}_{dir}\right)$$$$\mathcal{L}_{cls} = -\alpha_a (1-p^a)^\gamma \log p^a \quad \text{(Focal Loss)}$$<p><strong>수식 설명</strong>:</p>
+<ul>
+<li><strong>$N_{pos}$</strong>: positive anchor 수 — 배치당 positive 비율 차이를 정규화</li>
+<li><strong>$\mathcal{L}_{loc}$</strong>: SmoothL1 로컬라이제이션 손실</li>
+<li><strong>$\mathcal{L}_{cls}$</strong>: Focal Loss — 쉬운 배경 anchor의 기여를 $(1-p^a)^\gamma$로 억제 ($\alpha=0.25, \gamma=2$)</li>
+<li><strong>$\mathcal{L}_{dir}$</strong>: softmax 기반 방향 분류 손실 ($\beta_{loc}=2, \beta_{cls}=1, \beta_{dir}=0.2$)</li>
+</ul>
+<hr>
+<h2 id="5-주요-결과">5. 주요 결과<a class="anchor" href="#5-%ec%a3%bc%ec%9a%94-%ea%b2%b0%ea%b3%bc">#</a></h2>
+<h3 id="kitti-test-bev-detection-benchmark">KITTI test BEV Detection benchmark<a class="anchor" href="#kitti-test-bev-detection-benchmark">#</a></h3>
+<table>
+  <thead>
+      <tr>
+          <th>방법</th>
+          <th>입력</th>
+          <th>Speed(Hz)</th>
+          <th>mAP</th>
+          <th>Car Mod.</th>
+          <th>Ped Mod.</th>
+          <th>Cyclist Mod.</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>VoxelNet</td>
+          <td>Lidar</td>
+          <td>4.4</td>
+          <td>58.25</td>
+          <td>79.26</td>
+          <td>40.74</td>
+          <td>54.76</td>
+      </tr>
+      <tr>
+          <td>SECOND</td>
+          <td>Lidar</td>
+          <td>20</td>
+          <td>60.56</td>
+          <td>79.37</td>
+          <td>46.27</td>
+          <td>56.04</td>
+      </tr>
+      <tr>
+          <td><strong>PointPillars</strong></td>
+          <td><strong>Lidar</strong></td>
+          <td><strong>62</strong></td>
+          <td><strong>66.19</strong></td>
+          <td><strong>86.10</strong></td>
+          <td><strong>50.23</strong></td>
+          <td><strong>62.25</strong></td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="kitti-test-3d-detection-benchmark">KITTI test 3D Detection benchmark<a class="anchor" href="#kitti-test-3d-detection-benchmark">#</a></h3>
+<table>
+  <thead>
+      <tr>
+          <th>방법</th>
+          <th>입력</th>
+          <th>Speed(Hz)</th>
+          <th>mAP</th>
+          <th>Car Mod.</th>
+          <th>Ped Mod.</th>
+          <th>Cyclist Mod.</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>VoxelNet</td>
+          <td>Lidar</td>
+          <td>4.4</td>
+          <td>49.05</td>
+          <td>65.11</td>
+          <td>33.69</td>
+          <td>48.36</td>
+      </tr>
+      <tr>
+          <td>SECOND</td>
+          <td>Lidar</td>
+          <td>20</td>
+          <td>56.69</td>
+          <td>76.48</td>
+          <td>46.27</td>
+          <td>56.04</td>
+      </tr>
+      <tr>
+          <td><strong>PointPillars</strong></td>
+          <td><strong>Lidar</strong></td>
+          <td><strong>62</strong></td>
+          <td><strong>59.20</strong></td>
+          <td><strong>74.99</strong></td>
+          <td><strong>52.08</strong></td>
+          <td><strong>75.78</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p>→ <strong>LiDAR only</strong> 방법 중 속도와 정확도 모두 1위. 일부 fusion(LiDAR+카메라) 방법도 능가</p>
+<h3 id="인코더-유형별-비교-kitti-val-bev-map">인코더 유형별 비교 (KITTI val BEV mAP)<a class="anchor" href="#%ec%9d%b8%ec%bd%94%eb%8d%94-%ec%9c%a0%ed%98%95%eb%b3%84-%eb%b9%84%ea%b5%90-kitti-val-bev-map">#</a></h3>
+<table>
+  <thead>
+      <tr>
+          <th>인코더</th>
+          <th>유형</th>
+          <th>$0.16^2$</th>
+          <th>$0.20^2$</th>
+          <th>$0.24^2$</th>
+          <th>$0.28^2$</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>MV3D</td>
+          <td>Fixed</td>
+          <td>72.8</td>
+          <td>71.0</td>
+          <td>70.8</td>
+          <td>67.6</td>
+      </tr>
+      <tr>
+          <td>PIXOR</td>
+          <td>Fixed</td>
+          <td>71.8</td>
+          <td>71.3</td>
+          <td>69.9</td>
+          <td>65.6</td>
+      </tr>
+      <tr>
+          <td>VoxelNet</td>
+          <td>Learned</td>
+          <td><strong>74.4</strong></td>
+          <td><strong>74.0</strong></td>
+          <td>72.9</td>
+          <td>71.9</td>
+      </tr>
+      <tr>
+          <td><strong>PointPillars</strong></td>
+          <td><strong>Learned</strong></td>
+          <td>73.7</td>
+          <td>72.6</td>
+          <td><strong>72.9</strong></td>
+          <td><strong>72.0</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p>→ 동일 속도 조건에서 PointPillars가 VoxelNet보다 더 나은 operating point 제공</p>
+<hr>
+<h2 id="6-realtime-inference-분석">6. Realtime Inference 분석<a class="anchor" href="#6-realtime-inference-%eb%b6%84%ec%84%9d">#</a></h2>
+<p>전체 파이프라인 단계별 소요 시간 (Intel i7 CPU + NVIDIA 1080ti):</p>
+<table>
+  <thead>
+      <tr>
+          <th>단계</th>
+          <th>시간</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>포인트 클라우드 로드 &amp; 필터링</td>
+          <td>1.4ms</td>
+      </tr>
+      <tr>
+          <td>Pillar 생성 &amp; 장식</td>
+          <td>2.7ms</td>
+      </tr>
+      <tr>
+          <td>GPU 업로드 + 인코딩</td>
+          <td>2.9 + 1.3ms</td>
+      </tr>
+      <tr>
+          <td>Pseudo-image scatter</td>
+          <td>0.1ms</td>
+      </tr>
+      <tr>
+          <td>Backbone + Detection Head</td>
+          <td>7.7ms</td>
+      </tr>
+      <tr>
+          <td>NMS (CPU)</td>
+          <td>0.1ms</td>
+      </tr>
+      <tr>
+          <td><strong>총합</strong></td>
+          <td><strong>~16.2ms (62Hz)</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>속도의 핵심 — PointPillar 인코딩이 1.3ms</strong>: VoxelNet 인코더(190ms) 대비 <strong>146배 빠름</strong>. 3D Conv 완전 제거가 핵심.</p>
+<p>TensorRT 적용 시: 45.5% 추가 가속 → <strong>105Hz</strong> 달성 가능</p>
+<hr>
+<h2 id="7-ablation-studies-요약">7. Ablation Studies 요약<a class="anchor" href="#7-ablation-studies-%ec%9a%94%ec%95%bd">#</a></h2>
+<p><strong>7.1 공간 해상도</strong>: 작은 pillar(0.12m) → 정밀하지만 느림. 큰 pillar(0.28m) → 빠르지만 작은 객체 성능 저하. 0.16m이 최적 균형점</p>
+<p><strong>7.2 박스별 데이터 증강</strong>: VoxelNet·SECOND 권고와 달리 PointPillars에서는 최소한의 증강이 더 효과적 — GT 샘플링이 증강 필요성을 대체</p>
+<p><strong>7.3 포인트 장식</strong>: $x_p, y_p$ 오프셋 추가로 mAP <strong>+0.5</strong> 향상 — pillar 내 정확한 위치 정보의 효과</p>
+<p><strong>7.4 학습된 인코더 vs 고정 인코더</strong>: 해상도가 클수록 학습 인코더의 우위가 뚜렷 — 표현력 차이가 희소성 증가시 더 중요</p>
+<hr>
+<h2 id="8-핵심-개념-정리">8. 핵심 개념 정리<a class="anchor" href="#8-%ed%95%b5%ec%8b%ac-%ea%b0%9c%eb%85%90-%ec%a0%95%eb%a6%ac">#</a></h2>
+<table>
+  <thead>
+      <tr>
+          <th>개념</th>
+          <th>설명</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>Pillar</strong></td>
+          <td>x-y 평면에서 고정 크기 격자로 분할된 수직 기둥. z축 binning 불필요, 비어 있지 않은 pillar만 처리</td>
+      </tr>
+      <tr>
+          <td><strong>Point Decoration</strong></td>
+          <td>좌표 외 pillar 평균 대비 거리($x_c,y_c,z_c$)와 pillar 중심 오프셋($x_p,y_p$)을 추가해 상대 위치 정보 제공</td>
+      </tr>
+      <tr>
+          <td><strong>Pseudo-image</strong></td>
+          <td>Pillar 피처를 2D 격자에 scatter한 텐서. 이후 표준 2D CNN 적용 가능</td>
+      </tr>
+      <tr>
+          <td><strong>Simplified PointNet</strong></td>
+          <td>단일 Linear+BN+ReLU+MaxPool. VoxelNet의 2개 순차 PointNet 대비 2.5ms 절감</td>
+      </tr>
+      <tr>
+          <td><strong>Anchor 매칭</strong></td>
+          <td>2D BEV IoU로 positive/negative 결정. 높이·고도는 회귀 타겟으로만 사용</td>
+      </tr>
+      <tr>
+          <td><strong>방향 모호성 해결</strong></td>
+          <td>$\sin(\theta^{gt}-\theta^a)$ 회귀 + softmax 방향 분류 $\mathcal{L}_{dir}$ 조합</td>
+      </tr>
+      <tr>
+          <td><strong>GT 샘플링</strong></td>
+          <td>SECOND에서 제안한 기법. 다른 샘플의 GT 박스를 현재 포인트 클라우드에 붙여넣어 학습 다양성 증가</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="9-결론-및-시사점">9. 결론 및 시사점<a class="anchor" href="#9-%ea%b2%b0%eb%a1%a0-%eb%b0%8f-%ec%8b%9c%ec%82%ac%ec%a0%90">#</a></h2>
+<p><strong>PointPillars의 의의</strong>:</p>
+<ul>
+<li>3D Conv를 완전히 제거하고 <strong>2D CNN만으로</strong> LiDAR 3D 탐지 SOTA 달성</li>
+<li>학습된 인코더(PointNet) + 2D CNN의 조합이 speed-accuracy 최적 균형점 제공</li>
+<li>Z축 binning 하이퍼파라미터 제거로 다양한 포인트 클라우드 설정(멀티 스캔, 레이더)에 즉시 적용 가능</li>
+</ul>
+<p><strong>자율주행 로드맵 내 위치</strong>:</p>
+<ul>
+<li><strong>CenterPoint의 backbone 선택지</strong>: CenterPoint는 VoxelNet 또는 PointPillars를 3D 인코더로 지원하며, PointPillars 사용 시 실시간 추론 가능</li>
+<li><strong>BEVFusion의 LiDAR 브랜치</strong>: BEVFusion의 LiDAR → BEV 피처 추출에 PointPillars 구조가 직접 활용됨</li>
+<li>LiDAR 기반 3D 탐지의 <strong>속도 표준</strong>을 정립 — 이후 논문들의 실시간성 기준이 됨</li>
+</ul>
+<p><strong>한계</strong>:</p>
+<ul>
+<li>Pillar 단위 처리로 z축 정보(높이)가 MaxPool로 집약 → 세밀한 수직 구조 표현 불가</li>
+<li>보행자·자전거 탐지 성능이 차량보다 낮음 (작은 객체, 희소 포인트)</li>
+<li>카메라와의 융합을 고려하지 않은 LiDAR 전용 설계</li>
+</ul>
+<hr>
+<p><em>관련 논문: <a href="/posts/papers/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/">PointNet</a>, <a href="/posts/papers/centerpoint-center-based-3d-object-detection-and-tracking/">CenterPoint</a>, <a href="/posts/papers/bevfusion-multi-task-multi-sensor-fusion/">BEVFusion</a>, <a href="/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/">nuScenes</a></em></p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/paper/docs/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/" class="flex align-center">
+        <img src="/paper/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/paper/docs/centerpoint-center-based-3d-object-detection-and-tracking/" class="flex align-center">
+        <span>CenterPoint: Center-based 3D Object Detection and Tracking</span>
+        <img src="/paper/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#2-pointpillars-network">2. PointPillars Network</a>
+      <ul>
+        <li><a href="#전체-파이프라인">전체 파이프라인</a></li>
+        <li><a href="#21-pointcloud-to-pseudo-image">2.1 Pointcloud to Pseudo-Image</a></li>
+        <li><a href="#22-backbone-2d-cnn">2.2 Backbone (2D CNN)</a></li>
+        <li><a href="#23-detection-head-ssd">2.3 Detection Head (SSD)</a></li>
+      </ul>
+    </li>
+    <li><a href="#5-주요-결과">5. 주요 결과</a>
+      <ul>
+        <li><a href="#kitti-test-bev-detection-benchmark">KITTI test BEV Detection benchmark</a></li>
+        <li><a href="#kitti-test-3d-detection-benchmark">KITTI test 3D Detection benchmark</a></li>
+        <li><a href="#인코더-유형별-비교-kitti-val-bev-map">인코더 유형별 비교 (KITTI val BEV mAP)</a></li>
+      </ul>
+    </li>
+    <li><a href="#6-realtime-inference-분석">6. Realtime Inference 분석</a></li>
+    <li><a href="#7-ablation-studies-요약">7. Ablation Studies 요약</a></li>
+    <li><a href="#8-핵심-개념-정리">8. 핵심 개념 정리</a></li>
+    <li><a href="#9-결론-및-시사점">9. 결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

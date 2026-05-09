@@ -5,6 +5,7 @@ draft: false
 categories: ["Papers", "Computer Vision", "Deep Learning"]
 tags: ["ResNet", "Residual Learning", "Skip Connection", "Image Classification", "CNN", "Microsoft Research", "ILSVRC 2015"]
 year: 2015
+references: []
 ---
 
 ## 개요

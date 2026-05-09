@@ -5,6 +5,8 @@ draft: false
 categories: ["Papers", "Deep Learning", "Reinforcement Learning"]
 tags: ["reinforcement learning", "policy gradient", "PPO", "deep learning", "OpenAI"]
 year: 2017
+references:
+  - "DQN-playing-atari-with-deep-reinforcement-learning"
 ---
 
 ## 개요

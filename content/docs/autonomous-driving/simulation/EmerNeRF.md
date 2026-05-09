@@ -5,6 +5,9 @@ draft: false
 categories: ["Papers", "Autonomous Driving", "Novel View Synthesis"]
 tags: ["NeRF", "Autonomous Driving", "Dynamic Scene", "Self-Supervised Learning", "Neural Rendering"]
 year: 2023
+references:
+  - "nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis"
+  - "waymo-open-dataset"
 ---
 
 ## 개요

@@ -5,6 +5,11 @@ draft: false
 tags: ["Street View Generation", "Diffusion Model", "3D Geometry", "Autonomous Driving", "Data Synthesis", "nuScenes", "ControlNet"]
 categories: ["Papers", "Autonomous Driving", "Generative Models"]
 year: 2024
+references:
+  - "high-resolution-image-synthesis-with-latent-diffusion-models"
+  - "controlnet-adding-conditional-control-to-text-to-image-diffusion-models"
+  - "nuscenes-multimodal-dataset-autonomous-driving"
+  - "BEVFormer"
 ---
 
 ## 개요

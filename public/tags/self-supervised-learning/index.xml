@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Self-Supervised Learning on Paper</title>
+    <link>https://y30n9ju1v.github.io/paper/tags/self-supervised-learning/</link>
+    <description>Recent content in Self-Supervised Learning on Paper</description>
+    <generator>Hugo</generator>
+    <language>ko-KR</language>
+    <lastBuildDate>Sat, 18 Apr 2026 10:30:00 +0900</lastBuildDate>
+    <atom:link href="https://y30n9ju1v.github.io/paper/tags/self-supervised-learning/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>EmerNeRF: Emergent Spatial-Temporal Scene Decomposition via Self-Supervision</title>
+      <link>https://y30n9ju1v.github.io/paper/docs/autonomous-driving/simulation/emernerf/</link>
+      <pubDate>Sat, 18 Apr 2026 10:30:00 +0900</pubDate>
+      <guid>https://y30n9ju1v.github.io/paper/docs/autonomous-driving/simulation/emernerf/</guid>
+      <description>&lt;h2 id=&#34;개요&#34;&gt;개요&lt;a class=&#34;anchor&#34; href=&#34;#%ea%b0%9c%ec%9a%94&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;strong&gt;저자&lt;/strong&gt;: Jiawei Yang, Boris Ivanovic, Or Litany, Xinshuo Weng, Seung Wook Kim, Boyi Li, Tong Che, Danfei Xu, Sanja Fidler, Marco Pavone, Yue Wang&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;소속&lt;/strong&gt;: USC, NVIDIA Research, Georgia Tech, University of Toronto, Stanford, Technion&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;발행년도&lt;/strong&gt;: 2023 (arXiv:2311.02077)&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;주요 내용&lt;/strong&gt;: 자율주행 동적 장면을 위한 4D(공간+시간) NeRF 표현 학습. 정적/동적 분해와 씬 플로우 추정을 &lt;strong&gt;완전 자기지도(self-supervision)&lt;/strong&gt; 방식으로 수행&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;한계-극복&#34;&gt;한계 극복&lt;a class=&#34;anchor&#34; href=&#34;#%ed%95%9c%ea%b3%84-%ea%b7%b9%eb%b3%b5&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;strong&gt;기존 한계 1 — GT 어노테이션 의존&lt;/strong&gt;: 기존 동적 장면 분리 방법들(UniSim, NSG 등)은 동적 객체 분할 및 추적에 GT 바운딩 박스 어노테이션이 필요&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;기존 한계 2 — 사전 학습 Optical Flow 모델 의존&lt;/strong&gt;: SUDS, NSFP 등은 씬 플로우 추정에 별도의 사전 학습 플로우 모델을 요구하여 계산 비용이 크고 오류가 누적됨&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;기존 한계 3 — 다시점 동기화 가정&lt;/strong&gt;: 많은 방법들이 여러 시점에서 동기화된 영상을 요구하여 실제 AV 환경에 적용이 어려움&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;이 논문의 접근 방식&lt;/strong&gt;: 정적 필드 $\mathcal{S}$와 동적 필드 $\mathcal{D}$, 그리고 플로우 필드 $\mathcal{V}$를 결합한 하이브리드 NeRF를 구성하고, RGB 재구성 손실만으로 씬 플로우가 자연스럽게 **emergent(창발)**되도록 설계&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;목차&#34;&gt;목차&lt;a class=&#34;anchor&#34; href=&#34;#%eb%aa%a9%ec%b0%a8&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Chapter 1: Introduction&lt;/li&gt;&#xA;&lt;li&gt;Chapter 2: Related Work&lt;/li&gt;&#xA;&lt;li&gt;Chapter 3: Self-Supervised Spatial-Temporal Neural Fields&#xA;&lt;ul&gt;&#xA;&lt;li&gt;3.1 Scene Representations&lt;/li&gt;&#xA;&lt;li&gt;3.2 Emergent Scene Flow&lt;/li&gt;&#xA;&lt;li&gt;3.3 Vision Transformer Feature Lifting&lt;/li&gt;&#xA;&lt;li&gt;3.4 Optimization&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;/li&gt;&#xA;&lt;li&gt;Chapter 4: Experiments&#xA;&lt;ul&gt;&#xA;&lt;li&gt;4.1 Rendering&lt;/li&gt;&#xA;&lt;li&gt;4.2 Flow Estimation&lt;/li&gt;&#xA;&lt;li&gt;4.3 Leveraging Foundation Model Features&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;/li&gt;&#xA;&lt;li&gt;Chapter 5: Conclusion&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;hr&gt;&#xA;&lt;h2 id=&#34;chapter-1-introduction&#34;&gt;Chapter 1: Introduction&lt;a class=&#34;anchor&#34; href=&#34;#chapter-1-introduction&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;p&gt;&lt;strong&gt;요약&lt;/strong&gt;&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

@@ -5,6 +5,10 @@ draft: false
 categories: ["Papers", "Autonomous Driving", "Novel View Synthesis"]
 tags: ["NeRF", "Neural Rendering", "Autonomous Driving", "Novel View Synthesis", "LiDAR Simulation", "Sensor Simulation"]
 year: 2024
+references:
+  - "nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis"
+  - "3d-gaussian-splatting"
+  - "nuscenes-multimodal-dataset-autonomous-driving"
 ---
 
 ## 개요

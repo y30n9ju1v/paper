@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="ko-KR" dir="ltr">
+<head><script src="/paper/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=paper/livereload" data-no-instant defer></script>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="개요# 저자: Thomas Müller, Alex Evans, Christoph Schied, Alexander Keller (NVIDIA) 발행년도: 2022 게재: ACM Transactions on Graphics, Vol. 41, No. 4, Article 102 (SIGGRAPH 2022) 주요 내용: Multiresolution Hash Encoding이라는 새로운 입력 인코딩 방식을 제안하여, Neural Graphics Primitives(NeRF, SDF, NRC, Gigapixel Image)를 수 초수 분 내에 훈련 가능하게 만든 논문. GPU 병렬성을 최대한 활용한 CUDA 구현을 통해 기존 대비 수십수천 배의 속도 향상을 달성함. 한계 극복# 이 논문은 기존 Neural Graphics Primitives의 훈련 속도 문제를 해결하기 위해 작성되었습니다.
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/paper/docs/instant-ngp-multiresolution-hash-encoding/">
+  <meta property="og:site_name" content="Paper">
+  <meta property="og:title" content="Instant Neural Graphics Primitives with a Multiresolution Hash Encoding">
+  <meta property="og:description" content="개요# 저자: Thomas Müller, Alex Evans, Christoph Schied, Alexander Keller (NVIDIA) 발행년도: 2022 게재: ACM Transactions on Graphics, Vol. 41, No. 4, Article 102 (SIGGRAPH 2022) 주요 내용: Multiresolution Hash Encoding이라는 새로운 입력 인코딩 방식을 제안하여, Neural Graphics Primitives(NeRF, SDF, NRC, Gigapixel Image)를 수 초수 분 내에 훈련 가능하게 만든 논문. GPU 병렬성을 최대한 활용한 CUDA 구현을 통해 기존 대비 수십수천 배의 속도 향상을 달성함. 한계 극복# 이 논문은 기존 Neural Graphics Primitives의 훈련 속도 문제를 해결하기 위해 작성되었습니다.">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:published_time" content="2026-04-17T08:00:00+09:00">
+    <meta property="article:modified_time" content="2026-04-17T08:00:00+09:00">
+    <meta property="article:tag" content="NeRF">
+    <meta property="article:tag" content="Novel View Synthesis">
+    <meta property="article:tag" content="Neural Rendering">
+    <meta property="article:tag" content="Hash Encoding">
+    <meta property="article:tag" content="Real-Time Rendering">
+
+
+  <meta itemprop="name" content="Instant Neural Graphics Primitives with a Multiresolution Hash Encoding">
+  <meta itemprop="description" content="개요# 저자: Thomas Müller, Alex Evans, Christoph Schied, Alexander Keller (NVIDIA) 발행년도: 2022 게재: ACM Transactions on Graphics, Vol. 41, No. 4, Article 102 (SIGGRAPH 2022) 주요 내용: Multiresolution Hash Encoding이라는 새로운 입력 인코딩 방식을 제안하여, Neural Graphics Primitives(NeRF, SDF, NRC, Gigapixel Image)를 수 초수 분 내에 훈련 가능하게 만든 논문. GPU 병렬성을 최대한 활용한 CUDA 구현을 통해 기존 대비 수십수천 배의 속도 향상을 달성함. 한계 극복# 이 논문은 기존 Neural Graphics Primitives의 훈련 속도 문제를 해결하기 위해 작성되었습니다.">
+  <meta itemprop="datePublished" content="2026-04-17T08:00:00+09:00">
+  <meta itemprop="dateModified" content="2026-04-17T08:00:00+09:00">
+  <meta itemprop="wordCount" content="1676">
+  <meta itemprop="keywords" content="NeRF,Novel View Synthesis,Neural Rendering,Hash Encoding,Real-Time Rendering">
+
+<title>Instant Neural Graphics Primitives with a Multiresolution Hash Encoding | Paper</title>
+<link rel="icon" href="/paper/favicon.png" >
+<link rel="manifest" href="/paper/manifest.json">
+<link rel="canonical" href="http://localhost:1313/paper/docs/instant-ngp-multiresolution-hash-encoding/">
+<link rel="stylesheet" href="/paper/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/paper/fuse.min.js"></script>
+  <script defer src="/paper/en.search.min.136303f53f731e7f187e59dca354807444ce24732e128843ea97e041d47b7d93.js" integrity="sha256-E2MD9T9zHn8Yflnco1SAdETOJHMuEohD6pfgQdR7fZM=" crossorigin="anonymous"></script>
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '\\[', right: '\\]', display: true},
+      {left: '\\(', right: '\\)', display: false},
+      {left: '$', right: '$', display: false}
+    ]
+  });
+});
+</script>
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/paper/"><span>Paper</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/controlnet-adding-conditional-control-to-text-to-image-diffusion-models/" class="">
+      ControlNet: Adding Conditional Control to Text-to-Image Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/clip-learning-transferable-visual-models-from-natural-language-supervision/" class="">
+      CLIP: Learning Transferable Visual Models From Natural Language Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointnet-plus-plus-deep-hierarchical-feature-learning/" class="">
+      PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/" class="">
+      GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/lidarsim-realistic-lidar-simulation-by-leveraging-the-real-world/" class="">
+      LiDARsim: Realistic LiDAR Simulation by Leveraging the Real World</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vit-an-image-is-worth-16x16-words/" class="">
+      ViT: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/resnet-deep-residual-learning-for-image-recognition/" class="">
+      ResNet: Deep Residual Learning for Image Recognition</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/" class="">
+      StreamMapNet: Streaming Mapping Network for Vectorized Online HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vectormapnet-end-to-end-vectorized-hd-map-learning/" class="">
+      VectorMapNet: End-to-end Vectorized HD Map Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/detr-end-to-end-object-detection-with-transformers/" class="">
+      DETR: End-to-End Object Detection with Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/attention-is-all-you-need/" class="">
+      Attention Is All You Need</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/maptr-structured-modeling-online-vectorized-hd-map-construction/" class="">
+      MapTR: Structured Modeling and Learning for Online Vectorized HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/high-resolution-image-synthesis-with-latent-diffusion-models/" class="">
+      High-Resolution Image Synthesis with Latent Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/proximal-policy-optimization/" class="">
+      Proximal Policy Optimization Algorithms (PPO)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/denoising-diffusion-probabilistic-models/" class="">
+      Denoising Diffusion Probabilistic Models (DDPM)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/" class="">
+      PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointpillars-fast-encoders-object-detection-point-clouds/" class="">
+      PointPillars: Fast Encoders for Object Detection from Point Clouds</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/centerpoint-center-based-3d-object-detection-and-tracking/" class="">
+      CenterPoint: Center-based 3D Object Detection and Tracking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/monoscene-monocular-3d-semantic-scene-completion/" class="">
+      MonoScene: Monocular 3D Semantic Scene Completion</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/tpvformer-tri-perspective-view-3d-semantic-occupancy/" class="">
+      TPVFormer: Tri-Perspective View for Vision-Based 3D Semantic Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/drivearena/" class="">
+      DriveArena: A Closed-loop Generative Simulation Platform for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/neurad-neural-rendering-for-autonomous-driving/" class="">
+      NeuRAD: Neural Rendering for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/omnire-omni-urban-scene-reconstruction/" class="">
+      OmniRe: Omni Urban Scene Reconstruction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/magicdrive-street-view-generation-3d-geometry-control/" class="">
+      MagicDrive: Street View Generation with Diverse 3D Geometry Control</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/surroundocc/" class="">
+      SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/drivedreamer/" class="">
+      DriveDreamer: Towards Real-world-driven World Models for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/street-gaussians-modeling-dynamic-urban-scenes/" class="">
+      Street Gaussians: Modeling Dynamic Urban Scenes with Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bench2drive-multi-ability-benchmarking-e2e-autonomous-driving/" class="">
+      Bench2Drive: Towards Multi-Ability Benchmarking of Closed-Loop End-To-End Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/emernerf/" class="">
+      EmerNeRF: Emergent Spatial-Temporal Scene Decomposition via Self-Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/detr3d-3d-object-detection-multi-view-images/" class="">
+      DETR3D: 3D Object Detection from Multi-view Images via 3D-to-2D Queries</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/occ3d-large-scale-3d-occupancy-prediction-benchmark/" class="">
+      Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/unisim-neural-closed-loop-sensor-simulator/" class="">
+      UniSim: A Neural Closed-Loop Sensor Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevfusion-multi-task-multi-sensor-fusion/" class="">
+      BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/instant-ngp-multiresolution-hash-encoding/" class="active">
+      Instant Neural Graphics Primitives with a Multiresolution Hash Encoding</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/lift-splat-shoot/" class="">
+      Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevdepth/" class="">
+      BEVDepth: Acquisition of Reliable Depth for Multi-view 3D Object Detection</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/4d-gaussian-splatting/" class="">
+      4D Gaussian Splatting for Real-Time Dynamic Scene Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/gaia-1/" class="">
+      GAIA-1: A Generative World Model for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/dqn-playing-atari-with-deep-reinforcement-learning/" class="">
+      Playing Atari with Deep Reinforcement Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevformer/" class="">
+      BEVFormer: Learning Bird&#39;s-Eye-View Representation from Multi-Camera Images via Spatiotemporal Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/navsim/" class="">
+      NAVSIM: Data-Driven Non-Reactive Autonomous Vehicle Simulation and Benchmarking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nuplan/" class="">
+      nuPlan: A closed-loop ML-based planning benchmark for autonomous vehicles</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/transfuser/" class="">
+      TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3d-gaussian-splatting/" class="">
+      3D Gaussian Splatting for Real-Time Radiance Field Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/driving-gaussian-composite-gaussian-splatting/" class="">
+      DrivingGaussian: Composite Gaussian Splatting for Surrounding Dynamic Autonomous Driving Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3d-gaussian-ray-tracing/" class="">
+      3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/" class="">
+      3DGUT: Enabling Distorted Cameras and Secondary Rays in Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/carla-an-open-urban-driving-simulator/" class="">
+      CARLA: An Open Urban Driving Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/difix3d-plus/" class="">
+      DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/hugsim-real-time-photorealistic-closed-loop-simulator/" class="">
+      HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/" class="">
+      NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nuscenes-multimodal-dataset-autonomous-driving/" class="">
+      nuScenes: A Multimodal Dataset for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/waymo-open-dataset/" class="">
+      Scalability in Perception for Autonomous Driving: Waymo Open Dataset</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/uniad-planning-oriented-autonomous-driving/" class="">
+      UniAD: Planning-oriented Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vad/" class="">
+      VAD: Vectorized Scene Representation for Efficient Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/paper/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>Instant Neural Graphics Primitives with a Multiresolution Hash Encoding</h3>
+
+  <label for="toc-control">
+    
+    <img src="/paper/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#section-1-introduction">Section 1: Introduction</a></li>
+    <li><a href="#section-2-background-and-related-work">Section 2: Background and Related Work</a></li>
+    <li><a href="#section-3-multiresolution-hash-encoding">Section 3: Multiresolution Hash Encoding</a></li>
+    <li><a href="#section-4-implementation">Section 4: Implementation</a></li>
+    <li><a href="#section-5-experiments">Section 5: Experiments</a>
+      <ul>
+        <li><a href="#51-gigapixel-image-approximation">5.1 Gigapixel Image Approximation</a></li>
+        <li><a href="#52-signed-distance-functions-sdf">5.2 Signed Distance Functions (SDF)</a></li>
+        <li><a href="#53-neural-radiance-caching-nrc">5.3 Neural Radiance Caching (NRC)</a></li>
+        <li><a href="#54-neural-radiance-and-density-fields-nerf">5.4 Neural Radiance and Density Fields (NeRF)</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-6-discussion-and-future-work">Section 6: Discussion and Future Work</a></li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h2 id="개요">개요<a class="anchor" href="#%ea%b0%9c%ec%9a%94">#</a></h2>
+<ul>
+<li><strong>저자</strong>: Thomas Müller, Alex Evans, Christoph Schied, Alexander Keller (NVIDIA)</li>
+<li><strong>발행년도</strong>: 2022</li>
+<li><strong>게재</strong>: ACM Transactions on Graphics, Vol. 41, No. 4, Article 102 (SIGGRAPH 2022)</li>
+<li><strong>주요 내용</strong>: Multiresolution Hash Encoding이라는 새로운 입력 인코딩 방식을 제안하여, Neural Graphics Primitives(NeRF, SDF, NRC, Gigapixel Image)를 수 초<del>수 분 내에 훈련 가능하게 만든 논문. GPU 병렬성을 최대한 활용한 CUDA 구현을 통해 기존 대비 수십</del>수천 배의 속도 향상을 달성함.</li>
+</ul>
+<h2 id="한계-극복">한계 극복<a class="anchor" href="#%ed%95%9c%ea%b3%84-%ea%b7%b9%eb%b3%b5">#</a></h2>
+<p>이 논문은 기존 Neural Graphics Primitives의 훈련 속도 문제를 해결하기 위해 작성되었습니다.</p>
+<ul>
+<li><strong>기존 한계 1 — 느린 훈련 속도</strong>: NeRF와 같은 신경망 기반 3D 표현은 단일 장면을 학습하는 데 수 시간이 필요했음 (mip-NeRF, NSVF 등)</li>
+<li><strong>기존 한계 2 — 큰 네트워크 크기</strong>: 표현력을 높이려면 네트워크가 커져야 하고, 그럴수록 훈련/추론이 더 느려지는 딜레마 존재</li>
+<li><strong>기존 한계 3 — Task-specific 데이터 구조</strong>: Octree 등 기존 적응형 인코딩은 task-specific 구조 수정이 필요하여 범용성이 떨어짐</li>
+<li><strong>이 논문의 접근 방식</strong>: 학습 가능한 Feature Vector를 저장하는 Multiresolution Hash Table을 보조 데이터 구조로 도입. 네트워크는 작게 유지하면서 표현력은 해시 테이블이 담당. 완전히 CUDA로 구현하여 GPU 병렬성을 극대화함.</li>
+</ul>
+<h2 id="목차">목차<a class="anchor" href="#%eb%aa%a9%ec%b0%a8">#</a></h2>
+<ul>
+<li>Section 1: Introduction</li>
+<li>Section 2: Background and Related Work</li>
+<li>Section 3: Multiresolution Hash Encoding</li>
+<li>Section 4: Implementation</li>
+<li>Section 5: Experiments (Gigapixel Image, SDF, NRC, NeRF)</li>
+<li>Section 6: Discussion and Future Work</li>
+<li>Section 7: Conclusion</li>
+<li>Appendix A-E: Smooth Interpolation, NGLOD Implementation, SDF Training, Baseline MLPs, Accelerated NeRF Ray Marching</li>
+</ul>
+<hr>
+<h2 id="section-1-introduction">Section 1: Introduction<a class="anchor" href="#section-1-introduction">#</a></h2>
+<p><strong>요약</strong></p>
+<p>컴퓨터 그래픽스에서 Neural Graphics Primitives(NeRF, SDF, NRC 등)는 강력한 3D 표현 방식이지만, 훈련 비용이 크고 평가가 느리다는 문제가 있었습니다. 이 논문은 &ldquo;입력 인코딩&quot;의 설계를 바꿔 이 문제를 해결합니다.</p>
+<p>핵심 아이디어는 입력 좌표 <strong>x</strong>를 직접 신경망에 넣는 대신, 먼저 **해시 테이블에서 특징 벡터를 조회(lookup)**하여 신경망에 전달하는 것입니다. 이를 통해:</p>
+<ul>
+<li>네트워크 크기를 10~100배 줄일 수 있음</li>
+<li>더 적은 FLOPs로 동등하거나 더 높은 품질 달성</li>
+<li>GPU 메모리 대역폭을 효율적으로 활용</li>
+</ul>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Neural Graphics Primitives</strong>: 신경망으로 표현되는 그래픽스 함수들 — 이미지, 3D 형상(SDF), 라디언스 필드(NeRF), 조명 캐시(NRC) 등</li>
+<li><strong>입력 인코딩(Input Encoding)</strong>: 입력 <strong>x</strong>를 더 표현력 있는 특징 공간으로 변환하는 함수 enc(<strong>x</strong>; θ). 네트워크가 고주파 신호를 학습하는 데 도움을 줌</li>
+<li><strong>Adaptivity</strong>: 장면의 세밀한 부분에 자동으로 더 많은 파라미터를 할당하는 능력</li>
+</ul>
+<hr>
+<h2 id="section-2-background-and-related-work">Section 2: Background and Related Work<a class="anchor" href="#section-2-background-and-related-work">#</a></h2>
+<p><strong>요약</strong></p>
+<p>기존 입력 인코딩 방식들을 정리하고, 이 논문이 어떻게 다른지 설명합니다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>One-hot / Dense Grid Encoding</strong>: 단순히 그리드 셀 인덱스를 one-hot으로 표현. 파라미터 수가 기하급수적으로 증가하여 고해상도 불가</li>
+<li><strong>Frequency Encoding (NeRF Positional Encoding)</strong>: 사인/코사인 함수를 이용해 좌표를 주파수 공간으로 변환. 고주파 학습을 가능하게 하지만 큰 MLP가 필요</li>
+<li><strong>Parametric Encodings</strong>: 학습 가능한 파라미터를 보조 데이터 구조(그리드, 트리 등)에 저장하고, 이를 신경망과 함께 학습
+<ul>
+<li><strong>Dense Grid</strong> (ACORN): 전 해상도 그리드에 특징 저장. 정밀하지만 메모리 폭발적 증가</li>
+<li><strong>Octree 기반</strong> (NGLOD): 표면 근처만 세밀하게 저장. 정확하지만 SDF 학습에 특화, 범용성 부족</li>
+<li><strong>이 논문</strong>: 해시 테이블 + 다중 해상도로 위 두 방식의 장점을 결합</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="section-3-multiresolution-hash-encoding">Section 3: Multiresolution Hash Encoding<a class="anchor" href="#section-3-multiresolution-hash-encoding">#</a></h2>
+<p><strong>요약</strong></p>
+<p>이 논문의 핵심 기여입니다. 입력 좌표 <strong>x</strong> ∈ ℝ^d를 여러 해상도의 격자에 매핑하고, 각 격자의 꼭짓점에서 학습 가능한 특징 벡터를 조회한 뒤, 이를 연결(concatenate)하여 신경망에 입력합니다.</p>
+<p><strong>전체 파이프라인 (5단계)</strong></p>
+<ol>
+<li><strong>Hashing of voxel vertices</strong>: 각 해상도 레벨 ℓ에서 입력 좌표 <strong>x</strong> 주변의 격자 꼭짓점들을 해시 함수로 해시 테이블 인덱스로 변환</li>
+<li><strong>Lookup</strong>: 해시 테이블에서 해당 인덱스의 F차원 특징 벡터를 읽어옴</li>
+<li><strong>Linear interpolation</strong>: <strong>x</strong>의 격자 내 상대 위치에 따라 d선형(trilinear) 보간</li>
+<li><strong>Concatenation</strong>: 모든 L개 해상도 레벨의 특징 벡터와 보조 입력 ξ를 연결</li>
+<li><strong>Neural Network</strong>: 연결된 벡터를 MLP에 입력하여 최종 출력 m(<strong>y</strong>; Φ) 계산</li>
+</ol>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li>
+<p><strong>해상도 레벨 (Resolution Levels)</strong>: 가장 거친 해상도 N_min부터 가장 세밀한 N_max까지 L개의 레벨이 기하급수적으로 증가</p>
+</li>
+<li>
+<p><strong>성장 인자 b</strong>:</p>
+</li>
+</ul>
+$$b = \exp\left(\frac{\ln N_{\max} - \ln N_{\min}}{L-1}\right)$$<p><strong>수식 설명</strong>:</p>
+<ul>
+<li>
+<p><strong>$b$</strong>: 레벨 간 해상도 성장 비율 (보통 1.26 ~ 2.0)</p>
+</li>
+<li>
+<p><strong>$N_{\min}$</strong>: 가장 거친 해상도 (예: 16)</p>
+</li>
+<li>
+<p><strong>$N_{\max}$</strong>: 가장 세밀한 해상도 (예: 512 ~ 524288)</p>
+</li>
+<li>
+<p><strong>$L$</strong>: 총 레벨 수 (보통 16)</p>
+</li>
+<li>
+<p>이 수식으로 각 레벨의 해상도 $N_\ell = \lfloor N_{\min} \cdot b^\ell \rfloor$가 결정됨</p>
+</li>
+<li>
+<p><strong>해시 함수</strong>: 격자 꼭짓점 정수 좌표 <strong>x</strong>⌊⌋를 해시 테이블 인덱스로 변환</p>
+</li>
+</ul>
+$$h(\mathbf{x}) = \left(\bigoplus_{i=1}^{d} x_i \pi_i\right) \bmod T$$<p><strong>수식 설명</strong>:</p>
+<ul>
+<li>
+<p><strong>$h(\mathbf{x})$</strong>: 최종 해시 인덱스 (0 ~ T-1 범위)</p>
+</li>
+<li>
+<p><strong>$\oplus$</strong>: 비트 단위 XOR 연산</p>
+</li>
+<li>
+<p><strong>$x_i$</strong>: i번째 차원의 격자 꼭짓점 정수 좌표</p>
+</li>
+<li>
+<p><strong>$\pi_i$</strong>: 각 차원마다 다른 큰 소수 (π₁=1, π₂=2654435761, π₃=805459861). 차원 독립성을 위한 pseudo-random 순열</p>
+</li>
+<li>
+<p><strong>$T$</strong>: 해시 테이블 크기 (튜닝 가능한 하이퍼파라미터, 보통 2^14 ~ 2^24)</p>
+</li>
+<li>
+<p>XOR 기반이라 계산이 매우 빠름 (곱셈/나눗셈 불필요)</p>
+</li>
+<li>
+<p><strong>d선형 보간 (d-linear interpolation)</strong>: 각 레벨에서 꼭짓점의 특징 벡터를 <strong>x</strong>의 격자 내 상대 위치 w = <strong>x</strong> - ⌊<strong>x</strong>⌋로 가중 보간</p>
+</li>
+</ul>
+$$\text{보간 가중치: } \mathbf{w}_\ell = \mathbf{x} - \lfloor \mathbf{x}_\ell \rfloor$$<ul>
+<li>
+<p><strong>해시 충돌 (Hash Collision)</strong>: 서로 다른 공간 위치가 같은 해시 인덱스로 매핑되는 현상. 충돌된 두 위치의 그래디언트가 평균됨. 그러나 다중 해상도 구조 덕분에 충돌은 다른 레벨에서 분산되어 자연스럽게 해결됨 (명시적 충돌 처리 불필요)</p>
+</li>
+<li>
+<p><strong>하이퍼파라미터 요약</strong>:</p>
+</li>
+</ul>
+<table>
+  <thead>
+      <tr>
+          <th>파라미터</th>
+          <th>기호</th>
+          <th>기본값</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>레벨 수</td>
+          <td>L</td>
+          <td>16</td>
+      </tr>
+      <tr>
+          <td>해시 테이블 크기</td>
+          <td>T</td>
+          <td>2^14 ~ 2^24</td>
+      </tr>
+      <tr>
+          <td>레벨당 특징 차원</td>
+          <td>F</td>
+          <td>2</td>
+      </tr>
+      <tr>
+          <td>가장 거친 해상도</td>
+          <td>N_min</td>
+          <td>16</td>
+      </tr>
+      <tr>
+          <td>가장 세밀한 해상도</td>
+          <td>N_max</td>
+          <td>512 ~ 524288</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>해시 충돌의 암묵적 해결 원리</strong></p>
+<p>충돌이 발생해도 잘 동작하는 이유:</p>
+<ol>
+<li><strong>다중 해상도</strong>: 거친 레벨은 충돌이 적고 (격자 수 &lt; T), 세밀한 레벨은 충돌이 많지만 각 레벨이 서로 다른 장면 스케일을 담당하여 상호 보완</li>
+<li><strong>그래디언트 평균화</strong>: 같은 해시를 공유하는 위치들의 그래디언트가 평균됨 → 더 중요한(방문 빈도 높은) 위치의 그래디언트가 지배적</li>
+<li><strong>확률적 분산</strong>: 충돌이 동시에 모든 레벨에서 발생할 확률이 통계적으로 매우 낮음</li>
+</ol>
+<hr>
+<h2 id="section-4-implementation">Section 4: Implementation<a class="anchor" href="#section-4-implementation">#</a></h2>
+<p><strong>요약</strong></p>
+<p>NVIDIA CUDA로 전체 파이프라인을 완전히 구현하여 GPU 병렬성을 극대화했습니다. 작은 MLP와 효율적인 메모리 접근 패턴이 핵심입니다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Fully-fused CUDA Kernels</strong>: 해시 인코딩 → MLP forward/backward를 하나의 CUDA 커널로 융합. 메모리 왕복을 최소화하여 latency 감소</li>
+<li><strong>tiny-cuda-nn</strong>: NVIDIA의 소형 신경망 추론 프레임워크. 16개 뉴런 단위로 설계되어 GPU 연산 효율 극대화</li>
+<li><strong>네트워크 크기</strong>: 2개의 hidden layer, 각 64개 뉴런 (NeRF 기준). 인코딩이 표현력을 담당하므로 작은 네트워크로 충분</li>
+<li><strong>Half-precision (fp16)</strong>: 해시 테이블 조회에 fp16 원자적 연산 사용. 메모리 대역폭 절감</li>
+<li><strong>온라인 적응성</strong>: 입력 분포가 바뀌어도 (NRC의 경우 실시간 렌더링 중) 자동으로 현재 중요한 영역에 적응</li>
+</ul>
+<hr>
+<h2 id="section-5-experiments">Section 5: Experiments<a class="anchor" href="#section-5-experiments">#</a></h2>
+<p><strong>요약</strong></p>
+<p>4가지 Neural Graphics Primitives에 Multiresolution Hash Encoding을 적용하고 기존 방법들과 비교합니다.</p>
+<h3 id="51-gigapixel-image-approximation">5.1 Gigapixel Image Approximation<a class="anchor" href="#51-gigapixel-image-approximation">#</a></h3>
+<p>2D 좌표 → RGB 매핑을 학습하여 기가픽셀 이미지를 신경망으로 표현하는 태스크.</p>
+<ul>
+<li><strong>비교 대상</strong>: ACORN (Martel et al. 2021)</li>
+<li><strong>결과</strong>: ACORN은 36.9h 훈련 후 PSNR 38.59 dB. 우리 방법은 <strong>2.5분</strong> 만에 동등한 품질 달성, 10~100× 적은 파라미터 사용</li>
+</ul>
+<h3 id="52-signed-distance-functions-sdf">5.2 Signed Distance Functions (SDF)<a class="anchor" href="#52-signed-distance-functions-sdf">#</a></h3>
+<p>3D 형상을 SDF로 표현. f(<strong>x</strong>) = 0이 표면을 나타냄.</p>
+<ul>
+<li><strong>비교 대상</strong>: NGLOD (Takikawa et al. 2021), Frequency encoding</li>
+<li><strong>결과</strong>: NGLOD보다 IoU가 유사하거나 높으면서, 훈련 시간은 <strong>수 초</strong> (NGLOD는 수 분)</li>
+<li>시각적으로 약간의 &ldquo;grain&rdquo; microstructure가 있으나 수치는 경쟁적</li>
+</ul>
+<h3 id="53-neural-radiance-caching-nrc">5.3 Neural Radiance Caching (NRC)<a class="anchor" href="#53-neural-radiance-caching-nrc">#</a></h3>
+<p>실시간 렌더링 중 간접 조명을 캐싱하는 신경망. 1ms/frame 예산.</p>
+<ul>
+<li><strong>특징</strong>: 온라인 학습 (렌더링 중 실시간 학습), 1ms 예산 내에서 최대한 정확해야 함</li>
+<li><strong>결과</strong>: 기존 triangle wave encoding 대비 <strong>시각적 품질 크게 향상</strong> (그림자, 세부 조명 표현 개선). FPS는 147 → 133으로 소폭 감소</li>
+</ul>
+<h3 id="54-neural-radiance-and-density-fields-nerf">5.4 Neural Radiance and Density Fields (NeRF)<a class="anchor" href="#54-neural-radiance-and-density-fields-nerf">#</a></h3>
+<p>2D 이미지들로부터 3D 볼륨을 재구성하는 태스크.</p>
+<ul>
+<li><strong>비교 대상</strong>: mip-NeRF (수 시간 훈련), NSVF (수 시간 훈련)</li>
+<li><strong>결과</strong> (Synthetic NeRF 데이터셋):</li>
+</ul>
+<table>
+  <thead>
+      <tr>
+          <th>방법</th>
+          <th>훈련 시간</th>
+          <th>PSNR (avg)</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Ours: Hash</td>
+          <td>1초</td>
+          <td>21.2 dB</td>
+      </tr>
+      <tr>
+          <td>Ours: Hash</td>
+          <td>1분</td>
+          <td>33.1 dB</td>
+      </tr>
+      <tr>
+          <td>Ours: Hash</td>
+          <td>5분</td>
+          <td>33.2 dB</td>
+      </tr>
+      <tr>
+          <td>mip-NeRF</td>
+          <td>~수 시간</td>
+          <td>33.09 dB</td>
+      </tr>
+      <tr>
+          <td>NSVF</td>
+          <td>~수 시간</td>
+          <td>31.0 dB</td>
+      </tr>
+  </tbody>
+</table>
+<ul>
+<li>5분 훈련으로 수 시간 훈련한 mip-NeRF와 동등한 품질 달성</li>
+<li>Hash encoding 자체가 20~60× 속도 향상의 원인</li>
+</ul>
+<p><strong>수식 — NeRF Volume Rendering</strong></p>
+$$C(\mathbf{r}) = \int_{t_n}^{t_f} T(t)\, \sigma(\mathbf{r}(t))\, \mathbf{c}(\mathbf{r}(t), \mathbf{d})\, dt$$$$T(t) = \exp\left(-\int_{t_n}^{t} \sigma(\mathbf{r}(s))\, ds\right)$$<p><strong>수식 설명</strong>:</p>
+<ul>
+<li><strong>$C(\mathbf{r})$</strong>: 광선 <strong>r</strong>의 최종 렌더링 색상</li>
+<li><strong>$\sigma(\mathbf{r}(t))$</strong>: 위치 <strong>r</strong>(t)에서의 밀도 (불투명도). 클수록 빛이 잘 통과 못 함</li>
+<li><strong>$\mathbf{c}(\mathbf{r}(t), \mathbf{d})$</strong>: 위치 <strong>r</strong>(t)에서 방향 <strong>d</strong>로 보이는 색상</li>
+<li><strong>$T(t)$</strong>: 광선이 $t_n$에서 $t$까지 도달하는 투과율. 앞에 물체가 있으면 작아짐</li>
+<li>직관: 광선이 3D 공간을 통과하면서, 각 지점의 색상을 밀도와 투과율로 가중합산</li>
+</ul>
+<hr>
+<h2 id="section-6-discussion-and-future-work">Section 6: Discussion and Future Work<a class="anchor" href="#section-6-discussion-and-future-work">#</a></h2>
+<p><strong>요약</strong></p>
+<p>논문의 설계 선택들에 대한 심층 분석과 미래 방향을 논의합니다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Concatenation vs. Reduction</strong>: 각 레벨의 특징 벡터를 합산(sum)이 아닌 연결(concatenate)하는 이유 — GPU 병렬처리 효율, 정보 손실 방지</li>
+<li><strong>해시 함수 선택</strong>: 논문에서 사용한 XOR 기반 해시가 PCG32, space-filling curve 등 대안보다 품질/속도 균형이 좋음</li>
+<li><strong>Generative Setting</strong>: GAN 등 생성 모델과 결합 시 해시 충돌 처리가 어려울 수 있음 (특징이 규칙 격자에 정렬되지 않기 때문)</li>
+<li><strong>Attention Mechanism과의 연결</strong>: 주파수 인코딩이 Transformer의 attention에서 유래했듯, 해시 인코딩도 attention 기반 모델에 적용 가능성 있음</li>
+<li><strong>Microstructure Artifact</strong>: 해시 충돌로 인한 미세 grain 패턴이 SDF에서 약간 보임 → 해시 테이블 조회에 추가적인 smoothness prior 적용 필요성</li>
+</ul>
+<hr>
+<h2 id="핵심-개념-정리">핵심 개념 정리<a class="anchor" href="#%ed%95%b5%ec%8b%ac-%ea%b0%9c%eb%85%90-%ec%a0%95%eb%a6%ac">#</a></h2>
+<table>
+  <thead>
+      <tr>
+          <th>개념</th>
+          <th>설명</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>Multiresolution Hash Encoding</strong></td>
+          <td>L개의 해상도 레벨 × 각 레벨의 해시 테이블에서 특징 벡터를 조회하고 연결하는 입력 인코딩</td>
+      </tr>
+      <tr>
+          <td><strong>Hash Table (T)</strong></td>
+          <td>학습 가능한 F차원 특징 벡터 T개를 저장하는 배열. Adam optimizer로 학습됨</td>
+      </tr>
+      <tr>
+          <td><strong>Spatial Hashing</strong></td>
+          <td>XOR + 소수 곱 기반 해시 함수로 격자 꼭짓점 좌표 → 테이블 인덱스 변환</td>
+      </tr>
+      <tr>
+          <td><strong>Implicit Collision Resolution</strong></td>
+          <td>해시 충돌을 명시적으로 처리하지 않고 그래디언트 평균화로 자연스럽게 해결</td>
+      </tr>
+      <tr>
+          <td><strong>d-linear Interpolation</strong></td>
+          <td>격자 내 상대 위치 기반 보간으로 연속적이고 미분 가능한 인코딩 보장</td>
+      </tr>
+      <tr>
+          <td><strong>Fully-fused CUDA Kernels</strong></td>
+          <td>인코딩 + MLP를 단일 CUDA 커널로 융합하여 메모리 왕복 최소화</td>
+      </tr>
+      <tr>
+          <td><strong>Adaptivity</strong></td>
+          <td>장면의 중요한 영역에 자동으로 더 많은 파라미터가 집중되는 자기 적응 능력</td>
+      </tr>
+      <tr>
+          <td><strong>Neural Graphics Primitives</strong></td>
+          <td>NeRF(볼륨 렌더링), SDF(형상 표현), NRC(조명 캐싱), Gigapixel Image(이미지 압축) 4가지 응용</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>기존 방법들과의 비교 요약</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>방법</th>
+          <th>파라미터</th>
+          <th>훈련 속도</th>
+          <th>품질</th>
+          <th>범용성</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Frequency Encoding (NeRF)</td>
+          <td>적음</td>
+          <td>수 시간</td>
+          <td>보통</td>
+          <td>높음</td>
+      </tr>
+      <tr>
+          <td>Dense Grid</td>
+          <td>매우 많음</td>
+          <td>빠름</td>
+          <td>높음</td>
+          <td>낮음</td>
+      </tr>
+      <tr>
+          <td>Octree (NGLOD)</td>
+          <td>중간</td>
+          <td>중간</td>
+          <td>높음 (SDF)</td>
+          <td>낮음 (SDF 특화)</td>
+      </tr>
+      <tr>
+          <td><strong>Multiresolution Hash (Ours)</strong></td>
+          <td><strong>중간</strong></td>
+          <td><strong>수 초~분</strong></td>
+          <td><strong>높음</strong></td>
+          <td><strong>높음</strong></td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="결론-및-시사점">결론 및 시사점<a class="anchor" href="#%ea%b2%b0%eb%a1%a0-%eb%b0%8f-%ec%8b%9c%ec%82%ac%ec%a0%90">#</a></h2>
+<p><strong>논문의 결론</strong></p>
+<p>Multiresolution Hash Encoding은 단순하고 범용적인 입력 인코딩 방식으로, 어떤 Neural Graphics Primitives에도 적용 가능합니다. 핵심은:</p>
+<ol>
+<li><strong>속도</strong>: 기존 방법 대비 수십~수천 배 빠른 훈련 (수 시간 → 수 초)</li>
+<li><strong>품질</strong>: 동등하거나 더 높은 품질 (일부 view-dependent 효과 제외)</li>
+<li><strong>범용성</strong>: NeRF, SDF, NRC, Gigapixel Image 모두 동일한 구현으로 처리</li>
+<li><strong>단순성</strong>: 해시 테이블 크기 T만 조정하면 품질/속도/메모리 트레이드오프 제어 가능</li>
+</ol>
+<p><strong>실무적 시사점</strong></p>
+<ul>
+<li><strong>NeRF 실용화의 전환점</strong>: Instant-NGP는 NeRF를 연구 도구에서 실용적 도구로 전환시킨 논문. 이후 3D Gaussian Splatting(2023)과 함께 real-time 3D reconstruction 분야의 양대 산맥이 됨</li>
+<li><strong>후속 연구에 미친 영향</strong>:
+<ul>
+<li>3DGS(2023)는 Instant-NGP의 한계(view-dependent effect, 실시간 렌더링)를 극복하기 위해 rasterization 기반 접근 채택</li>
+<li>NeRF 기반 자율주행 시뮬레이터(EmerNeRF, OmniRe 등)에서 Hash Encoding 기본 채택</li>
+<li>HuGSim, Difix3D+ 등 최신 논문들도 이 방법의 영향권</li>
+</ul>
+</li>
+<li><strong>설계 철학</strong>: &ldquo;큰 신경망이 모든 것을 학습하게 하는&rdquo; 방식 대신, &ldquo;데이터 구조와 신경망의 역할 분담&rdquo; — 데이터 구조가 위치 정보를, 신경망이 함수 표현을 담당</li>
+</ul>
+<p><strong>한계</strong></p>
+<ul>
+<li>view-dependent 효과(반사, 광택)가 있는 장면에서 mip-NeRF 대비 품질 열세</li>
+<li>해시 충돌로 인한 grain artifact (SDF에서 두드러짐)</li>
+<li>Generative 모델과 결합 시 충돌 처리 추가 연구 필요</li>
+<li>훈련 시간이 빠르지만 실시간 렌더링은 여전히 3DGS보다 느림 (~10 FPS vs. &gt;30 FPS)</li>
+</ul>
+<hr>
+<p><em>관련 논문: <a href="/posts/papers/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/">NeRF</a>, <a href="/posts/papers/mip-nerf-360/">Mip-NeRF 360</a>, <a href="/posts/papers/3d-gaussian-splatting/">3D Gaussian Splatting</a>, <a href="/posts/papers/neurad-neural-rendering-for-autonomous-driving/">NeuRAD</a></em></p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/paper/docs/bevfusion-multi-task-multi-sensor-fusion/" class="flex align-center">
+        <img src="/paper/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/paper/docs/lift-splat-shoot/" class="flex align-center">
+        <span>Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D</span>
+        <img src="/paper/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#section-1-introduction">Section 1: Introduction</a></li>
+    <li><a href="#section-2-background-and-related-work">Section 2: Background and Related Work</a></li>
+    <li><a href="#section-3-multiresolution-hash-encoding">Section 3: Multiresolution Hash Encoding</a></li>
+    <li><a href="#section-4-implementation">Section 4: Implementation</a></li>
+    <li><a href="#section-5-experiments">Section 5: Experiments</a>
+      <ul>
+        <li><a href="#51-gigapixel-image-approximation">5.1 Gigapixel Image Approximation</a></li>
+        <li><a href="#52-signed-distance-functions-sdf">5.2 Signed Distance Functions (SDF)</a></li>
+        <li><a href="#53-neural-radiance-caching-nrc">5.3 Neural Radiance Caching (NRC)</a></li>
+        <li><a href="#54-neural-radiance-and-density-fields-nerf">5.4 Neural Radiance and Density Fields (NeRF)</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-6-discussion-and-future-work">Section 6: Discussion and Future Work</a></li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

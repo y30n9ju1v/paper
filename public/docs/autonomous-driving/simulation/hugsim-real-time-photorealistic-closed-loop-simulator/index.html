@@ -1,0 +1,1649 @@
+<!DOCTYPE html>
+<html lang="ko-KR" dir="ltr">
+<head>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="개요# 저자: Hongyu Zhou, Longzhong Lin, Jiabao Wang, Yichong Lu, Dongfeng Bai, Bingbing Liu, Yue Wang, Andreas Geiger, Yiyi Liao 발행년도: 2024 (arXiv:2412.01718) 학회: CVPR 2024 Extension 주요 내용: 3D Gaussian Splatting을 기반으로 실시간, 포토리얼리스틱, 클로즈드-루프 자율주행 시뮬레이터 HUGSIM을 제안. 보간 뷰와 외삽 뷰 모두에서 고품질 렌더링을 제공하며, 70개 이상의 시퀀스에 걸친 종합적인 벤치마크를 통해 기존 자율주행 알고리즘 평가 플랫폼으로 활용 가능. 목차# Introduction Related Work Urban Scene Reconstruction Simulation Experiments Closed-Loop Benchmark Conclusion 1. Introduction# 요약
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://y30n9ju1v.github.io/paper/docs/autonomous-driving/simulation/hugsim-real-time-photorealistic-closed-loop-simulator/">
+  <meta property="og:site_name" content="Paper">
+  <meta property="og:title" content="HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving">
+  <meta property="og:description" content="개요# 저자: Hongyu Zhou, Longzhong Lin, Jiabao Wang, Yichong Lu, Dongfeng Bai, Bingbing Liu, Yue Wang, Andreas Geiger, Yiyi Liao 발행년도: 2024 (arXiv:2412.01718) 학회: CVPR 2024 Extension 주요 내용: 3D Gaussian Splatting을 기반으로 실시간, 포토리얼리스틱, 클로즈드-루프 자율주행 시뮬레이터 HUGSIM을 제안. 보간 뷰와 외삽 뷰 모두에서 고품질 렌더링을 제공하며, 70개 이상의 시퀀스에 걸친 종합적인 벤치마크를 통해 기존 자율주행 알고리즘 평가 플랫폼으로 활용 가능. 목차# Introduction Related Work Urban Scene Reconstruction Simulation Experiments Closed-Loop Benchmark Conclusion 1. Introduction# 요약">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:published_time" content="2026-04-10T09:00:00+09:00">
+    <meta property="article:modified_time" content="2026-04-10T09:00:00+09:00">
+    <meta property="article:tag" content="3D Gaussian Splatting">
+    <meta property="article:tag" content="Autonomous Driving">
+    <meta property="article:tag" content="Simulation">
+    <meta property="article:tag" content="Closed-Loop">
+
+
+  <meta itemprop="name" content="HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving">
+  <meta itemprop="description" content="개요# 저자: Hongyu Zhou, Longzhong Lin, Jiabao Wang, Yichong Lu, Dongfeng Bai, Bingbing Liu, Yue Wang, Andreas Geiger, Yiyi Liao 발행년도: 2024 (arXiv:2412.01718) 학회: CVPR 2024 Extension 주요 내용: 3D Gaussian Splatting을 기반으로 실시간, 포토리얼리스틱, 클로즈드-루프 자율주행 시뮬레이터 HUGSIM을 제안. 보간 뷰와 외삽 뷰 모두에서 고품질 렌더링을 제공하며, 70개 이상의 시퀀스에 걸친 종합적인 벤치마크를 통해 기존 자율주행 알고리즘 평가 플랫폼으로 활용 가능. 목차# Introduction Related Work Urban Scene Reconstruction Simulation Experiments Closed-Loop Benchmark Conclusion 1. Introduction# 요약">
+  <meta itemprop="datePublished" content="2026-04-10T09:00:00+09:00">
+  <meta itemprop="dateModified" content="2026-04-10T09:00:00+09:00">
+  <meta itemprop="wordCount" content="1978">
+  <meta itemprop="keywords" content="3D Gaussian Splatting,Autonomous Driving,Simulation,Closed-Loop">
+
+<title>HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving | Paper</title>
+<link rel="icon" href="/paper/favicon.png" >
+<link rel="manifest" href="/paper/manifest.json">
+<link rel="canonical" href="https://y30n9ju1v.github.io/paper/docs/autonomous-driving/simulation/hugsim-real-time-photorealistic-closed-loop-simulator/">
+<link rel="stylesheet" href="/paper/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/paper/fuse.min.js"></script>
+  <script defer src="/paper/en.search.min.b1685711fcbce34e51ac4e2f3f34db3464d1f2809b936b8ce7ecb2014e6bf361.js" integrity="sha256-sWhXEfy8405RrE4vPzTbNGTR8oCbk2uM5&#43;yyAU5r82E=" crossorigin="anonymous"></script>
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '\\[', right: '\\]', display: true},
+      {left: '\\(', right: '\\)', display: false},
+      {left: '$', right: '$', display: false}
+    ]
+  });
+});
+</script>
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/paper/"><span>Paper</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-26dad33899f9ff5c8eb940bf3bc5c8c6" class="toggle"  />
+    <label for="section-26dad33899f9ff5c8eb940bf3bc5c8c6" class="flex">
+      <a role="button" class="">
+        Deep Learning</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/clip-learning-transferable-visual-models-from-natural-language-supervision/" class="">
+      CLIP: Learning Transferable Visual Models From Natural Language Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/pointnet-plus-plus-deep-hierarchical-feature-learning/" class="">
+      PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/vit-an-image-is-worth-16x16-words/" class="">
+      ViT: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/resnet-deep-residual-learning-for-image-recognition/" class="">
+      ResNet: Deep Residual Learning for Image Recognition</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/detr-end-to-end-object-detection-with-transformers/" class="">
+      DETR: End-to-End Object Detection with Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/attention-is-all-you-need/" class="">
+      Attention Is All You Need</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/proximal-policy-optimization/" class="">
+      Proximal Policy Optimization Algorithms (PPO)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/" class="">
+      PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/dqn-playing-atari-with-deep-reinforcement-learning/" class="">
+      Playing Atari with Deep Reinforcement Learning</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-55a967b32f0d01d82a62069db60bc9a4" class="toggle"  />
+    <label for="section-55a967b32f0d01d82a62069db60bc9a4" class="flex">
+      <a role="button" class="">
+        Novel View Synthesis</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/instant-ngp-multiresolution-hash-encoding/" class="">
+      Instant Neural Graphics Primitives with a Multiresolution Hash Encoding</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/4d-gaussian-splatting/" class="">
+      4D Gaussian Splatting for Real-Time Dynamic Scene Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3d-gaussian-splatting/" class="">
+      3D Gaussian Splatting for Real-Time Radiance Field Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3d-gaussian-ray-tracing/" class="">
+      3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/" class="">
+      3DGUT: Enabling Distorted Cameras and Secondary Rays in Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/difix3d-plus/" class="">
+      DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/" class="">
+      NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-bba278969cd1a39a02e4f40a6eceba0d" class="toggle"  />
+    <label for="section-bba278969cd1a39a02e4f40a6eceba0d" class="flex">
+      <a role="button" class="">
+        Generative Models</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/controlnet-adding-conditional-control-to-text-to-image-diffusion-models/" class="">
+      ControlNet: Adding Conditional Control to Text-to-Image Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/high-resolution-image-synthesis-with-latent-diffusion-models/" class="">
+      High-Resolution Image Synthesis with Latent Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/denoising-diffusion-probabilistic-models/" class="">
+      Denoising Diffusion Probabilistic Models (DDPM)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/drivearena/" class="">
+      DriveArena: A Closed-loop Generative Simulation Platform for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/magicdrive-street-view-generation-3d-geometry-control/" class="">
+      MagicDrive: Street View Generation with Diverse 3D Geometry Control</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/drivedreamer/" class="">
+      DriveDreamer: Towards Real-world-driven World Models for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/gaia-1/" class="">
+      GAIA-1: A Generative World Model for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-ba66afb2e4f86c05dd02e329f85a3a79" class="toggle" checked />
+    <label for="section-ba66afb2e4f86c05dd02e329f85a3a79" class="flex">
+      <a role="button" class="">
+        Autonomous Driving</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-d7ba9eb4570c2bfc131b9c6410bbe7ec" class="toggle"  />
+    <label for="section-d7ba9eb4570c2bfc131b9c6410bbe7ec" class="flex">
+      <a role="button" class="">
+        Perception</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/" class="">
+      GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/" class="">
+      StreamMapNet: Streaming Mapping Network for Vectorized Online HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/vectormapnet-end-to-end-vectorized-hd-map-learning/" class="">
+      VectorMapNet: End-to-end Vectorized HD Map Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/maptr-structured-modeling-online-vectorized-hd-map-construction/" class="">
+      MapTR: Structured Modeling and Learning for Online Vectorized HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/pointpillars-fast-encoders-object-detection-point-clouds/" class="">
+      PointPillars: Fast Encoders for Object Detection from Point Clouds</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/centerpoint-center-based-3d-object-detection-and-tracking/" class="">
+      CenterPoint: Center-based 3D Object Detection and Tracking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/monoscene-monocular-3d-semantic-scene-completion/" class="">
+      MonoScene: Monocular 3D Semantic Scene Completion</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/tpvformer-tri-perspective-view-3d-semantic-occupancy/" class="">
+      TPVFormer: Tri-Perspective View for Vision-Based 3D Semantic Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/surroundocc/" class="">
+      SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/detr3d-3d-object-detection-multi-view-images/" class="">
+      DETR3D: 3D Object Detection from Multi-view Images via 3D-to-2D Queries</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/occ3d-large-scale-3d-occupancy-prediction-benchmark/" class="">
+      Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevfusion-multi-task-multi-sensor-fusion/" class="">
+      BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/lift-splat-shoot/" class="">
+      Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevdepth/" class="">
+      BEVDepth: Acquisition of Reliable Depth for Multi-view 3D Object Detection</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevformer/" class="">
+      BEVFormer: Learning Bird&#39;s-Eye-View Representation from Multi-Camera Images via Spatiotemporal Transformers</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-7a9153220f9190837dca18e7bc97c48d" class="toggle" checked />
+    <label for="section-7a9153220f9190837dca18e7bc97c48d" class="flex">
+      <a role="button" class="">
+        Simulation</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/lidarsim-realistic-lidar-simulation-by-leveraging-the-real-world/" class="">
+      LiDARsim: Realistic LiDAR Simulation by Leveraging the Real World</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/neurad-neural-rendering-for-autonomous-driving/" class="">
+      NeuRAD: Neural Rendering for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/omnire-omni-urban-scene-reconstruction/" class="">
+      OmniRe: Omni Urban Scene Reconstruction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/street-gaussians-modeling-dynamic-urban-scenes/" class="">
+      Street Gaussians: Modeling Dynamic Urban Scenes with Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/emernerf/" class="">
+      EmerNeRF: Emergent Spatial-Temporal Scene Decomposition via Self-Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/unisim-neural-closed-loop-sensor-simulator/" class="">
+      UniSim: A Neural Closed-Loop Sensor Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/driving-gaussian-composite-gaussian-splatting/" class="">
+      DrivingGaussian: Composite Gaussian Splatting for Surrounding Dynamic Autonomous Driving Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/carla-an-open-urban-driving-simulator/" class="">
+      CARLA: An Open Urban Driving Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/hugsim-real-time-photorealistic-closed-loop-simulator/" class="active">
+      HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-e9f19cbf840aaca3029a9a86c6765e7f" class="toggle"  />
+    <label for="section-e9f19cbf840aaca3029a9a86c6765e7f" class="flex">
+      <a role="button" class="">
+        Planning</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/bench2drive-multi-ability-benchmarking-e2e-autonomous-driving/" class="">
+      Bench2Drive: Towards Multi-Ability Benchmarking of Closed-Loop End-To-End Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/navsim/" class="">
+      NAVSIM: Data-Driven Non-Reactive Autonomous Vehicle Simulation and Benchmarking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/transfuser/" class="">
+      TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/uniad-planning-oriented-autonomous-driving/" class="">
+      UniAD: Planning-oriented Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/vad/" class="">
+      VAD: Vectorized Scene Representation for Efficient Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-c1644e2152ae0bb887d703d1c6a373f2" class="toggle"  />
+    <label for="section-c1644e2152ae0bb887d703d1c6a373f2" class="flex">
+      <a role="button" class="">
+        Dataset &amp; Benchmark</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/nuplan/" class="">
+      nuPlan: A closed-loop ML-based planning benchmark for autonomous vehicles</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/nuscenes-multimodal-dataset-autonomous-driving/" class="">
+      nuScenes: A Multimodal Dataset for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/waymo-open-dataset/" class="">
+      Scalability in Perception for Autonomous Driving: Waymo Open Dataset</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/paper/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving</h3>
+
+  <label for="toc-control">
+    
+    <img src="/paper/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#1-introduction">1. Introduction</a></li>
+    <li><a href="#2-related-work">2. Related Work</a></li>
+    <li><a href="#3-urban-scene-reconstruction">3. Urban Scene Reconstruction</a>
+      <ul>
+        <li><a href="#31-기초-개념-3d-gaussian-splatting">3.1 기초 개념: 3D Gaussian Splatting</a></li>
+        <li><a href="#32-분해된-장면-표현">3.2 분해된 장면 표현</a></li>
+        <li><a href="#33-전체-gaussian-splatting-holistic-gaussian-splatting">3.3 전체 Gaussian Splatting (Holistic Gaussian Splatting)</a></li>
+        <li><a href="#34-손실-함수-loss-functions">3.4 손실 함수 (Loss Functions)</a></li>
+      </ul>
+    </li>
+    <li><a href="#4-simulation">4. Simulation</a>
+      <ul>
+        <li><a href="#41-gui-설정-인터페이스">4.1 GUI 설정 인터페이스</a></li>
+        <li><a href="#42-클로즈드루프-시뮬레이션">4.2 클로즈드루프 시뮬레이션</a></li>
+        <li><a href="#43-액터-행동-모델">4.3 액터 행동 모델</a></li>
+        <li><a href="#44-평가-지표-hd-score">4.4 평가 지표: HD-Score</a></li>
+      </ul>
+    </li>
+    <li><a href="#5-experiments">5. Experiments</a>
+      <ul>
+        <li><a href="#51-새로운-뷰-합성-보간-뷰">5.1 새로운 뷰 합성 (보간 뷰)</a></li>
+        <li><a href="#52-새로운-뷰-합성-외삽-뷰">5.2 새로운 뷰 합성 (외삽 뷰)</a></li>
+        <li><a href="#53-3d-의미-재구성">5.3 3D 의미 재구성</a></li>
+        <li><a href="#54-절제-연구-ablation-study">5.4 절제 연구 (Ablation Study)</a></li>
+      </ul>
+    </li>
+    <li><a href="#6-closed-loop-benchmark">6. Closed-Loop Benchmark</a>
+      <ul>
+        <li><a href="#61-벤치마크-구성">6.1 벤치마크 구성</a></li>
+        <li><a href="#62-평가-결과">6.2 평가 결과</a></li>
+      </ul>
+    </li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h2 id="개요">개요<a class="anchor" href="#%ea%b0%9c%ec%9a%94">#</a></h2>
+<ul>
+<li><strong>저자</strong>: Hongyu Zhou, Longzhong Lin, Jiabao Wang, Yichong Lu, Dongfeng Bai, Bingbing Liu, Yue Wang, Andreas Geiger, Yiyi Liao</li>
+<li><strong>발행년도</strong>: 2024 (arXiv:2412.01718)</li>
+<li><strong>학회</strong>: CVPR 2024 Extension</li>
+<li><strong>주요 내용</strong>: 3D Gaussian Splatting을 기반으로 실시간, 포토리얼리스틱, 클로즈드-루프 자율주행 시뮬레이터 HUGSIM을 제안. 보간 뷰와 외삽 뷰 모두에서 고품질 렌더링을 제공하며, 70개 이상의 시퀀스에 걸친 종합적인 벤치마크를 통해 기존 자율주행 알고리즘 평가 플랫폼으로 활용 가능.</li>
+</ul>
+<h2 id="목차">목차<a class="anchor" href="#%eb%aa%a9%ec%b0%a8">#</a></h2>
+<ol>
+<li>Introduction</li>
+<li>Related Work</li>
+<li>Urban Scene Reconstruction</li>
+<li>Simulation</li>
+<li>Experiments</li>
+<li>Closed-Loop Benchmark</li>
+<li>Conclusion</li>
+</ol>
+<hr>
+<h2 id="1-introduction">1. Introduction<a class="anchor" href="#1-introduction">#</a></h2>
+<p><strong>요약</strong></p>
+<p>자율주행 알고리즘은 최근 몇 년간 인식(Perception), 계획(Planning), 제어(Control) 분야에서 비약적인 발전을 이루었다. 그러나 기존의 AD 평가 방식은 개별 컴포넌트 성능을 독립적으로 측정하는 오픈루프(Open-loop) 방식에 머물러 있어, 알고리즘이 실제 주행 환경에서 어떻게 동작하는지 전체적(holistic)으로 평가하기 어렵다.</p>
+<p>이 문제를 해결하기 위해 본 논문은 <strong>HUGSIM</strong>을 제안한다. HUGSIM은 3D Gaussian Splatting(3DGS)를 기반으로 한 클로즈드-루프(closed-loop) 시뮬레이터로, 다음 세 가지 주요 특성을 갖는다:</p>
+<ol>
+<li><strong>실시간성(Real-Time)</strong>: 빠른 속도로 렌더링 가능</li>
+<li><strong>포토리얼리즘(Photo-Realistic)</strong>: 고품질 이미지 합성</li>
+<li><strong>클로즈드-루프(Closed-Loop)</strong>: Ego 차량의 행동에 따라 환경이 동적으로 반응</li>
+</ol>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>오픈루프 vs 클로즈드루프</strong>: 오픈루프 평가는 사전 수집된 데이터에서 알고리즘을 테스트하지만, 알고리즘의 행동이 미래 관측에 영향을 주지 않음. 클로즈드루프는 시뮬레이터가 알고리즘의 제어 명령에 실시간으로 반응하여 실제 주행과 유사한 피드백 루프를 형성.</li>
+<li><strong>기존 방법의 한계</strong>: NeRF 기반 방법들은 고품질 렌더링을 제공하지만 실시간성이 부족. 게임 엔진 기반 방법들은 실시간성은 있지만 현실감이 떨어짐.</li>
+</ul>
+<hr>
+<h2 id="2-related-work">2. Related Work<a class="anchor" href="#2-related-work">#</a></h2>
+<p><strong>요약</strong></p>
+<p>관련 연구를 세 카테고리로 분류하여 정리한다.</p>
+<p><strong>2.1 Open-Loop 벤치마크</strong></p>
+<p>대부분의 기존 데이터셋(KITTI, nuScenes, Waymo)과 벤치마크는 오픈루프 방식으로 AD 알고리즘을 평가한다. NAVSIM은 클로즈드루프와 오픈루프의 중간 형태를 제공하지만, 반응형 시뮬레이터가 없어 새로운 뷰 합성 기능을 갖추지 못했다.</p>
+<p><strong>2.2 도시 장면 재구성 방법</strong></p>
+<ul>
+<li><strong>정적 장면</strong>: NeRF, mesh 기반, 3DGS 기반 방법들이 발전했지만 동적 객체 처리에 한계</li>
+<li><strong>동적 장면</strong>: EmerNeRF, StreetGaussians 등이 동적 물체를 별도로 모델링하는 접근법 제시</li>
+</ul>
+<p><strong>2.3 클로즈드-루프 시뮬레이터</strong></p>
+<p>DriveArena, UniSim 등이 클로즈드루프 시뮬레이션을 시도했으나, HD 맵 없이도 동작하거나 실시간 렌더링을 갖추는 동시에 포토리얼리스틱 품질을 달성하지 못하는 한계가 있었다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>HD-Score</strong>: NAVSIM과 DriveArena에서 영감을 받아 제안한 HUGSIM만의 평가 지표. NC(No Collision), DAC(Drive Area Compliance), TTC(Time to Collision), COM(Comfort)의 복합 점수.</li>
+</ul>
+<hr>
+<h2 id="3-urban-scene-reconstruction">3. Urban Scene Reconstruction<a class="anchor" href="#3-urban-scene-reconstruction">#</a></h2>
+<p><strong>요약</strong></p>
+<p>HUGSIM의 장면 재구성 파이프라인은 정적(static) 배경과 동적(dynamic) 전경을 분리하여 모델링한다.</p>
+<h3 id="31-기초-개념-3d-gaussian-splatting">3.1 기초 개념: 3D Gaussian Splatting<a class="anchor" href="#31-%ea%b8%b0%ec%b4%88-%ea%b0%9c%eb%85%90-3d-gaussian-splatting">#</a></h3>
+<p>3DGS는 장면을 이방성(anisotropic) 3D Gaussian들의 집합으로 표현한다. 각 Gaussian $\mathbf{g}$는 다음 속성을 갖는다:</p>
+<ul>
+<li>위치 $\mu \in \mathbb{R}^3$ (공간 내 중심점)</li>
+<li>회전 $\mathbf{R}$ (쿼터니언으로 표현)</li>
+<li>스케일 $\mathbf{S}$ (각 축의 크기)</li>
+<li>투명도 $\alpha \in [0, 1]$</li>
+<li>구면 조화 함수(Spherical Harmonics, $SH$)로 표현된 색상</li>
+</ul>
+<p>색상 렌더링은 볼륨 렌더링 방정식으로 계산된다:</p>
+$$\pi = \mathbf{C} = \sum_{i \in N} c_i \alpha'_i \prod_{j=1}^{i-1}(1 - \alpha'_j)$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$\mathbf{C}$</strong>: 최종 렌더링된 픽셀 색상</li>
+<li><strong>$c_i$</strong>: i번째 Gaussian의 색상</li>
+<li><strong>$\alpha'_i$</strong>: i번째 Gaussian의 projected 투명도 (카메라에서 본 실제 불투명도)</li>
+<li><strong>$\prod_{j=1}^{i-1}(1-\alpha'_j)$</strong>: 앞의 j-1개 Gaussian을 통과한 빛의 투과율 (앞 객체들이 얼마나 빛을 가리는지)</li>
+<li>직관적으로: 뒤쪽 Gaussian일수록 앞에 있는 Gaussian들에 의해 가려지는 효과가 누적됨</li>
+</ul>
+<h3 id="32-분해된-장면-표현">3.2 분해된 장면 표현<a class="anchor" href="#32-%eb%b6%84%ed%95%b4%eb%90%9c-%ec%9e%a5%eb%a9%b4-%ed%91%9c%ed%98%84">#</a></h3>
+<p><strong>비-지면 정적 Gaussian (Non-Ground Static Gaussians)</strong></p>
+<p>기존 3DGS 정의에 추가로 **3D 의미론적 레이블(semantic label)**을 각 Gaussian에 부여한다. 이를 통해:</p>
+<ul>
+<li>전경/배경 분리를 위한 의미 정보 활용</li>
+<li>충돌 감지에 의미 정보 활용 가능</li>
+</ul>
+<p><strong>지면 Gaussian (Ground Gaussians)</strong></p>
+<p>자율주행 장면에서 지면은 평평해야 한다는 물리적 제약을 활용한다. 단순한 단일 평면으로 가정하면 경사면 등 복잡한 지형을 처리하기 어려우므로, **다중 평면 지면 모델(Multi-Plane Ground Model)**을 제안한다.</p>
+<p>최적화 문제:</p>
+$$\min_{\{x_i, y_i, \sigma_i\}} (1 - \lambda_{SSM})\|\mathbf{I} - \hat{\mathbf{I}}\|_1 + \lambda_{SSM}\text{SSIM}(\mathbf{I}, \hat{\mathbf{I}})$$$$\text{subject to} \quad \min_{\{x_i, y_i, \sigma_i\}} \sqrt{\lambda} \frac{1}{N} \sum_{z_i > z_{th}} (\mu_{y,i}^{cam} - \mu_{y,i}^{gm})^2 = 0$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$\mathbf{I}$, $\hat{\mathbf{I}}$</strong>: 렌더링 이미지와 실제(ground truth) 이미지</li>
+<li><strong>$\lambda_{SSM}$</strong>: SSIM 손실 가중치</li>
+<li><strong>$\mu_{y,i}^{cam}$, $\mu_{y,i}^{gm}$</strong>: 카메라 좌표와 지면 모델 좌표에서의 Gaussian y축 위치</li>
+<li>직관적으로: 렌더링 품질을 유지하면서 Gaussian들이 실제 지면에 붙어 있도록 제약을 부과</li>
+</ul>
+<p><strong>비-네이티브 동적 차량 Gaussian (Non-Native Dynamic Vehicles)</strong></p>
+<p>동적 차량은 RGB 이미지와 노이즈가 있는 3D 예측값(3D bounding box)에서 재구성된다. 각 차량의 Gaussian은 유니사이클 모델(unicycle model)에 의해 파라미터화된 변환으로 최적화된다:</p>
+$$\begin{pmatrix} \dot{x} \\ \dot{y} \\ \dot{\theta} \\ \dot{v} \end{pmatrix} = \frac{dS}{dt} = \begin{pmatrix} v\cos\theta \\ v\sin\theta \\ \frac{v\tan\delta}{L} \\ a \end{pmatrix}$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$x, y$</strong>: 차량의 BEV(Bird&rsquo;s Eye View) 위치</li>
+<li><strong>$\theta$</strong>: 차량 방향각 (yaw)</li>
+<li><strong>$v$</strong>: 전진 속도</li>
+<li><strong>$\delta$</strong>: 조향각 (steering angle)</li>
+<li><strong>$L$</strong>: 차량 축간거리 (wheelbase)</li>
+<li><strong>$a$</strong>: 가속도</li>
+<li>직관적으로: 자동차의 물리적 움직임 특성(앞바퀴 조향으로 인한 회전)을 모델링하여 자연스러운 차량 궤적을 예측</li>
+</ul>
+<h3 id="33-전체-gaussian-splatting-holistic-gaussian-splatting">3.3 전체 Gaussian Splatting (Holistic Gaussian Splatting)<a class="anchor" href="#33-%ec%a0%84%ec%b2%b4-gaussian-splatting-holistic-gaussian-splatting">#</a></h3>
+<p><strong>새로운 뷰 합성 (Novel View Synthesis)</strong></p>
+<p>정적 Gaussian과 동적 Gaussian을 결합하여 최종 이미지를 렌더링한다. 의미 레이블(s), 광학 흐름(F), 깊이(D)도 동일한 볼륨 렌더링 방식으로 계산된다:</p>
+$$\pi_S: \mathbf{S} = \sum_{i \in N} \text{softmax}(s_i) \alpha'_i \prod_{j=1}^{i-1}(1 - \alpha'_j) \quad (7)$$$$\pi_F: \mathbf{F} = \sum_{i \in N} F_i \alpha'_i \prod_{j=1}^{i-1}(1 - \alpha'_j) \quad (9)$$$$\pi_D: \mathbf{D} = \sum_{i \in N} d_i \alpha'_i \prod_{j=1}^{i-1}(1 - \alpha'_j) \quad (10)$$<p><strong>수식 설명 (의미 레이블)</strong></p>
+<ul>
+<li><strong>$s_i$</strong>: i번째 Gaussian의 3D 의미 로짓(logit) 벡터 (차, 나무, 도로 등 클래스별 점수)</li>
+<li><strong>$\text{softmax}(s_i)$</strong>: 3D 공간에서 소프트맥스를 적용하여 정규화 (2D 소프트맥스보다 floating Gaussian 문제를 줄임)</li>
+<li><strong>$\pi_S$</strong>: 최종 의미 레이블 맵</li>
+</ul>
+<p><strong>광학 흐름 계산</strong></p>
+<p>두 타임스탬프 $t_1$, $t_2$ 사이의 광학 흐름을 계산하기 위해 각 Gaussian 중심 $\mu$를 두 이미지 평면에 투영한다:</p>
+$$\mu'_1 = \mathbf{K}[\mathbf{R}_{t_1}^{cam}; \mathbf{t}_{t_1}^{cam}]\mu, \quad \mu'_2 = \mathbf{K}[\mathbf{R}_{t_2}^{cam}; \mathbf{t}_{t_2}^{cam}]\mu \quad (8)$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$\mathbf{K}$</strong>: 카메라 내부 파라미터 행렬 (focal length, principal point)</li>
+<li><strong>$\mathbf{R}_t^{cam}$, $\mathbf{t}_t^{cam}$</strong>: 시간 $t$에서의 카메라 외부 파라미터 (회전과 이동)</li>
+<li><strong>$\mu'_1$, $\mu'_2$</strong>: 각 타임스탬프에서의 2D 이미지 투영 좌표</li>
+<li>광학 흐름 벡터: $\mathbf{f}_{t_1 \to t_2} = \mu'_2 - \mu'_1$</li>
+</ul>
+<h3 id="34-손실-함수-loss-functions">3.4 손실 함수 (Loss Functions)<a class="anchor" href="#34-%ec%86%90%ec%8b%a4-%ed%95%a8%ec%88%98-loss-functions">#</a></h3>
+<p><strong>이미지 기반 손실</strong></p>
+$$\mathcal{L}_I = (1 - \lambda_{SSIM})\|\mathbf{I} - \hat{\mathbf{I}}\|_1 + \lambda_{SSIM}\text{SSIM}(\mathbf{I}, \hat{\mathbf{I}}) \quad (11)$$<p><strong>의미 손실</strong></p>
+$$\mathcal{L}_S = -\sum_{k=0}^{\hat{S}-1} \hat{S}_k \log(S_k) \quad (12)$$<p><strong>알파 마스크 손실</strong></p>
+$$\mathcal{L}_A = \|\mathcal{A} - \hat{\mathbf{I}}_M\|_2 \quad (13)$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$\mathcal{L}_I$</strong>: 렌더링 이미지와 실제 이미지의 픽셀 차이 (L1)와 구조적 유사도(SSIM)의 결합</li>
+<li><strong>$\mathcal{L}_S$</strong>: 2D 의미 분할 pseudo-label과의 크로스 엔트로피 손실</li>
+<li><strong>$\mathcal{L}_A$</strong>: 렌더링된 알파 맵과 마스크 ground truth의 L2 거리</li>
+<li><strong>$\hat{\mathbf{I}}_M$</strong>: 차량 마스크 ground truth (비-네이티브 차량이 투명하게 보이지 않도록 제약)</li>
+</ul>
+<p><strong>물리 기반 정규화 (지면 모델)</strong></p>
+$$\mathcal{L}_{ground} = \frac{1}{N} \sum_{z_i > z_{th}} (\mu_{y,i}^{cam} - \mu_{y,i}^{gm})^2 \quad (14)$$<p><strong>유니사이클 모델 손실</strong></p>
+$$\mathcal{L}_t = \sum_t \|x_t - \hat{x}_t\|_2 + \|z_t - \hat{z}_t\|_2 \quad (15)$$$$\mathcal{L}_{uni} = \sum_t \|x_{t+1} - x_t - \frac{v_t}{\omega_t}(\sin\theta_{t+1} - \sin\theta_t)\| + \sum_t \|z_{t+1} - z_t + \frac{v_t}{\omega_t}(\cos\theta_{t+1} - \cos\theta_t)\| + \sum_t \|\theta_{t+1} - \theta_t - \omega_t\| \quad (16)$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$\mathcal{L}_t$</strong>: 예측 bounding box 위치와 실제 위치의 차이 (x, z는 수평 좌표)</li>
+<li><strong>$\mathcal{L}_{uni}$</strong>: 유니사이클 모델의 운동 방정식을 따르도록 강제하는 정규화
+<ul>
+<li>첫 번째 항: x축 방향 이동이 속도와 각도 변화에 부합하는지</li>
+<li>두 번째 항: z축 방향 이동이 물리 법칙에 부합하는지</li>
+<li>세 번째 항: 각도 변화가 각속도와 일치하는지</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="4-simulation">4. Simulation<a class="anchor" href="#4-simulation">#</a></h2>
+<p><strong>요약</strong></p>
+<p>HUGSIM의 시뮬레이션 모듈은 세 가지 핵심 요소로 구성된다: GUI 인터페이스, 클로즈드루프 시뮬레이션 엔진, 액터 행동 생성 시스템.</p>
+<h3 id="41-gui-설정-인터페이스">4.1 GUI 설정 인터페이스<a class="anchor" href="#41-gui-%ec%84%a4%ec%a0%95-%ec%9d%b8%ed%84%b0%ed%8e%98%ec%9d%b4%ec%8a%a4">#</a></h3>
+<p>시뮬레이터 설정을 위한 그래픽 사용자 인터페이스(GUI)를 제공한다. 주요 설정 항목:</p>
+<ol>
+<li><strong>카메라 설정</strong>: 카메라 수, 내부/외부 파라미터</li>
+<li><strong>Ego 차량 파라미터</strong>: 운동학 모델, 제어 빈도, 초기 상태</li>
+<li><strong>액터 설정</strong>: 네이티브/비-네이티브 차량, 공격적 행동 여부</li>
+</ol>
+<p>3DRealCar 데이터셋에서 100가지 이상의 후보 3D 차량 모델을 제공한다.</p>
+<h3 id="42-클로즈드루프-시뮬레이션">4.2 클로즈드루프 시뮬레이션<a class="anchor" href="#42-%ed%81%b4%eb%a1%9c%ec%a6%88%eb%93%9c%eb%a3%a8%ed%94%84-%ec%8b%9c%eb%ae%ac%eb%a0%88%ec%9d%b4%ec%85%98">#</a></h3>
+<p><strong>시뮬레이터-사용자 통신</strong></p>
+<p>3D Gaussian 재구성 결과를 Gymnasium 환경으로 캡슐화하여, AD 알고리즘과 병렬로 실행한다. 두 시스템이 같은 기기에서 실행될 때는 <strong>named pipes</strong>, 다른 경우에는 <strong>web sockets</strong>을 사용한다.</p>
+<p><strong>컨트롤러</strong></p>
+<p>AD 알고리즘이 계획된 waypoints 또는 다음 몇 초간의 제어 명령 시퀀스를 반환하면, 시뮬레이터는 이를 바탕으로 LQR(Linear Quadratic Regulator) 제어를 적용한다.</p>
+<p><strong>Ego 차량 운동학 모델</strong></p>
+<p>제어 명령(조향각 $\delta$, 가속도 $a$)이 주어질 때, 이산화된 자전거 모델(kinematic bicycle model)을 사용한다:</p>
+$$S = \begin{pmatrix} x \\ y \\ \theta \\ v \end{pmatrix}, \quad \frac{dS}{dt} = \begin{pmatrix} v\cos\theta \\ v\sin\theta \\ \frac{v\tan\delta}{L} \\ a \end{pmatrix} \quad (18)$$<p><strong>충돌 감지 (Collision Detection)</strong></p>
+<p>두 종류의 충돌을 정의한다:</p>
+<ol>
+<li><strong>전경 충돌</strong>: BEV(Bird&rsquo;s Eye View) bounding box 겹침으로 감지</li>
+<li><strong>배경 충돌</strong>: Ego 차량 3D bounding box 안의 배경 Gaussian 수가 임계값 초과 시 감지 (의미 레이블로 지면, 식생 등 제외)</li>
+</ol>
+<h3 id="43-액터-행동-모델">4.3 액터 행동 모델<a class="anchor" href="#43-%ec%95%a1%ed%84%b0-%ed%96%89%eb%8f%99-%eb%aa%a8%eb%8d%b8">#</a></h3>
+<p><strong>재생(Replayed) 행동</strong>: 원본 데이터셋의 관측 궤적을 유니사이클 모델로 재구성하여 재생</p>
+<p><strong>일반(Normal) 행동</strong>: IDM(Intelligent Driver Model)을 따르는 차선 추종 행동. HD 맵이 없는 경우 일정 속도로 사전 정의된 방향 주행</p>
+<p><strong>공격적(Aggressive) 행동</strong>:</p>
+$$\min C_{total}(s_{1:T}^{(a)}) = C_{attack}(s_{1:T}^{(a)}) + \lambda C_{collision}(s_{1:T}^{(a)}) \quad (19)$$$$C_{attack}(s_{1:T}^{(a)}) = \min_{t=1:T} \|s_t^{(j)} - s_t^{(a)}\|$$$$C_{collision}(s_{1:T}^{(a)}) = \sum_{j=1}^{M} \mathbb{1}(\min_{t=1:T} \|s_t^{(j)} - s_t^{(a)}\| < \text{tolerance})$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$s_{1:T}^{(a)}$</strong>: 공격적 액터의 T 타임스탬프 궤적</li>
+<li><strong>$C_{attack}$</strong>: 공격 비용 - Ego 차량과 공격 액터 간 최소 거리 (작을수록 위험)</li>
+<li><strong>$C_{collision}$</strong>: 충돌 비용 - 다른 액터와의 충돌 횟수 (회피하면서 공격해야 함)</li>
+<li><strong>$\lambda$</strong>: 충돌 페널티 가중치</li>
+<li>직관적으로: 다른 차량들과 충돌하지 않으면서 Ego 차량에 최대한 가까이 접근하는 최적 궤적을 탐색</li>
+</ul>
+<h3 id="44-평가-지표-hd-score">4.4 평가 지표: HD-Score<a class="anchor" href="#44-%ed%8f%89%ea%b0%80-%ec%a7%80%ed%91%9c-hd-score">#</a></h3>
+$$\text{HD-Score}_t = \left(\prod_{m \in \{NC, DAC\}} score_m\right) \times \frac{\sum_{w \in \{TTC, COM\}} weight_w \times score_w}{\sum_{w \in \{TTC, COM\}} weight_w} \quad (20)$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$NC$ (No Collision)</strong>: 충돌 없음 여부 (0 or 1, 충돌 시 전체 점수 0)</li>
+<li><strong>$DAC$ (Drive Area Compliance)</strong>: 주행 구역 준수 여부 (도로 이탈 시 전체 점수 0)</li>
+<li><strong>$TTC$ (Time to Collision)</strong>: 충돌까지의 시간 - 낮을수록 위험 상황</li>
+<li><strong>$COM$ (Comfort)</strong>: 승차감 - 급격한 가속/감속/조향 페널티</li>
+<li>직관적으로: NC와 DAC는 안전의 최소 조건(AND 조건)이며, TTC와 COM은 주행 품질을 나타내는 보완적 지표</li>
+</ul>
+<hr>
+<h2 id="5-experiments">5. Experiments<a class="anchor" href="#5-experiments">#</a></h2>
+<p><strong>요약</strong></p>
+<p>HUGSIM은 다섯 가지 측면에서 평가된다: 보간 뷰 합성, 외삽 뷰 합성, 3D 의미 재구성, 3D 시맨틱 재구성, 기하학적 재구성.</p>
+<h3 id="51-새로운-뷰-합성-보간-뷰">5.1 새로운 뷰 합성 (보간 뷰)<a class="anchor" href="#51-%ec%83%88%eb%a1%9c%ec%9a%b4-%eb%b7%b0-%ed%95%a9%ec%84%b1-%eb%b3%b4%ea%b0%84-%eb%b7%b0">#</a></h3>
+<p>KITTI-360과 Waymo 데이터셋에서 평가. 주요 지표: PSNR, SSIM, LPIPS.</p>
+<table>
+  <thead>
+      <tr>
+          <th>방법</th>
+          <th>PSNR↑</th>
+          <th>SSIM↑</th>
+          <th>LPIPS↓</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>NSG</td>
+          <td>23.00</td>
+          <td>0.664</td>
+          <td>0.373</td>
+      </tr>
+      <tr>
+          <td>StreetGaussian</td>
+          <td>25.59</td>
+          <td>0.873</td>
+          <td>0.174</td>
+      </tr>
+      <tr>
+          <td><strong>Ours (HUGSIM)</strong></td>
+          <td><strong>25.42</strong></td>
+          <td><strong>0.821</strong></td>
+          <td><strong>0.092</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p>HUGSIM은 NeRF 기반 방법 대비 렌더링 속도 면에서 압도적 우위를 보이며, 품질 면에서도 경쟁력 있는 성능을 달성한다.</p>
+<h3 id="52-새로운-뷰-합성-외삽-뷰">5.2 새로운 뷰 합성 (외삽 뷰)<a class="anchor" href="#52-%ec%83%88%eb%a1%9c%ec%9a%b4-%eb%b7%b0-%ed%95%a9%ec%84%b1-%ec%99%b8%ec%82%bd-%eb%b7%b0">#</a></h3>
+<p>외삽 뷰는 훈련 데이터에 없는 새로운 시점에서의 렌더링으로, 클로즈드루프 시뮬레이션에서 필수적이다.</p>
+<ul>
+<li>HUGSIM은 NeuRAD, StreetGaussian 대비 LiDAR 입력 없이도 경쟁력 있는 외삽 성능을 달성</li>
+<li>물리적 제약(지면 모델, 유니사이클 모델)이 외삽 뷰 품질을 크게 향상</li>
+</ul>
+<h3 id="53-3d-의미-재구성">5.3 3D 의미 재구성<a class="anchor" href="#53-3d-%ec%9d%98%eb%af%b8-%ec%9e%ac%ea%b5%ac%ec%84%b1">#</a></h3>
+<p>KITTI-360에서 3D 의미 포인트 클라우드를 추출하여 평가:</p>
+<ul>
+<li><strong>정확도(acc)</strong>: 예측 포인트에서 가장 가까운 LiDAR 포인트까지의 평균 거리</li>
+<li><strong>완전성(comp)</strong>: LiDAR 포인트에서 가장 가까운 예측 포인트까지의 평균 거리</li>
+<li><strong>mIoU</strong>: 3D 의미 분류 정확도</li>
+</ul>
+<h3 id="54-절제-연구-ablation-study">5.4 절제 연구 (Ablation Study)<a class="anchor" href="#54-%ec%a0%88%ec%a0%9c-%ec%97%b0%ea%b5%ac-ablation-study">#</a></h3>
+<p><strong>동적 장면 절제</strong>: 노이즈 있는 3D bounding box에서 유니사이클 모델 최적화의 효과를 검증. 최적화 없이는 렌더링 품질과 3D 추적 정확도 모두 저하됨.</p>
+<p><strong>정적 장면 절제</strong>: 노출 모델링과 의미 손실의 효과 분석.</p>
+<p><strong>지면 모델 절제</strong>: $\mathcal{L}_{ground}$가 없으면 외삽 뷰에서 부유하는 Gaussian이 나타나는 아티팩트 발생.</p>
+<hr>
+<h2 id="6-closed-loop-benchmark">6. Closed-Loop Benchmark<a class="anchor" href="#6-closed-loop-benchmark">#</a></h2>
+<p><strong>요약</strong></p>
+<p>HUGSIM 벤치마크는 KITTI-360, Waymo, nuScenes, PandaSet에서 70개 이상의 시퀀스로 구성된다. 난이도는 Easy, Medium, Hard, Extreme의 4단계.</p>
+<h3 id="61-벤치마크-구성">6.1 벤치마크 구성<a class="anchor" href="#61-%eb%b2%a4%ec%b9%98%eb%a7%88%ed%81%ac-%ea%b5%ac%ec%84%b1">#</a></h3>
+<p><strong>지원 데이터셋</strong>: KITTI-360 (6 카메라), Waymo (5 카메라), nuScenes (6 카메라)</p>
+<p><strong>시나리오 난이도</strong>:</p>
+<ul>
+<li><strong>Easy</strong>: 주로 정적 장면, 간단한 직진 주행</li>
+<li><strong>Medium</strong>: 차선 변경, IDM 행동 차량 포함</li>
+<li><strong>Hard</strong>: 교차로, 회전, 공격적 액터 포함</li>
+<li><strong>Extreme</strong>: 다수의 공격적 액터, 복잡한 교통 상황</li>
+</ul>
+<h3 id="62-평가-결과">6.2 평가 결과<a class="anchor" href="#62-%ed%8f%89%ea%b0%80-%ea%b2%b0%ea%b3%bc">#</a></h3>
+<p>평가된 AD 알고리즘:</p>
+<ul>
+<li><strong>UniAD</strong>: 가장 강력한 성능, 대부분의 복잡한 시나리오에서 우수</li>
+<li><strong>VAD</strong>: 중간 수준 성능</li>
+<li><strong>LatentTransformer (LTF)</strong>: 쉬운 시나리오에서 양호하나 복잡한 상황에서 한계</li>
+</ul>
+<p><strong>핵심 발견</strong>:</p>
+<ol>
+<li>nuScenes에서 훈련된 모델들은 KITTI-360과 Waymo에서 일반화 어려움 → 다양한 도메인 일반화 연구 필요</li>
+<li>HD 맵 없이는 도로 이탈(DAC) 문제가 현저히 증가</li>
+<li>공격적 액터가 있는 Extreme 시나리오에서는 모든 기존 방법이 어려움을 겪음</li>
+</ol>
+<hr>
+<h2 id="핵심-개념-정리">핵심 개념 정리<a class="anchor" href="#%ed%95%b5%ec%8b%ac-%ea%b0%9c%eb%85%90-%ec%a0%95%eb%a6%ac">#</a></h2>
+<table>
+  <thead>
+      <tr>
+          <th>개념</th>
+          <th>설명</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>3D Gaussian Splatting (3DGS)</strong></td>
+          <td>장면을 3D Gaussian들의 집합으로 표현, 빠른 렌더링과 고품질 이미지 합성 가능</td>
+      </tr>
+      <tr>
+          <td><strong>클로즈드루프 시뮬레이션</strong></td>
+          <td>자율주행 알고리즘의 제어 명령이 시뮬레이터에 실시간으로 반영되는 피드백 루프</td>
+      </tr>
+      <tr>
+          <td><strong>다중 평면 지면 모델</strong></td>
+          <td>경사로 등 복잡한 지형을 처리하기 위해 지역적으로 평평한 여러 평면으로 지면을 모델링</td>
+      </tr>
+      <tr>
+          <td><strong>유니사이클 모델</strong></td>
+          <td>자동차의 단순화된 물리 모델로, 전진 속도와 조향각으로 움직임을 표현</td>
+      </tr>
+      <tr>
+          <td><strong>HD-Score</strong></td>
+          <td>NC, DAC, TTC, COM을 결합한 자율주행 종합 평가 지표</td>
+      </tr>
+      <tr>
+          <td><strong>공격적 액터</strong></td>
+          <td>최적화 기반 생성으로 Ego 차량과의 충돌을 시도하는 시나리오 액터</td>
+      </tr>
+      <tr>
+          <td><strong>구면 조화 함수 (SH)</strong></td>
+          <td>방향에 따른 색상 변화(반사, 하이라이트 등)를 표현하는 수학적 도구</td>
+      </tr>
+      <tr>
+          <td><strong>볼륨 렌더링</strong></td>
+          <td>3D 공간의 Gaussian들을 누적하여 2D 이미지로 합성하는 방법</td>
+      </tr>
+      <tr>
+          <td><strong>LQR 제어</strong></td>
+          <td>유한한 비용으로 최적 제어 명령을 계산하는 선형 이차 조정기</td>
+      </tr>
+      <tr>
+          <td><strong>IDM (Intelligent Driver Model)</strong></td>
+          <td>앞 차량과의 거리와 속도를 기반으로 안전한 차간 거리를 유지하는 차량 추종 모델</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="결론-및-시사점">결론 및 시사점<a class="anchor" href="#%ea%b2%b0%eb%a1%a0-%eb%b0%8f-%ec%8b%9c%ec%82%ac%ec%a0%90">#</a></h2>
+<p><strong>주요 기여</strong></p>
+<ol>
+<li><strong>HUGSIM 시스템</strong>: 3DGS 기반 실시간, 포토리얼리스틱, 클로즈드루프 자율주행 시뮬레이터 최초 제안</li>
+<li><strong>물리 기반 재구성</strong>: 다중 평면 지면 모델과 유니사이클 기반 차량 재구성으로 외삽 뷰 품질 향상</li>
+<li><strong>종합 벤치마크</strong>: 70개 이상 시퀀스, 4개 데이터셋, 400개 이상 시나리오로 구성된 AD 평가 플랫폼</li>
+<li><strong>HD-Score</strong>: 클로즈드루프 평가에 특화된 새로운 복합 평가 지표</li>
+</ol>
+<p><strong>실무적 시사점</strong></p>
+<ul>
+<li>기존 AD 알고리즘들은 클로즈드루프 환경에서 오픈루프 평가 대비 현저히 낮은 성능을 보임 → 클로즈드루프 평가의 필요성 강조</li>
+<li>도메인 일반화(domain generalization) 문제가 여전히 AD 알고리즘의 주요 과제</li>
+<li>공격적 시나리오 생성을 통해 AD 알고리즘의 안전성을 체계적으로 평가 가능</li>
+<li>포토리얼리스틱 시뮬레이션이 HD 맵 없이도 가능함을 보여줌으로써, 실용적인 AD 시스템 개발 경로 제시</li>
+</ul>
+<p><strong>한계점 및 향후 연구 방향</strong></p>
+<ul>
+<li>보행자 등 비-차량 동적 객체(pedestrian) 처리 필요 (현재 버전은 차량에 집중)</li>
+<li>클로즈드루프에서 장거리 주행 시 누적 오차 문제 존재</li>
+<li>극단적으로 빠른 속도나 급격한 방향 전환 시 렌더링 품질 저하</li>
+</ul>
+<hr>
+<p><em>관련 논문: <a href="/posts/papers/3d-gaussian-splatting/">3D Gaussian Splatting</a>, <a href="/posts/papers/4d-gaussian-splatting/">4D Gaussian Splatting</a>, <a href="/posts/papers/street-gaussians-modeling-dynamic-urban-scenes/">Street Gaussians</a>, <a href="/posts/papers/driving-gaussian-composite-gaussian-splatting/">DrivingGaussian</a>, <a href="/posts/papers/omnire-omni-urban-scene-reconstruction/">OmniRe</a>, <a href="/posts/papers/unisim-neural-closed-loop-sensor-simulator/">UniSim</a>, <a href="/posts/papers/CARLA-An-Open-Urban-Driving-Simulator/">CARLA</a>, <a href="/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/">nuScenes</a></em></p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/paper/docs/autonomous-driving/simulation/carla-an-open-urban-driving-simulator/" class="flex align-center">
+        <img src="/paper/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>CARLA: An Open Urban Driving Simulator</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/paper/docs/autonomous-driving/planning/bench2drive-multi-ability-benchmarking-e2e-autonomous-driving/" class="flex align-center">
+        <span>Bench2Drive: Towards Multi-Ability Benchmarking of Closed-Loop End-To-End Autonomous Driving</span>
+        <img src="/paper/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#1-introduction">1. Introduction</a></li>
+    <li><a href="#2-related-work">2. Related Work</a></li>
+    <li><a href="#3-urban-scene-reconstruction">3. Urban Scene Reconstruction</a>
+      <ul>
+        <li><a href="#31-기초-개념-3d-gaussian-splatting">3.1 기초 개념: 3D Gaussian Splatting</a></li>
+        <li><a href="#32-분해된-장면-표현">3.2 분해된 장면 표현</a></li>
+        <li><a href="#33-전체-gaussian-splatting-holistic-gaussian-splatting">3.3 전체 Gaussian Splatting (Holistic Gaussian Splatting)</a></li>
+        <li><a href="#34-손실-함수-loss-functions">3.4 손실 함수 (Loss Functions)</a></li>
+      </ul>
+    </li>
+    <li><a href="#4-simulation">4. Simulation</a>
+      <ul>
+        <li><a href="#41-gui-설정-인터페이스">4.1 GUI 설정 인터페이스</a></li>
+        <li><a href="#42-클로즈드루프-시뮬레이션">4.2 클로즈드루프 시뮬레이션</a></li>
+        <li><a href="#43-액터-행동-모델">4.3 액터 행동 모델</a></li>
+        <li><a href="#44-평가-지표-hd-score">4.4 평가 지표: HD-Score</a></li>
+      </ul>
+    </li>
+    <li><a href="#5-experiments">5. Experiments</a>
+      <ul>
+        <li><a href="#51-새로운-뷰-합성-보간-뷰">5.1 새로운 뷰 합성 (보간 뷰)</a></li>
+        <li><a href="#52-새로운-뷰-합성-외삽-뷰">5.2 새로운 뷰 합성 (외삽 뷰)</a></li>
+        <li><a href="#53-3d-의미-재구성">5.3 3D 의미 재구성</a></li>
+        <li><a href="#54-절제-연구-ablation-study">5.4 절제 연구 (Ablation Study)</a></li>
+      </ul>
+    </li>
+    <li><a href="#6-closed-loop-benchmark">6. Closed-Loop Benchmark</a>
+      <ul>
+        <li><a href="#61-벤치마크-구성">6.1 벤치마크 구성</a></li>
+        <li><a href="#62-평가-결과">6.2 평가 결과</a></li>
+      </ul>
+    </li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

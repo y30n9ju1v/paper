@@ -5,6 +5,10 @@ draft: false
 categories: ["Papers", "Autonomous Driving", "3D Occupancy"]
 tags: ["3D Gaussian Splatting", "Occupancy Prediction", "World Model", "Temporal Modeling", "Streaming", "nuScenes"]
 year: 2024
+references:
+  - "3d-gaussian-splatting"
+  - "occ3d-large-scale-3d-occupancy-prediction-benchmark"
+  - "BEVFormer"
 ---
 
 ## 개요

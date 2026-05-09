@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="ko-KR" dir="ltr">
+<head>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="개요# 저자: Jonah Philion, Sanja Fidler (NVIDIA, University of Toronto, Vector Institute) 발행년도: 2020 (arXiv:2008.05711) 주요 내용: 임의의 카메라 리그로부터 멀티뷰 이미지를 받아, 별도의 깊이 센서(LiDAR) 없이 Bird’s-Eye-View(BEV) 표현을 직접 학습하는 end-to-end 아키텍처 “Lift-Splat-Shoot&#34;을 제안. 객체 분할, 지도 분할, 모션 플래닝 태스크에서 기존 방법을 능가함. 한계 극복# 이 논문이 기존 연구의 어떤 한계를 극복하기 위해 작성되었는지 설명합니다.
+기존 한계 1 — 단일 이미지 패러다임의 한계: 기존 컴퓨터 비전 알고리즘은 입력 이미지와 동일한 좌표계 내에서 예측을 출력하도록 설계되어 있어, 자율주행에서 필요한 ego-car 기준의 BEV 좌표계 출력에 바로 적용하기 어려웠습니다. 기존 한계 2 — 카메라 간 융합의 비미분성: 개별 카메라 이미지에 단일 이미지 탐지기를 따로 적용한 뒤 결과를 ego 프레임으로 변환하는 방식은, 카메라 간 최적 융합 전략을 데이터 기반으로 학습하거나 downstream planner의 피드백으로 역전파할 수 없었습니다. 기존 한계 3 — 깊이 불확실성 미반영: OFT(Orthographic Feature Transform) 같은 기존 방법은 한 픽셀의 feature를 깊이와 무관하게 모든 voxel에 동일하게 기여시켜, 실제 깊이 분포를 반영하지 못했습니다. 이 논문의 접근 방식: 각 픽셀마다 깊이에 대한 확률 분포(categorical distribution)를 예측하고, 이를 이용해 frustum 형태의 3D 피처 포인트 클라우드를 생성(Lift)한 뒤, 이를 BEV 평면에 통합(Splat)하여 하나의 통합된 BEV CNN으로 처리합니다. 전체 파이프라인이 end-to-end로 미분 가능하며, 카메라 캘리브레이션에 대한 강건성도 데이터로부터 학습합니다. 목차# Section 1: Introduction Section 2: Related Work (Monocular Object Detection / BEV Inference) Section 3: Method (Lift / Splat / Shoot) Section 4: Implementation (Architecture Details / Frustum Pooling Cumulative Sum Trick) Section 5: Experiments and Results (Segmentation / Robustness / Zero-Shot Transfer / Oracle Depth / Motion Planning) Section 6: Conclusion Section 1: Introduction# 요약
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://y30n9ju1v.github.io/paper/docs/autonomous-driving/perception/lift-splat-shoot/">
+  <meta property="og:site_name" content="Paper">
+  <meta property="og:title" content="Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D">
+  <meta property="og:description" content="개요# 저자: Jonah Philion, Sanja Fidler (NVIDIA, University of Toronto, Vector Institute) 발행년도: 2020 (arXiv:2008.05711) 주요 내용: 임의의 카메라 리그로부터 멀티뷰 이미지를 받아, 별도의 깊이 센서(LiDAR) 없이 Bird’s-Eye-View(BEV) 표현을 직접 학습하는 end-to-end 아키텍처 “Lift-Splat-Shoot&#34;을 제안. 객체 분할, 지도 분할, 모션 플래닝 태스크에서 기존 방법을 능가함. 한계 극복# 이 논문이 기존 연구의 어떤 한계를 극복하기 위해 작성되었는지 설명합니다.
+기존 한계 1 — 단일 이미지 패러다임의 한계: 기존 컴퓨터 비전 알고리즘은 입력 이미지와 동일한 좌표계 내에서 예측을 출력하도록 설계되어 있어, 자율주행에서 필요한 ego-car 기준의 BEV 좌표계 출력에 바로 적용하기 어려웠습니다. 기존 한계 2 — 카메라 간 융합의 비미분성: 개별 카메라 이미지에 단일 이미지 탐지기를 따로 적용한 뒤 결과를 ego 프레임으로 변환하는 방식은, 카메라 간 최적 융합 전략을 데이터 기반으로 학습하거나 downstream planner의 피드백으로 역전파할 수 없었습니다. 기존 한계 3 — 깊이 불확실성 미반영: OFT(Orthographic Feature Transform) 같은 기존 방법은 한 픽셀의 feature를 깊이와 무관하게 모든 voxel에 동일하게 기여시켜, 실제 깊이 분포를 반영하지 못했습니다. 이 논문의 접근 방식: 각 픽셀마다 깊이에 대한 확률 분포(categorical distribution)를 예측하고, 이를 이용해 frustum 형태의 3D 피처 포인트 클라우드를 생성(Lift)한 뒤, 이를 BEV 평면에 통합(Splat)하여 하나의 통합된 BEV CNN으로 처리합니다. 전체 파이프라인이 end-to-end로 미분 가능하며, 카메라 캘리브레이션에 대한 강건성도 데이터로부터 학습합니다. 목차# Section 1: Introduction Section 2: Related Work (Monocular Object Detection / BEV Inference) Section 3: Method (Lift / Splat / Shoot) Section 4: Implementation (Architecture Details / Frustum Pooling Cumulative Sum Trick) Section 5: Experiments and Results (Segmentation / Robustness / Zero-Shot Transfer / Oracle Depth / Motion Planning) Section 6: Conclusion Section 1: Introduction# 요약">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:published_time" content="2026-04-17T08:00:00+09:00">
+    <meta property="article:modified_time" content="2026-04-17T08:00:00+09:00">
+    <meta property="article:tag" content="Autonomous Driving">
+    <meta property="article:tag" content="BEV">
+    <meta property="article:tag" content="Multi-Camera">
+    <meta property="article:tag" content="3D Object Detection">
+
+
+  <meta itemprop="name" content="Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D">
+  <meta itemprop="description" content="개요# 저자: Jonah Philion, Sanja Fidler (NVIDIA, University of Toronto, Vector Institute) 발행년도: 2020 (arXiv:2008.05711) 주요 내용: 임의의 카메라 리그로부터 멀티뷰 이미지를 받아, 별도의 깊이 센서(LiDAR) 없이 Bird’s-Eye-View(BEV) 표현을 직접 학습하는 end-to-end 아키텍처 “Lift-Splat-Shoot&#34;을 제안. 객체 분할, 지도 분할, 모션 플래닝 태스크에서 기존 방법을 능가함. 한계 극복# 이 논문이 기존 연구의 어떤 한계를 극복하기 위해 작성되었는지 설명합니다.
+기존 한계 1 — 단일 이미지 패러다임의 한계: 기존 컴퓨터 비전 알고리즘은 입력 이미지와 동일한 좌표계 내에서 예측을 출력하도록 설계되어 있어, 자율주행에서 필요한 ego-car 기준의 BEV 좌표계 출력에 바로 적용하기 어려웠습니다. 기존 한계 2 — 카메라 간 융합의 비미분성: 개별 카메라 이미지에 단일 이미지 탐지기를 따로 적용한 뒤 결과를 ego 프레임으로 변환하는 방식은, 카메라 간 최적 융합 전략을 데이터 기반으로 학습하거나 downstream planner의 피드백으로 역전파할 수 없었습니다. 기존 한계 3 — 깊이 불확실성 미반영: OFT(Orthographic Feature Transform) 같은 기존 방법은 한 픽셀의 feature를 깊이와 무관하게 모든 voxel에 동일하게 기여시켜, 실제 깊이 분포를 반영하지 못했습니다. 이 논문의 접근 방식: 각 픽셀마다 깊이에 대한 확률 분포(categorical distribution)를 예측하고, 이를 이용해 frustum 형태의 3D 피처 포인트 클라우드를 생성(Lift)한 뒤, 이를 BEV 평면에 통합(Splat)하여 하나의 통합된 BEV CNN으로 처리합니다. 전체 파이프라인이 end-to-end로 미분 가능하며, 카메라 캘리브레이션에 대한 강건성도 데이터로부터 학습합니다. 목차# Section 1: Introduction Section 2: Related Work (Monocular Object Detection / BEV Inference) Section 3: Method (Lift / Splat / Shoot) Section 4: Implementation (Architecture Details / Frustum Pooling Cumulative Sum Trick) Section 5: Experiments and Results (Segmentation / Robustness / Zero-Shot Transfer / Oracle Depth / Motion Planning) Section 6: Conclusion Section 1: Introduction# 요약">
+  <meta itemprop="datePublished" content="2026-04-17T08:00:00+09:00">
+  <meta itemprop="dateModified" content="2026-04-17T08:00:00+09:00">
+  <meta itemprop="wordCount" content="1540">
+  <meta itemprop="keywords" content="Autonomous Driving,BEV,Multi-Camera,3D Object Detection">
+
+<title>Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D | Paper</title>
+<link rel="icon" href="/paper/favicon.png" >
+<link rel="manifest" href="/paper/manifest.json">
+<link rel="canonical" href="https://y30n9ju1v.github.io/paper/docs/autonomous-driving/perception/lift-splat-shoot/">
+<link rel="stylesheet" href="/paper/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/paper/fuse.min.js"></script>
+  <script defer src="/paper/en.search.min.b1685711fcbce34e51ac4e2f3f34db3464d1f2809b936b8ce7ecb2014e6bf361.js" integrity="sha256-sWhXEfy8405RrE4vPzTbNGTR8oCbk2uM5&#43;yyAU5r82E=" crossorigin="anonymous"></script>
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '\\[', right: '\\]', display: true},
+      {left: '\\(', right: '\\)', display: false},
+      {left: '$', right: '$', display: false}
+    ]
+  });
+});
+</script>
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/paper/"><span>Paper</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-26dad33899f9ff5c8eb940bf3bc5c8c6" class="toggle"  />
+    <label for="section-26dad33899f9ff5c8eb940bf3bc5c8c6" class="flex">
+      <a role="button" class="">
+        Deep Learning</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/clip-learning-transferable-visual-models-from-natural-language-supervision/" class="">
+      CLIP: Learning Transferable Visual Models From Natural Language Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/pointnet-plus-plus-deep-hierarchical-feature-learning/" class="">
+      PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/vit-an-image-is-worth-16x16-words/" class="">
+      ViT: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/resnet-deep-residual-learning-for-image-recognition/" class="">
+      ResNet: Deep Residual Learning for Image Recognition</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/detr-end-to-end-object-detection-with-transformers/" class="">
+      DETR: End-to-End Object Detection with Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/attention-is-all-you-need/" class="">
+      Attention Is All You Need</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/proximal-policy-optimization/" class="">
+      Proximal Policy Optimization Algorithms (PPO)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/" class="">
+      PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/dqn-playing-atari-with-deep-reinforcement-learning/" class="">
+      Playing Atari with Deep Reinforcement Learning</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-55a967b32f0d01d82a62069db60bc9a4" class="toggle"  />
+    <label for="section-55a967b32f0d01d82a62069db60bc9a4" class="flex">
+      <a role="button" class="">
+        Novel View Synthesis</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/instant-ngp-multiresolution-hash-encoding/" class="">
+      Instant Neural Graphics Primitives with a Multiresolution Hash Encoding</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/4d-gaussian-splatting/" class="">
+      4D Gaussian Splatting for Real-Time Dynamic Scene Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3d-gaussian-splatting/" class="">
+      3D Gaussian Splatting for Real-Time Radiance Field Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3d-gaussian-ray-tracing/" class="">
+      3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/" class="">
+      3DGUT: Enabling Distorted Cameras and Secondary Rays in Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/difix3d-plus/" class="">
+      DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/" class="">
+      NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-bba278969cd1a39a02e4f40a6eceba0d" class="toggle"  />
+    <label for="section-bba278969cd1a39a02e4f40a6eceba0d" class="flex">
+      <a role="button" class="">
+        Generative Models</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/controlnet-adding-conditional-control-to-text-to-image-diffusion-models/" class="">
+      ControlNet: Adding Conditional Control to Text-to-Image Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/high-resolution-image-synthesis-with-latent-diffusion-models/" class="">
+      High-Resolution Image Synthesis with Latent Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/denoising-diffusion-probabilistic-models/" class="">
+      Denoising Diffusion Probabilistic Models (DDPM)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/drivearena/" class="">
+      DriveArena: A Closed-loop Generative Simulation Platform for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/magicdrive-street-view-generation-3d-geometry-control/" class="">
+      MagicDrive: Street View Generation with Diverse 3D Geometry Control</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/drivedreamer/" class="">
+      DriveDreamer: Towards Real-world-driven World Models for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/gaia-1/" class="">
+      GAIA-1: A Generative World Model for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-ba66afb2e4f86c05dd02e329f85a3a79" class="toggle" checked />
+    <label for="section-ba66afb2e4f86c05dd02e329f85a3a79" class="flex">
+      <a role="button" class="">
+        Autonomous Driving</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-d7ba9eb4570c2bfc131b9c6410bbe7ec" class="toggle" checked />
+    <label for="section-d7ba9eb4570c2bfc131b9c6410bbe7ec" class="flex">
+      <a role="button" class="">
+        Perception</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/" class="">
+      GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/" class="">
+      StreamMapNet: Streaming Mapping Network for Vectorized Online HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/vectormapnet-end-to-end-vectorized-hd-map-learning/" class="">
+      VectorMapNet: End-to-end Vectorized HD Map Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/maptr-structured-modeling-online-vectorized-hd-map-construction/" class="">
+      MapTR: Structured Modeling and Learning for Online Vectorized HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/pointpillars-fast-encoders-object-detection-point-clouds/" class="">
+      PointPillars: Fast Encoders for Object Detection from Point Clouds</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/centerpoint-center-based-3d-object-detection-and-tracking/" class="">
+      CenterPoint: Center-based 3D Object Detection and Tracking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/monoscene-monocular-3d-semantic-scene-completion/" class="">
+      MonoScene: Monocular 3D Semantic Scene Completion</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/tpvformer-tri-perspective-view-3d-semantic-occupancy/" class="">
+      TPVFormer: Tri-Perspective View for Vision-Based 3D Semantic Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/surroundocc/" class="">
+      SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/detr3d-3d-object-detection-multi-view-images/" class="">
+      DETR3D: 3D Object Detection from Multi-view Images via 3D-to-2D Queries</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/occ3d-large-scale-3d-occupancy-prediction-benchmark/" class="">
+      Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevfusion-multi-task-multi-sensor-fusion/" class="">
+      BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/lift-splat-shoot/" class="active">
+      Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevdepth/" class="">
+      BEVDepth: Acquisition of Reliable Depth for Multi-view 3D Object Detection</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevformer/" class="">
+      BEVFormer: Learning Bird&#39;s-Eye-View Representation from Multi-Camera Images via Spatiotemporal Transformers</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-7a9153220f9190837dca18e7bc97c48d" class="toggle"  />
+    <label for="section-7a9153220f9190837dca18e7bc97c48d" class="flex">
+      <a role="button" class="">
+        Simulation</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/lidarsim-realistic-lidar-simulation-by-leveraging-the-real-world/" class="">
+      LiDARsim: Realistic LiDAR Simulation by Leveraging the Real World</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/neurad-neural-rendering-for-autonomous-driving/" class="">
+      NeuRAD: Neural Rendering for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/omnire-omni-urban-scene-reconstruction/" class="">
+      OmniRe: Omni Urban Scene Reconstruction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/street-gaussians-modeling-dynamic-urban-scenes/" class="">
+      Street Gaussians: Modeling Dynamic Urban Scenes with Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/emernerf/" class="">
+      EmerNeRF: Emergent Spatial-Temporal Scene Decomposition via Self-Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/unisim-neural-closed-loop-sensor-simulator/" class="">
+      UniSim: A Neural Closed-Loop Sensor Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/driving-gaussian-composite-gaussian-splatting/" class="">
+      DrivingGaussian: Composite Gaussian Splatting for Surrounding Dynamic Autonomous Driving Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/carla-an-open-urban-driving-simulator/" class="">
+      CARLA: An Open Urban Driving Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/hugsim-real-time-photorealistic-closed-loop-simulator/" class="">
+      HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-e9f19cbf840aaca3029a9a86c6765e7f" class="toggle"  />
+    <label for="section-e9f19cbf840aaca3029a9a86c6765e7f" class="flex">
+      <a role="button" class="">
+        Planning</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/bench2drive-multi-ability-benchmarking-e2e-autonomous-driving/" class="">
+      Bench2Drive: Towards Multi-Ability Benchmarking of Closed-Loop End-To-End Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/navsim/" class="">
+      NAVSIM: Data-Driven Non-Reactive Autonomous Vehicle Simulation and Benchmarking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/transfuser/" class="">
+      TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/uniad-planning-oriented-autonomous-driving/" class="">
+      UniAD: Planning-oriented Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/vad/" class="">
+      VAD: Vectorized Scene Representation for Efficient Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-c1644e2152ae0bb887d703d1c6a373f2" class="toggle"  />
+    <label for="section-c1644e2152ae0bb887d703d1c6a373f2" class="flex">
+      <a role="button" class="">
+        Dataset &amp; Benchmark</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/nuplan/" class="">
+      nuPlan: A closed-loop ML-based planning benchmark for autonomous vehicles</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/nuscenes-multimodal-dataset-autonomous-driving/" class="">
+      nuScenes: A Multimodal Dataset for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/waymo-open-dataset/" class="">
+      Scalability in Perception for Autonomous Driving: Waymo Open Dataset</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/paper/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D</h3>
+
+  <label for="toc-control">
+    
+    <img src="/paper/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#section-1-introduction">Section 1: Introduction</a></li>
+    <li><a href="#section-2-related-work">Section 2: Related Work</a></li>
+    <li><a href="#section-3-method">Section 3: Method</a>
+      <ul>
+        <li><a href="#31-lift-latent-depth-distribution">3.1 Lift: Latent Depth Distribution</a></li>
+        <li><a href="#32-splat-pillar-pooling">3.2 Splat: Pillar Pooling</a></li>
+        <li><a href="#33-shoot-motion-planning">3.3 Shoot: Motion Planning</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-4-implementation">Section 4: Implementation</a></li>
+    <li><a href="#section-5-experiments-and-results">Section 5: Experiments and Results</a>
+      <ul>
+        <li><a href="#51-segmentation-결과">5.1 Segmentation 결과</a></li>
+        <li><a href="#52-robustness-강건성">5.2 Robustness (강건성)</a></li>
+        <li><a href="#53-zero-shot-camera-rig-transfer">5.3 Zero-Shot Camera Rig Transfer</a></li>
+        <li><a href="#54-benchmarking-against-oracle-depth">5.4 Benchmarking Against Oracle Depth</a></li>
+        <li><a href="#55-motion-planning">5.5 Motion Planning</a></li>
+      </ul>
+    </li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h2 id="개요">개요<a class="anchor" href="#%ea%b0%9c%ec%9a%94">#</a></h2>
+<ul>
+<li><strong>저자</strong>: Jonah Philion, Sanja Fidler (NVIDIA, University of Toronto, Vector Institute)</li>
+<li><strong>발행년도</strong>: 2020 (arXiv:2008.05711)</li>
+<li><strong>주요 내용</strong>: 임의의 카메라 리그로부터 멀티뷰 이미지를 받아, 별도의 깊이 센서(LiDAR) 없이 Bird&rsquo;s-Eye-View(BEV) 표현을 직접 학습하는 end-to-end 아키텍처 &ldquo;Lift-Splat-Shoot&quot;을 제안. 객체 분할, 지도 분할, 모션 플래닝 태스크에서 기존 방법을 능가함.</li>
+</ul>
+<h2 id="한계-극복">한계 극복<a class="anchor" href="#%ed%95%9c%ea%b3%84-%ea%b7%b9%eb%b3%b5">#</a></h2>
+<p>이 논문이 기존 연구의 어떤 한계를 극복하기 위해 작성되었는지 설명합니다.</p>
+<ul>
+<li><strong>기존 한계 1 — 단일 이미지 패러다임의 한계</strong>: 기존 컴퓨터 비전 알고리즘은 입력 이미지와 동일한 좌표계 내에서 예측을 출력하도록 설계되어 있어, 자율주행에서 필요한 ego-car 기준의 BEV 좌표계 출력에 바로 적용하기 어려웠습니다.</li>
+<li><strong>기존 한계 2 — 카메라 간 융합의 비미분성</strong>: 개별 카메라 이미지에 단일 이미지 탐지기를 따로 적용한 뒤 결과를 ego 프레임으로 변환하는 방식은, 카메라 간 최적 융합 전략을 데이터 기반으로 학습하거나 downstream planner의 피드백으로 역전파할 수 없었습니다.</li>
+<li><strong>기존 한계 3 — 깊이 불확실성 미반영</strong>: OFT(Orthographic Feature Transform) 같은 기존 방법은 한 픽셀의 feature를 깊이와 무관하게 모든 voxel에 동일하게 기여시켜, 실제 깊이 분포를 반영하지 못했습니다.</li>
+<li><strong>이 논문의 접근 방식</strong>: 각 픽셀마다 깊이에 대한 확률 분포(categorical distribution)를 예측하고, 이를 이용해 frustum 형태의 3D 피처 포인트 클라우드를 생성(Lift)한 뒤, 이를 BEV 평면에 통합(Splat)하여 하나의 통합된 BEV CNN으로 처리합니다. 전체 파이프라인이 end-to-end로 미분 가능하며, 카메라 캘리브레이션에 대한 강건성도 데이터로부터 학습합니다.</li>
+</ul>
+<h2 id="목차">목차<a class="anchor" href="#%eb%aa%a9%ec%b0%a8">#</a></h2>
+<ul>
+<li>Section 1: Introduction</li>
+<li>Section 2: Related Work (Monocular Object Detection / BEV Inference)</li>
+<li>Section 3: Method (Lift / Splat / Shoot)</li>
+<li>Section 4: Implementation (Architecture Details / Frustum Pooling Cumulative Sum Trick)</li>
+<li>Section 5: Experiments and Results (Segmentation / Robustness / Zero-Shot Transfer / Oracle Depth / Motion Planning)</li>
+<li>Section 6: Conclusion</li>
+</ul>
+<hr>
+<h2 id="section-1-introduction">Section 1: Introduction<a class="anchor" href="#section-1-introduction">#</a></h2>
+<p><strong>요약</strong></p>
+<p>자율주행에서 인식 시스템은 여러 센서로부터 입력을 받아 ego-car 좌표계(BEV)에서 예측을 출력해야 합니다. 기존 컴퓨터 비전 모델들은 입력 이미지 좌표계 내에서 예측하도록 설계되어 있어 이 요구에 맞지 않습니다. 단순하게 각 카메라에 단일 이미지 탐지기를 적용한 뒤 결과를 변환하는 방법은 세 가지 대칭성(Translation equivariance, Permutation invariance, Ego-frame isometry equivariance)을 갖지만, 카메라 간 최적 융합 전략을 데이터 기반으로 학습하거나 역전파할 수 없다는 단점이 있습니다.</p>
+<p>저자들은 이 세 가지 대칭성을 설계에 반영하면서도 end-to-end 미분 가능한 &ldquo;Lift-Splat&rdquo; 모델을 제안합니다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Translation equivariance</strong>: 이미지 내 픽셀 좌표가 전부 이동하면 출력도 동일하게 이동하는 성질. 완전 합성곱 신경망이 이 성질을 가지며, 멀티뷰 확장도 이를 상속합니다.</li>
+<li><strong>Permutation invariance</strong>: n개 카메라의 순서가 바뀌어도 최종 출력이 변하지 않는 성질.</li>
+<li><strong>Ego-frame isometry equivariance</strong>: ego car가 회전/이동해도 동일 객체가 동일하게 탐지되는 성질.</li>
+<li><strong>End-to-end differentiability</strong>: 센서 입력부터 최종 BEV 예측까지 모든 파라미터를 역전파로 함께 학습할 수 있어, downstream planner의 피드백이 인식 모듈에 전달됩니다.</li>
+</ul>
+<hr>
+<h2 id="section-2-related-work">Section 2: Related Work<a class="anchor" href="#section-2-related-work">#</a></h2>
+<p><strong>요약</strong></p>
+<p>관련 연구는 크게 두 가지 방향입니다.</p>
+<ol>
+<li><strong>단안 객체 탐지(Monocular Object Detection)</strong>: 이미지 평면에서 2D 탐지기를 학습한 뒤 3D bounding box를 회귀하는 방법, 또는 깊이 예측과 BEV 탐지를 분리 학습하는 &ldquo;pseudolidar&rdquo; 방법이 있습니다. Orthographic Feature Transform(OFT)은 고정된 voxel 큐브를 이미지에 투영해 feature를 모으지만, 깊이에 무관하게 동일한 feature를 기여하는 한계가 있습니다.</li>
+<li><strong>BEV 프레임에서의 추론</strong>: MonoLayout, Pyramid Occupancy Networks(PON), FISHING Net 등이 카메라 extrinsic/intrinsic을 이용해 이미지 표현을 BEV로 변환합니다.</li>
+</ol>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Pseudolidar</strong>: 깊이 예측 네트워크와 BEV 탐지 네트워크를 분리 학습하는 방식. BEV 좌표계에서 유클리드 거리가 더 의미 있다는 장점이 있으나, end-to-end 학습이 어렵습니다.</li>
+<li><strong>OFT (Orthographic Feature Transform)</strong>: 3D 공간의 voxel을 이미지에 투영해 feature를 수집. 그러나 깊이와 무관하게 동일 feature를 기여하는 한계가 있음.</li>
+</ul>
+<hr>
+<h2 id="section-3-method">Section 3: Method<a class="anchor" href="#section-3-method">#</a></h2>
+<h3 id="31-lift-latent-depth-distribution">3.1 Lift: Latent Depth Distribution<a class="anchor" href="#31-lift-latent-depth-distribution">#</a></h3>
+<p><strong>요약</strong></p>
+<p>&ldquo;Lift&rdquo; 단계는 각 카메라 이미지를 2D 좌표계에서 3D 공간으로 올리는 과정입니다. 깊이는 근본적으로 단안 이미지에서 모호하므로, 네트워크는 각 픽셀에 대해 깊이에 대한 카테고리 분포 $\alpha$와 컨텍스트 벡터 $\mathbf{c}$를 예측합니다. 각 픽셀에 $|D|$개의 깊이 후보 포인트를 생성하여 frustum 형태의 포인트 클라우드를 만듭니다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>카테고리 깊이 분포</strong>: 연속적인 깊이 대신 이산적인 깊이 후보 집합 $D = \{d_0, d_0+\Delta, ..., d_0+|D|\Delta\}$에 대한 확률 분포를 예측합니다. 이를 통해 깊이 불확실성을 모델링합니다.</li>
+<li><strong>Frustum 형태의 포인트 클라우드</strong>: 하나의 이미지에서 $D \cdot H \cdot W$개의 포인트가 생성됩니다. 멀티뷰 합성 커뮤니티의 &ldquo;multi-plane image&quot;와 동등하지만, 각 평면의 feature가 $(r,g,b,\alpha)$ 값 대신 추상적인 벡터입니다.</li>
+</ul>
+<p><strong>수식</strong></p>
+$$\mathbf{c}_d = \alpha_d \mathbf{c}$$<p><strong>수식 설명</strong></p>
+<p>이 수식은 깊이 $d$에 위치한 포인트 $p_d$의 feature 벡터를 정의합니다:</p>
+<ul>
+<li><strong>$\mathbf{c}_d \in \mathbb{R}^C$</strong>: 깊이 $d$에 할당된 포인트의 최종 feature 벡터</li>
+<li><strong>$\alpha_d$</strong>: 해당 픽셀에서 깊이 $d$에 대한 확률값 (깊이 분포의 $d$번째 원소). $\alpha \in \triangle^{|D|-1}$이므로 모든 $\alpha_d$의 합은 1</li>
+<li><strong>$\mathbf{c} \in \mathbb{R}^C$</strong>: 픽셀 전체를 대표하는 컨텍스트 벡터 (깊이와 무관)</li>
+<li><strong>직관</strong>: 네트워크가 특정 깊이 $d^*$에 one-hot으로 $\alpha$를 예측하면 pseudolidar처럼 동작하고, 균등 분포를 예측하면 OFT처럼 동작합니다. 실제로는 그 사이 어딘가에서 깊이 불확실성에 따라 유연하게 선택합니다.</li>
+</ul>
+<h3 id="32-splat-pillar-pooling">3.2 Splat: Pillar Pooling<a class="anchor" href="#32-splat-pillar-pooling">#</a></h3>
+<p><strong>요약</strong></p>
+<p>&ldquo;Splat&rdquo; 단계는 Lift에서 생성된 대형 포인트 클라우드를 BEV 래스터 그리드로 통합합니다. PointPillars 아키텍처를 따라, &ldquo;Pillar&rdquo;(높이가 무한한 voxel)를 사용합니다. 각 포인트를 가장 가까운 pillar에 할당하고 sum pooling을 수행하여 $C \times H \times W$ 텐서를 생성합니다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Pillar Pooling</strong>: 포인트들을 BEV 격자의 각 셀(pillar)에 누적하는 과정. Sum pooling을 사용하여 카메라 수에 무관한 고정 크기의 BEV 텐서를 출력합니다.</li>
+<li><strong>Cumulative Sum Trick</strong>: 메모리 효율적인 sum pooling 구현. 포인트를 bin id로 정렬한 뒤 누적합을 계산하고 구간 경계값을 빼는 방법으로 패딩 없이 구현합니다. 역전파 속도를 2배 향상시킵니다.</li>
+</ul>
+<h3 id="33-shoot-motion-planning">3.3 Shoot: Motion Planning<a class="anchor" href="#33-shoot-motion-planning">#</a></h3>
+<p><strong>요약</strong></p>
+<p>&ldquo;Shoot&rdquo; 단계는 Lift-Splat이 생성한 BEV 표현을 cost map으로 해석하여 end-to-end 모션 플래닝을 수행합니다. 테스트 시에는 K개의 template trajectory를 BEV cost map에 &ldquo;쏘아서&rdquo; 비용을 계산하고 최저 비용 경로를 선택합니다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Template trajectory</strong>: K-Means로 클러스터링한 1K개의 자아 차량 궤적 템플릿 $\mathcal{T} = \{\tau_i\}_K = \{\{x_j, y_j, t_j\}_T\}_K$</li>
+<li><strong>Cost map</strong>: 네트워크가 출력하는 공간적 비용 함수. 특정 위치를 지나는 것의 비용을 나타냅니다.</li>
+</ul>
+<p><strong>수식</strong></p>
+$$p(\tau_i | o) = \frac{\exp\!\left(-\displaystyle\sum_{x_i, y_i \in \tau_i} c_o(x_i, y_i)\right)}{\displaystyle\sum_{\tau \in \mathcal{T}} \exp\!\left(-\displaystyle\sum_{x, y \in \tau} c_o(x, y)\right)}$$<p><strong>수식 설명</strong></p>
+<p>이 수식은 관측값 $o$가 주어졌을 때 각 template trajectory $\tau_i$를 선택할 확률을 Boltzmann 분포로 정의합니다:</p>
+<ul>
+<li><strong>$p(\tau_i | o)$</strong>: 관측 $o$에서 궤적 $\tau_i$를 선택할 확률</li>
+<li><strong>$c_o(x, y)$</strong>: 네트워크가 예측한 cost map에서 위치 $(x, y)$의 비용값. 값이 클수록 그 위치를 지나는 것이 위험하거나 비쌈</li>
+<li><strong>$\sum_{x_i, y_i \in \tau_i} c_o(x_i, y_i)$</strong>: 궤적 $\tau_i$를 따라가는 총 비용. 위험한 위치(장애물, 차선 경계 등)를 많이 지날수록 커짐</li>
+<li><strong>$\exp(-\text{비용})$</strong>: 비용이 낮을수록 확률이 높아지는 softmax 구조</li>
+<li><strong>분모</strong>: 모든 template에 대한 정규화 상수. 이를 통해 확률의 합이 1이 됨</li>
+<li><strong>학습</strong>: ground-truth 궤적에 가장 가까운 template을 정답으로 하여 cross-entropy loss로 학습합니다. 이를 통해 cost map $c_o$가 자동으로 학습됨</li>
+</ul>
+<hr>
+<h2 id="section-4-implementation">Section 4: Implementation<a class="anchor" href="#section-4-implementation">#</a></h2>
+<p><strong>요약</strong></p>
+<p><strong>아키텍처</strong>: 이미지별 CNN에는 EfficientNet-B0(ImageNet 사전학습)을 사용하고, BEV CNN에는 ResNet-18 기반의 FPN 구조를 사용합니다. 총 파라미터 수는 14.3M입니다.</p>
+<p><strong>주요 하이퍼파라미터</strong>:</p>
+<ul>
+<li>입력 이미지 크기: $128 \times 352$</li>
+<li>BEV 그리드: $200 \times 200$ (각 셀 0.5m × 0.5m, $-50$m ~ $50$m 범위)</li>
+<li>깊이 범위: $D \in [4.0\text{m}, 45.0\text{m}]$, 1m 간격 (총 41개 이산 깊이)</li>
+<li>추론 속도: Titan V GPU에서 35 Hz</li>
+</ul>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Frustum Pooling Layer</strong>: Lift 단계의 frustum 포인트 클라우드를 pillar 기반 BEV 텐서로 변환하는 레이어. 카메라 수 $n$에 무관하게 고정 크기 $C \times H \times W$ 출력</li>
+<li><strong>Cumulative Sum Trick의 수학적 원리</strong>: 패딩 대신 정렬 + 누적합 + 경계 빼기로 sum pooling을 구현하여 메모리를 절약하고, 전체 모듈에 대한 해석적 기울기를 유도하여 autograd 속도를 2배 향상</li>
+</ul>
+<hr>
+<h2 id="section-5-experiments-and-results">Section 5: Experiments and Results<a class="anchor" href="#section-5-experiments-and-results">#</a></h2>
+<p><strong>요약</strong></p>
+<p><strong>데이터셋</strong>: nuScenes(6카메라, 1K 장면, 20초)와 Lyft Level 5(6카메라) 데이터셋을 사용합니다.</p>
+<p><strong>태스크</strong>: 객체 분할(Car, Vehicle), 지도 분할(Drivable Area, Lane Boundary), 모션 플래닝</p>
+<h3 id="51-segmentation-결과">5.1 Segmentation 결과<a class="anchor" href="#51-segmentation-%ea%b2%b0%ea%b3%bc">#</a></h3>
+<table>
+  <thead>
+      <tr>
+          <th>Method</th>
+          <th>nuScenes Car</th>
+          <th>nuScenes Vehicle</th>
+          <th>Lyft Car</th>
+          <th>Lyft Vehicle</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>CNN</td>
+          <td>22.78</td>
+          <td>24.25</td>
+          <td>30.71</td>
+          <td>31.91</td>
+      </tr>
+      <tr>
+          <td>OFT</td>
+          <td>29.72</td>
+          <td>30.05</td>
+          <td>39.48</td>
+          <td>40.43</td>
+      </tr>
+      <tr>
+          <td><strong>Lift-Splat</strong></td>
+          <td><strong>32.06</strong></td>
+          <td><strong>32.07</strong></td>
+          <td><strong>43.09</strong></td>
+          <td><strong>44.64</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p>지도 분할에서도 Drivable Area IOU 72.94, Lane Boundary IOU 19.96으로 모든 기준선을 능가합니다.</p>
+<h3 id="52-robustness-강건성">5.2 Robustness (강건성)<a class="anchor" href="#52-robustness-%ea%b0%95%ea%b1%b4%ec%84%b1">#</a></h3>
+<ul>
+<li><strong>Extrinsic noise 강건성</strong>: 훈련 시 노이즈가 많은 extrinsic으로 학습한 모델은 테스트 시 noisy extrinsic에 더 강건합니다.</li>
+<li><strong>Camera dropout 강건성</strong>: 훈련 시 매 샘플마다 카메라 1개를 무작위로 제거하면, 테스트 시 카메라가 누락되어도 성능이 잘 유지됩니다. 특히 6개 카메라가 모두 존재할 때 가장 좋은 모델은 dropout 훈련된 모델입니다.</li>
+</ul>
+<h3 id="53-zero-shot-camera-rig-transfer">5.3 Zero-Shot Camera Rig Transfer<a class="anchor" href="#53-zero-shot-camera-rig-transfer">#</a></h3>
+<ul>
+<li>nuScenes 4개 카메라로 훈련하고, 테스트 시 추가 2개 카메라를 제공하면 성능이 단조 증가합니다 (IOU 26.53 → 27.94).</li>
+<li>nuScenes로만 훈련한 모델을 Lyft(완전히 다른 카메라 리그)에서 평가해도 기준선 대비 월등한 성능을 보입니다 (Lyft Car IOU: CNN 7.00, OFT 16.25, <strong>Lift-Splat 21.35</strong>).</li>
+</ul>
+<h3 id="54-benchmarking-against-oracle-depth">5.4 Benchmarking Against Oracle Depth<a class="anchor" href="#54-benchmarking-against-oracle-depth">#</a></h3>
+<p>LiDAR 깊이를 직접 사용하는 PointPillars와 비교 시, 카메라 전용 Lift-Splat은 여전히 차이가 있습니다. 다만 야간이나 장거리에서의 성능 차이가 두드러지며, 다중 시간 프레임 활용이 향후 과제입니다.</p>
+<h3 id="55-motion-planning">5.5 Motion Planning<a class="anchor" href="#55-motion-planning">#</a></h3>
+<p>1K template trajectory 중 ground-truth와 가장 가까운 template을 예측하는 분류 태스크:</p>
+<ul>
+<li>Lidar (1 scan): Top-5 19.27%, Top-10 28.88%, Top-20 41.93%</li>
+<li><strong>Lift-Splat</strong>: Top-5 15.52%, Top-10 19.94%, Top-20 27.99%</li>
+</ul>
+<p>Lidar 기반보다 낮지만, 카메라만으로 교차로 정지, 차선 유지 등 합리적인 궤적을 예측합니다.</p>
+<hr>
+<h2 id="핵심-개념-정리">핵심 개념 정리<a class="anchor" href="#%ed%95%b5%ec%8b%ac-%ea%b0%9c%eb%85%90-%ec%a0%95%eb%a6%ac">#</a></h2>
+<table>
+  <thead>
+      <tr>
+          <th>개념</th>
+          <th>설명</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>BEV (Bird&rsquo;s-Eye-View)</strong></td>
+          <td>위에서 내려다보는 시점의 표현. 자율주행 플래너가 소비하는 좌표계</td>
+      </tr>
+      <tr>
+          <td><strong>Lift</strong></td>
+          <td>각 픽셀을 깊이 분포를 이용해 3D frustum 포인트 클라우드로 변환</td>
+      </tr>
+      <tr>
+          <td><strong>Splat</strong></td>
+          <td>여러 카메라의 frustum을 BEV 래스터 그리드(Pillar)에 통합</td>
+      </tr>
+      <tr>
+          <td><strong>Shoot</strong></td>
+          <td>BEV cost map에 template trajectory를 쏘아 최적 경로 선택</td>
+      </tr>
+      <tr>
+          <td><strong>Latent Depth Distribution</strong></td>
+          <td>깊이를 단일 값이 아닌 카테고리 확률 분포로 예측. 깊이 불확실성을 end-to-end로 학습</td>
+      </tr>
+      <tr>
+          <td><strong>Pillar Pooling</strong></td>
+          <td>BEV 격자의 각 셀(Pillar)에 3D 포인트 feature를 누적하는 작업</td>
+      </tr>
+      <tr>
+          <td><strong>Cumulative Sum Trick</strong></td>
+          <td>패딩 없이 sum pooling을 구현하는 효율적인 방법. 2배 속도 향상</td>
+      </tr>
+      <tr>
+          <td><strong>Camera rig agnostic</strong></td>
+          <td>임의의 카메라 수와 배치를 가진 카메라 리그에 적용 가능</td>
+      </tr>
+      <tr>
+          <td><strong>Ego-frame isometry equivariance</strong></td>
+          <td>자차(ego car)의 회전/이동에 무관하게 동일 객체가 동일하게 탐지되는 성질</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="결론-및-시사점">결론 및 시사점<a class="anchor" href="#%ea%b2%b0%eb%a1%a0-%eb%b0%8f-%ec%8b%9c%ec%82%ac%ec%a0%90">#</a></h2>
+<p><strong>결론</strong>: Lift-Splat-Shoot은 임의의 카메라 리그로부터 LiDAR 없이 BEV 표현을 end-to-end로 학습하는 아키텍처입니다. 깊이 불확실성을 카테고리 분포로 모델링하는 핵심 아이디어 덕분에, 단순한 기준선보다 우수한 성능을 보이며 캘리브레이션 오류와 카메라 누락에도 강건합니다.</p>
+<p><strong>실무적 시사점</strong>:</p>
+<ol>
+<li><strong>LiDAR 없는 자율주행 인식</strong>: BEVFusion, BEVDet, BEVDepth 등 이후 BEV 인식 연구의 토대가 된 seminal 논문. 카메라만으로 BEV를 추론하는 패러다임을 확립했습니다.</li>
+<li><strong>Camera rig 확장성</strong>: 카메라 수와 위치가 바뀌어도 재학습 없이 zero-shot 전이가 가능합니다. 실제 자율주행 차량 개발에서 카메라 배치 변경 시 유용합니다.</li>
+<li><strong>End-to-end 모션 플래닝</strong>: 인식과 플래닝을 통합 학습하여, 플래너의 피드백이 인식 모듈 학습에 반영됩니다.</li>
+<li><strong>한계 및 향후 과제</strong>: 야간이나 장거리에서 LiDAR 대비 성능 격차 존재. 단일 타임스텝 처리의 한계로, 다중 타임스텝의 temporal 정보 활용이 향후 과제로 남아 있습니다. (이 과제는 이후 BEVDet4D, BEVFormer 등이 해결합니다.)</li>
+</ol>
+<hr>
+<p><em>관련 논문: <a href="/posts/papers/bevdepth/">BEVDepth</a>, <a href="/posts/papers/BEVFormer/">BEVFormer</a>, <a href="/posts/papers/bevfusion-multi-task-multi-sensor-fusion/">BEVFusion</a>, <a href="/posts/papers/detr3d-3d-object-detection-multi-view-images/">DETR3D</a>, <a href="/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/">nuScenes</a></em></p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/paper/docs/autonomous-driving/perception/bevfusion-multi-task-multi-sensor-fusion/" class="flex align-center">
+        <img src="/paper/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/paper/docs/autonomous-driving/perception/bevdepth/" class="flex align-center">
+        <span>BEVDepth: Acquisition of Reliable Depth for Multi-view 3D Object Detection</span>
+        <img src="/paper/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#section-1-introduction">Section 1: Introduction</a></li>
+    <li><a href="#section-2-related-work">Section 2: Related Work</a></li>
+    <li><a href="#section-3-method">Section 3: Method</a>
+      <ul>
+        <li><a href="#31-lift-latent-depth-distribution">3.1 Lift: Latent Depth Distribution</a></li>
+        <li><a href="#32-splat-pillar-pooling">3.2 Splat: Pillar Pooling</a></li>
+        <li><a href="#33-shoot-motion-planning">3.3 Shoot: Motion Planning</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-4-implementation">Section 4: Implementation</a></li>
+    <li><a href="#section-5-experiments-and-results">Section 5: Experiments and Results</a>
+      <ul>
+        <li><a href="#51-segmentation-결과">5.1 Segmentation 결과</a></li>
+        <li><a href="#52-robustness-강건성">5.2 Robustness (강건성)</a></li>
+        <li><a href="#53-zero-shot-camera-rig-transfer">5.3 Zero-Shot Camera Rig Transfer</a></li>
+        <li><a href="#54-benchmarking-against-oracle-depth">5.4 Benchmarking Against Oracle Depth</a></li>
+        <li><a href="#55-motion-planning">5.5 Motion Planning</a></li>
+      </ul>
+    </li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

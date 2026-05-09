@@ -5,6 +5,11 @@ draft: false
 categories: ["Papers", "Autonomous Driving", "Novel View Synthesis"]
 tags: ["3D Gaussian Splatting", "Autonomous Driving", "Novel View Synthesis", "Dynamic Scene", "SMPL", "Human Modeling", "Digital Twin"]
 year: 2025
+references:
+  - "3d-gaussian-splatting"
+  - "EmerNeRF"
+  - "nuscenes-multimodal-dataset-autonomous-driving"
+  - "waymo-open-dataset"
 ---
 
 ## 개요

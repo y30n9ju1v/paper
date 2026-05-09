@@ -5,6 +5,10 @@ draft: false
 categories: ["Papers", "Autonomous Driving", "3D Occupancy", "Benchmark & Dataset"]
 tags: ["Autonomous Driving", "3D Occupancy", "LiDAR", "Dataset", "Benchmark"]
 year: 2023
+references:
+  - "BEVFormer"
+  - "nuscenes-multimodal-dataset-autonomous-driving"
+  - "waymo-open-dataset"
 ---
 
 ## 개요

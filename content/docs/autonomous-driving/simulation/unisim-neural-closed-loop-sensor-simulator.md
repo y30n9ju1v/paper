@@ -5,6 +5,9 @@ draft: false
 categories: ["Papers", "Autonomous Driving", "Novel View Synthesis"]
 tags: ["Autonomous Driving", "Neural Rendering", "Simulation", "NeRF", "LiDAR", "Closed-Loop"]
 year: 2023
+references:
+  - "nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis"
+  - "nuscenes-multimodal-dataset-autonomous-driving"
 ---
 
 ## 개요

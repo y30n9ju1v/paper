@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="ko-KR" dir="ltr">
+<head><script src="/paper/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=paper/livereload" data-no-instant defer></script>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="개요# 저자: Ruiyuan Gao, Kai Chen, Enze Xie, Lanqing Hong, Zhenguo Li, Dit-Yan Yeung, Qiang Xu (CUHK, HKUST, Huawei Noah’s Ark Lab) 발행년도: 2024 (ICLR 2024) arXiv: 2310.02601v7 주요 내용: BEV 맵, 3D 바운딩 박스, 카메라 포즈를 조건으로 멀티카메라 스트리트뷰 이미지 및 비디오를 생성하는 프레임워크. Cross-view attention 모듈로 카메라 간 일관성을 보장하며, 생성 데이터로 BEV Segmentation 및 3D Object Detection 성능을 향상시킨다. 한계 극복# 기존 스트리트뷰 생성 연구들은 2D 기반 조건에 의존하여 3D 기하 정보(높이, 깊이, 폐색)를 충분히 활용하지 못했다.
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/paper/docs/magicdrive-street-view-generation-3d-geometry-control/">
+  <meta property="og:site_name" content="Paper">
+  <meta property="og:title" content="MagicDrive: Street View Generation with Diverse 3D Geometry Control">
+  <meta property="og:description" content="개요# 저자: Ruiyuan Gao, Kai Chen, Enze Xie, Lanqing Hong, Zhenguo Li, Dit-Yan Yeung, Qiang Xu (CUHK, HKUST, Huawei Noah’s Ark Lab) 발행년도: 2024 (ICLR 2024) arXiv: 2310.02601v7 주요 내용: BEV 맵, 3D 바운딩 박스, 카메라 포즈를 조건으로 멀티카메라 스트리트뷰 이미지 및 비디오를 생성하는 프레임워크. Cross-view attention 모듈로 카메라 간 일관성을 보장하며, 생성 데이터로 BEV Segmentation 및 3D Object Detection 성능을 향상시킨다. 한계 극복# 기존 스트리트뷰 생성 연구들은 2D 기반 조건에 의존하여 3D 기하 정보(높이, 깊이, 폐색)를 충분히 활용하지 못했다.">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:published_time" content="2026-04-19T10:00:00+09:00">
+    <meta property="article:modified_time" content="2026-04-19T10:00:00+09:00">
+    <meta property="article:tag" content="Street View Generation">
+    <meta property="article:tag" content="Diffusion Model">
+    <meta property="article:tag" content="3D Geometry">
+    <meta property="article:tag" content="Autonomous Driving">
+    <meta property="article:tag" content="Data Synthesis">
+    <meta property="article:tag" content="NuScenes">
+
+
+  <meta itemprop="name" content="MagicDrive: Street View Generation with Diverse 3D Geometry Control">
+  <meta itemprop="description" content="개요# 저자: Ruiyuan Gao, Kai Chen, Enze Xie, Lanqing Hong, Zhenguo Li, Dit-Yan Yeung, Qiang Xu (CUHK, HKUST, Huawei Noah’s Ark Lab) 발행년도: 2024 (ICLR 2024) arXiv: 2310.02601v7 주요 내용: BEV 맵, 3D 바운딩 박스, 카메라 포즈를 조건으로 멀티카메라 스트리트뷰 이미지 및 비디오를 생성하는 프레임워크. Cross-view attention 모듈로 카메라 간 일관성을 보장하며, 생성 데이터로 BEV Segmentation 및 3D Object Detection 성능을 향상시킨다. 한계 극복# 기존 스트리트뷰 생성 연구들은 2D 기반 조건에 의존하여 3D 기하 정보(높이, 깊이, 폐색)를 충분히 활용하지 못했다.">
+  <meta itemprop="datePublished" content="2026-04-19T10:00:00+09:00">
+  <meta itemprop="dateModified" content="2026-04-19T10:00:00+09:00">
+  <meta itemprop="wordCount" content="1359">
+  <meta itemprop="keywords" content="Street View Generation,Diffusion Model,3D Geometry,Autonomous Driving,Data Synthesis,NuScenes,ControlNet">
+
+<title>MagicDrive: Street View Generation with Diverse 3D Geometry Control | Paper</title>
+<link rel="icon" href="/paper/favicon.png" >
+<link rel="manifest" href="/paper/manifest.json">
+<link rel="canonical" href="http://localhost:1313/paper/docs/magicdrive-street-view-generation-3d-geometry-control/">
+<link rel="stylesheet" href="/paper/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/paper/fuse.min.js"></script>
+  <script defer src="/paper/en.search.min.136303f53f731e7f187e59dca354807444ce24732e128843ea97e041d47b7d93.js" integrity="sha256-E2MD9T9zHn8Yflnco1SAdETOJHMuEohD6pfgQdR7fZM=" crossorigin="anonymous"></script>
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '\\[', right: '\\]', display: true},
+      {left: '\\(', right: '\\)', display: false},
+      {left: '$', right: '$', display: false}
+    ]
+  });
+});
+</script>
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/paper/"><span>Paper</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/controlnet-adding-conditional-control-to-text-to-image-diffusion-models/" class="">
+      ControlNet: Adding Conditional Control to Text-to-Image Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/clip-learning-transferable-visual-models-from-natural-language-supervision/" class="">
+      CLIP: Learning Transferable Visual Models From Natural Language Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointnet-plus-plus-deep-hierarchical-feature-learning/" class="">
+      PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/" class="">
+      GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/lidarsim-realistic-lidar-simulation-by-leveraging-the-real-world/" class="">
+      LiDARsim: Realistic LiDAR Simulation by Leveraging the Real World</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vit-an-image-is-worth-16x16-words/" class="">
+      ViT: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/resnet-deep-residual-learning-for-image-recognition/" class="">
+      ResNet: Deep Residual Learning for Image Recognition</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/" class="">
+      StreamMapNet: Streaming Mapping Network for Vectorized Online HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vectormapnet-end-to-end-vectorized-hd-map-learning/" class="">
+      VectorMapNet: End-to-end Vectorized HD Map Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/detr-end-to-end-object-detection-with-transformers/" class="">
+      DETR: End-to-End Object Detection with Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/attention-is-all-you-need/" class="">
+      Attention Is All You Need</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/maptr-structured-modeling-online-vectorized-hd-map-construction/" class="">
+      MapTR: Structured Modeling and Learning for Online Vectorized HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/high-resolution-image-synthesis-with-latent-diffusion-models/" class="">
+      High-Resolution Image Synthesis with Latent Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/proximal-policy-optimization/" class="">
+      Proximal Policy Optimization Algorithms (PPO)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/denoising-diffusion-probabilistic-models/" class="">
+      Denoising Diffusion Probabilistic Models (DDPM)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/" class="">
+      PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointpillars-fast-encoders-object-detection-point-clouds/" class="">
+      PointPillars: Fast Encoders for Object Detection from Point Clouds</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/centerpoint-center-based-3d-object-detection-and-tracking/" class="">
+      CenterPoint: Center-based 3D Object Detection and Tracking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/monoscene-monocular-3d-semantic-scene-completion/" class="">
+      MonoScene: Monocular 3D Semantic Scene Completion</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/tpvformer-tri-perspective-view-3d-semantic-occupancy/" class="">
+      TPVFormer: Tri-Perspective View for Vision-Based 3D Semantic Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/drivearena/" class="">
+      DriveArena: A Closed-loop Generative Simulation Platform for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/neurad-neural-rendering-for-autonomous-driving/" class="">
+      NeuRAD: Neural Rendering for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/omnire-omni-urban-scene-reconstruction/" class="">
+      OmniRe: Omni Urban Scene Reconstruction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/magicdrive-street-view-generation-3d-geometry-control/" class="active">
+      MagicDrive: Street View Generation with Diverse 3D Geometry Control</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/surroundocc/" class="">
+      SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/drivedreamer/" class="">
+      DriveDreamer: Towards Real-world-driven World Models for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/street-gaussians-modeling-dynamic-urban-scenes/" class="">
+      Street Gaussians: Modeling Dynamic Urban Scenes with Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bench2drive-multi-ability-benchmarking-e2e-autonomous-driving/" class="">
+      Bench2Drive: Towards Multi-Ability Benchmarking of Closed-Loop End-To-End Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/emernerf/" class="">
+      EmerNeRF: Emergent Spatial-Temporal Scene Decomposition via Self-Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/detr3d-3d-object-detection-multi-view-images/" class="">
+      DETR3D: 3D Object Detection from Multi-view Images via 3D-to-2D Queries</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/occ3d-large-scale-3d-occupancy-prediction-benchmark/" class="">
+      Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/unisim-neural-closed-loop-sensor-simulator/" class="">
+      UniSim: A Neural Closed-Loop Sensor Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevfusion-multi-task-multi-sensor-fusion/" class="">
+      BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/instant-ngp-multiresolution-hash-encoding/" class="">
+      Instant Neural Graphics Primitives with a Multiresolution Hash Encoding</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/lift-splat-shoot/" class="">
+      Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevdepth/" class="">
+      BEVDepth: Acquisition of Reliable Depth for Multi-view 3D Object Detection</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/4d-gaussian-splatting/" class="">
+      4D Gaussian Splatting for Real-Time Dynamic Scene Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/gaia-1/" class="">
+      GAIA-1: A Generative World Model for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/dqn-playing-atari-with-deep-reinforcement-learning/" class="">
+      Playing Atari with Deep Reinforcement Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevformer/" class="">
+      BEVFormer: Learning Bird&#39;s-Eye-View Representation from Multi-Camera Images via Spatiotemporal Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/navsim/" class="">
+      NAVSIM: Data-Driven Non-Reactive Autonomous Vehicle Simulation and Benchmarking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nuplan/" class="">
+      nuPlan: A closed-loop ML-based planning benchmark for autonomous vehicles</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/transfuser/" class="">
+      TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3d-gaussian-splatting/" class="">
+      3D Gaussian Splatting for Real-Time Radiance Field Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/driving-gaussian-composite-gaussian-splatting/" class="">
+      DrivingGaussian: Composite Gaussian Splatting for Surrounding Dynamic Autonomous Driving Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3d-gaussian-ray-tracing/" class="">
+      3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/" class="">
+      3DGUT: Enabling Distorted Cameras and Secondary Rays in Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/carla-an-open-urban-driving-simulator/" class="">
+      CARLA: An Open Urban Driving Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/difix3d-plus/" class="">
+      DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/hugsim-real-time-photorealistic-closed-loop-simulator/" class="">
+      HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/" class="">
+      NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nuscenes-multimodal-dataset-autonomous-driving/" class="">
+      nuScenes: A Multimodal Dataset for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/waymo-open-dataset/" class="">
+      Scalability in Perception for Autonomous Driving: Waymo Open Dataset</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/uniad-planning-oriented-autonomous-driving/" class="">
+      UniAD: Planning-oriented Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vad/" class="">
+      VAD: Vectorized Scene Representation for Efficient Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/paper/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>MagicDrive: Street View Generation with Diverse 3D Geometry Control</h3>
+
+  <label for="toc-control">
+    
+    <img src="/paper/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#section-1-introduction">Section 1: Introduction</a></li>
+    <li><a href="#section-3-preliminary">Section 3: Preliminary</a></li>
+    <li><a href="#section-4-street-view-generation-with-3d-information">Section 4: Street View Generation with 3D Information</a>
+      <ul>
+        <li><a href="#41-geometric-conditions-encoding">4.1 Geometric Conditions Encoding</a></li>
+        <li><a href="#42-cross-view-attention-module">4.2 Cross-view Attention Module</a></li>
+        <li><a href="#43-model-training">4.3 Model Training</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-5-experiments">Section 5: Experiments</a></li>
+    <li><a href="#section-6-ablation-study">Section 6: Ablation Study</a></li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h2 id="개요">개요<a class="anchor" href="#%ea%b0%9c%ec%9a%94">#</a></h2>
+<ul>
+<li><strong>저자</strong>: Ruiyuan Gao, Kai Chen, Enze Xie, Lanqing Hong, Zhenguo Li, Dit-Yan Yeung, Qiang Xu (CUHK, HKUST, Huawei Noah&rsquo;s Ark Lab)</li>
+<li><strong>발행년도</strong>: 2024 (ICLR 2024)</li>
+<li><strong>arXiv</strong>: 2310.02601v7</li>
+<li><strong>주요 내용</strong>: BEV 맵, 3D 바운딩 박스, 카메라 포즈를 조건으로 멀티카메라 스트리트뷰 이미지 및 비디오를 생성하는 프레임워크. Cross-view attention 모듈로 카메라 간 일관성을 보장하며, 생성 데이터로 BEV Segmentation 및 3D Object Detection 성능을 향상시킨다.</li>
+</ul>
+<h2 id="한계-극복">한계 극복<a class="anchor" href="#%ed%95%9c%ea%b3%84-%ea%b7%b9%eb%b3%b5">#</a></h2>
+<p>기존 스트리트뷰 생성 연구들은 2D 기반 조건에 의존하여 3D 기하 정보(높이, 깊이, 폐색)를 충분히 활용하지 못했다.</p>
+<ul>
+<li><strong>기존 한계 1 — 2D 조건의 한계</strong>: BEVGen은 BEV 맵만을 조건으로 사용하여 객체 높이 정보가 소실되고, 3D object detection 데이터 생성에 부적합했다.</li>
+<li><strong>기존 한계 2 — 깊이 정보 소실</strong>: BEVControl은 3D 좌표를 2D로 투영하여 깊이와 폐색 정보가 손실된다.</li>
+<li><strong>기존 한계 3 — 멀티카메라 비일관성</strong>: 기존 방법들은 카메라 간 시점 일관성을 보장하는 메커니즘이 없었다.</li>
+<li><strong>이 논문의 접근 방식</strong>: 3D 바운딩 박스와 BEV 맵을 별도 인코더로 독립 인코딩하고, Cross-view attention 모듈을 추가하여 멀티카메라 일관성을 확보한다.</li>
+</ul>
+<h2 id="목차">목차<a class="anchor" href="#%eb%aa%a9%ec%b0%a8">#</a></h2>
+<ul>
+<li>Section 1: Introduction</li>
+<li>Section 2: Related Work</li>
+<li>Section 3: Preliminary (문제 정의 및 Diffusion Model 기초)</li>
+<li>Section 4: Street View Generation with 3D Information (핵심 방법론)
+<ul>
+<li>4.1 Geometric Conditions Encoding</li>
+<li>4.2 Cross-view Attention Module</li>
+<li>4.3 Model Training</li>
+</ul>
+</li>
+<li>Section 5: Experiments</li>
+<li>Section 6: Ablation Study</li>
+<li>Section 7: Conclusion</li>
+</ul>
+<h2 id="section-1-introduction">Section 1: Introduction<a class="anchor" href="#section-1-introduction">#</a></h2>
+<p><strong>요약</strong></p>
+<p>자율주행에서 3D 환경 인식은 필수적이나, 데이터 수집 비용이 높다. 합성 데이터로 모델을 강화하려는 시도가 많지만, 기존 방법들은 2D 조건(바운딩 박스, 세그멘테이션 맵)에 의존해 3D 기하 정보를 온전히 활용하지 못했다. MagicDrive는 BEV 맵, 3D 바운딩 박스, 카메라 포즈를 동시에 조건으로 받아 고품질 멀티카메라 스트리트뷰를 생성하는 새로운 프레임워크다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Realism (사실성)</strong>: 합성 이미지가 실제 데이터 품질에 부합하고, 동일 장면에서 여러 카메라 시점이 물리적으로 일관성을 유지해야 함</li>
+<li><strong>Controllability (제어 가능성)</strong>: BEV 맵, 3D 바운딩 박스, 카메라 포즈 등 주어진 조건을 정확히 반영하여 이미지를 생성해야 함</li>
+<li><strong>Multi-level Control</strong>: 장면(날씨·시간), 배경(도로 맵), 전경(객체 방향·삭제) 세 수준의 제어를 독립적으로 지원</li>
+</ul>
+<h2 id="section-3-preliminary">Section 3: Preliminary<a class="anchor" href="#section-3-preliminary">#</a></h2>
+<p><strong>요약</strong></p>
+<p>LiDAR 좌표계를 기준으로 장면을 정의하고, Latent Diffusion Model(LDM)을 기반으로 조건부 이미지 생성을 수행한다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>장면 표현 S = {M, B, L}</strong>: M은 BEV 바이너리 맵, B는 3D 바운딩 박스 집합, L은 날씨·시간 등 텍스트 설명</li>
+<li><strong>카메라 포즈 P = {K, R, T}</strong>: intrinsic(K), rotation(R), translation(T)으로 구성</li>
+<li><strong>Latent Diffusion Model (LDM)</strong>: VQ-VAE로 이미지를 잠재 공간에 압축한 뒤, 잠재 공간에서 노이즈 제거 과정을 학습</li>
+</ul>
+<p><strong>수식: LDM 학습 목표</strong></p>
+$$\ell = \mathbb{E}_{x_0, \epsilon, t, \{S, P\}} \left[ \|\epsilon - \epsilon_\theta(\sqrt{\bar{\alpha}_t}\mathcal{E}(x_0) + \sqrt{1 - \bar{\alpha}_t}\epsilon, t, \{S, P\})\| \right]$$<p><strong>수식 설명</strong></p>
+<p>이 수식은 MagicDrive의 최종 학습 목표 함수로, 모델이 노이즈를 정확히 예측하도록 훈련하는 과정을 나타낸다:</p>
+<ul>
+<li><strong>$\ell$</strong>: 학습 손실 (작을수록 좋음)</li>
+<li><strong>$x_0$</strong>: 원본 이미지</li>
+<li><strong>$\mathcal{E}(x_0)$</strong>: VQ-VAE 인코더가 이미지를 잠재 벡터로 압축한 것</li>
+<li><strong>$\epsilon$</strong>: 추가된 가우시안 노이즈 (정답 노이즈)</li>
+<li><strong>$\epsilon_\theta$</strong>: 노이즈를 예측하는 UNet 모델</li>
+<li><strong>$\bar{\alpha}_t$</strong>: 타임스텝 t에서의 노이즈 스케줄 파라미터</li>
+<li><strong>$\{S, P\}$</strong>: 장면 정보(BEV 맵, 3D 박스, 텍스트)와 카메라 포즈 조건</li>
+<li><strong>직관</strong>: &ldquo;원본 이미지에 노이즈를 섞은 것을 보여주면, 모델이 어떤 노이즈가 섞였는지 맞춰야 한다. 이때 장면 조건을 힌트로 준다&rdquo;</li>
+</ul>
+<h2 id="section-4-street-view-generation-with-3d-information">Section 4: Street View Generation with 3D Information<a class="anchor" href="#section-4-street-view-generation-with-3d-information">#</a></h2>
+<p><strong>요약</strong></p>
+<p>MagicDrive의 핵심 설계는 세 가지다: (1) 조건별 독립 인코딩, (2) Cross-view attention으로 멀티카메라 일관성 보장, (3) Classifier-Free Guidance(CFG)를 활용한 훈련 전략.</p>
+<h3 id="41-geometric-conditions-encoding">4.1 Geometric Conditions Encoding<a class="anchor" href="#41-geometric-conditions-encoding">#</a></h3>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Scene-level Encoding (장면 수준)</strong>: 카메라 포즈와 텍스트를 함께 인코딩. 텍스트는 CLIP 텍스트 인코더($E_{text}$)로, 카메라 포즈는 Fourier embedding → MLP($E_{cam}$)로 처리 후 결합</li>
+<li><strong>3D Bounding Box Encoding (전경 수준)</strong>: 각 바운딩 박스의 클래스명을 CLIP으로 풀링하고, 8개 코너 좌표를 Fourier embedding → MLP로 처리. Cross-attention으로 UNet에 주입</li>
+<li><strong>Road Map Encoding (배경 수준)</strong>: BEV 맵을 ControlNet과 같은 additive encoder branch로 처리. 명시적 시점 변환 없이 3D 단서(높이, 카메라 포즈)로부터 암묵적으로 학습</li>
+<li><strong>Visible Object Filter ($f_{viz}$)</strong>: 각 카메라에 실제 보이는 박스만 필터링하여 학습 최적화 부담을 줄임</li>
+</ul>
+<p><strong>수식: 카메라 포즈 인코딩</strong></p>
+$$h^c = E_{cam}(\text{Fourier}(\mathbf{P})) = E_{cam}(\text{Fourier}([\mathbf{K}, \mathbf{R}, \mathbf{T}]^T))$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$\mathbf{P} = [\mathbf{K}, \mathbf{R}, \mathbf{T}]^T \in \mathbb{R}^{7 \times 3}$</strong>: 카메라의 내부 파라미터(K), 회전(R), 이동(T)을 행렬로 합친 것</li>
+<li><strong>$\text{Fourier}(\cdot)$</strong>: 고주파 변화를 모델이 잘 인식하도록 각 3차원 벡터를 주파수 공간으로 변환</li>
+<li><strong>$E_{cam}$</strong>: MLP로 구성된 카메라 인코더</li>
+<li><strong>$h^c$</strong>: 카메라 포즈 임베딩 벡터 (텍스트 임베딩과 동일한 차원)</li>
+</ul>
+<p><strong>수식: 바운딩 박스 인코딩</strong></p>
+$$e^b_c(i) = \text{AvgPool}(E_{text}(L_{c_i})), \quad e^b_p(i) = \text{MLP}_p(\text{Fourier}(b_i))$$$$h^b_i = E_{box}(c_i, b_i) = \text{MLP}_b(e^b_c(i), e^b_p(i))$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$L_{c_i}$</strong>: i번째 객체의 클래스 이름 (예: &ldquo;car&rdquo;, &ldquo;truck&rdquo;)</li>
+<li><strong>$e^b_c(i)$</strong>: CLIP으로 인코딩된 클래스 의미 임베딩</li>
+<li><strong>$b_i \in \mathbb{R}^{8 \times 3}$</strong>: 바운딩 박스의 8개 코너 3D 좌표</li>
+<li><strong>$e^b_p(i)$</strong>: 코너 좌표의 위치 임베딩</li>
+<li><strong>$h^b_i$</strong>: 클래스 + 위치를 합친 최종 바운딩 박스 임베딩</li>
+</ul>
+<h3 id="42-cross-view-attention-module">4.2 Cross-view Attention Module<a class="anchor" href="#42-cross-view-attention-module">#</a></h3>
+<p><strong>요약</strong></p>
+<p>멀티카메라 스트리트뷰에서 인접 카메라 간 이미지 일관성을 보장하기 위해, 각 카메라 뷰가 좌우 인접 뷰와 정보를 교환하는 Cross-view Attention을 UNet의 Cross-attention 뒤에 추가한다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Target view</strong>: 현재 생성 중인 카메라 뷰 (t)</li>
+<li><strong>Left/Right neighbor</strong>: 인접 카메라 뷰 (l, r)</li>
+<li><strong>Zero-initialization</strong>: 학습 초기에 Cross-view attention 출력을 0으로 초기화하여 사전학습 모델의 능력을 보존하면서 안정적으로 학습</li>
+</ul>
+<p><strong>수식: Cross-view Attention</strong></p>
+$$\text{Attention}^i_{cv}(Q_t, K_i, V_i) = \text{softmax}\left(\frac{Q_t K_i^T}{\sqrt{d}}\right) \cdot V_i, \quad i \in \{l, r\}$$$$\mathbf{h}^v_{out} = \mathbf{h}^v_{in} + \text{Attention}^l_{cv} + \text{Attention}^r_{cv}$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$Q_t$</strong>: 현재(target) 뷰의 Query — &ldquo;나는 어떤 정보가 필요한가?&rdquo;</li>
+<li><strong>$K_i, V_i$</strong>: 인접(left/right) 뷰의 Key와 Value — &ldquo;나는 이런 정보를 가지고 있다&rdquo;</li>
+<li><strong>$\sqrt{d}$</strong>: 차원 수의 제곱근으로 나누어 attention 값이 너무 커지지 않도록 정규화</li>
+<li><strong>$\mathbf{h}^v_{out}$</strong>: skip connection으로 인접 뷰 정보를 더한 최종 hidden state</li>
+<li><strong>직관</strong>: &ldquo;앞 카메라가 보는 장면과 왼쪽·오른쪽 카메라가 보는 장면이 서로 같은 물체를 다른 각도에서 보는 것임을 학습&rdquo;</li>
+</ul>
+<h3 id="43-model-training">4.3 Model Training<a class="anchor" href="#43-model-training">#</a></h3>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Classifier-Free Guidance (CFG)</strong>: 추론 시 조건 강도를 조절하는 기법. 훈련 중 scene-level 조건(카메라 포즈, 텍스트)을 $\gamma^s$ 비율로 동시 드롭</li>
+<li><strong>Invisible Box Augmentation</strong>: 카메라에 보이지 않는 박스 10%를 훈련 데이터에 추가하여, 모델이 가려진 객체의 기하 변환을 학습</li>
+<li><strong>Unique Noise per View</strong>: 훈련 시 각 카메라 뷰에 서로 다른 노이즈를 적용하여 trivial solution(모든 뷰에 동일한 이미지 출력) 방지</li>
+</ul>
+<h2 id="section-5-experiments">Section 5: Experiments<a class="anchor" href="#section-5-experiments">#</a></h2>
+<p><strong>요약</strong></p>
+<p>nuScenes 데이터셋(700 학습 / 150 검증 장면)에서 BEVGen, BEVControl과 비교. 품질(FID), BEV 세그멘테이션(CVT), 3D 객체 검출(BEVFusion)로 평가.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>FID (Fréchet Inception Distance)</strong>: 낮을수록 실제 이미지와 합성 이미지의 분포가 유사함을 의미 (낮을수록 좋음)</li>
+<li><strong>mIoU (mean Intersection over Union)</strong>: 세그멘테이션 정확도 지표 (높을수록 좋음)</li>
+<li><strong>mAP / NDS</strong>: 3D 객체 검출 성능 지표 (높을수록 좋음)</li>
+</ul>
+<p><strong>주요 결과 (Table 1)</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>Method</th>
+          <th>Resolution</th>
+          <th>FID↓</th>
+          <th>Road mIoU↑</th>
+          <th>Vehicle mIoU↑</th>
+          <th>mAP↑</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>BEVGen</td>
+          <td>224×400</td>
+          <td>25.54</td>
+          <td>50.20</td>
+          <td>5.89</td>
+          <td>-</td>
+      </tr>
+      <tr>
+          <td>BEVControl</td>
+          <td>-</td>
+          <td>24.85</td>
+          <td>60.80</td>
+          <td>26.80</td>
+          <td>-</td>
+      </tr>
+      <tr>
+          <td><strong>MagicDrive</strong></td>
+          <td><strong>224×400</strong></td>
+          <td><strong>16.20</strong></td>
+          <td><strong>61.05</strong></td>
+          <td><strong>27.01</strong></td>
+          <td>12.30</td>
+      </tr>
+      <tr>
+          <td>MagicDrive</td>
+          <td>272×736</td>
+          <td>16.59</td>
+          <td>54.24</td>
+          <td><strong>31.05</strong></td>
+          <td><strong>20.85</strong></td>
+      </tr>
+  </tbody>
+</table>
+<ul>
+<li>MagicDrive는 FID에서 모든 베이스라인을 크게 능가 (16.20 vs 24.85)</li>
+<li>합성 데이터로 BEVFusion 학습 시 mAP +2.46, NDS +1.13 향상 (Table 2)</li>
+<li>합성 데이터로 CVT 학습 시 Vehicle mIoU +4.34 향상 (Table 3)</li>
+</ul>
+<p><strong>Multi-level Control</strong></p>
+<ul>
+<li><strong>Scene level</strong>: 날씨(맑음→비), 시간(낮→밤) 텍스트 변경으로 스타일 제어</li>
+<li><strong>Background level</strong>: BEV 맵 일부 수정으로 도로 레이아웃 변경</li>
+<li><strong>Foreground level</strong>: 특정 차량 180° 회전, 50% 차량 삭제 등 객체 조작</li>
+</ul>
+<h2 id="section-6-ablation-study">Section 6: Ablation Study<a class="anchor" href="#section-6-ablation-study">#</a></h2>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>$E_{box}$ 효과</strong>: 별도 박스 인코더 없이 BEV 맵에 통합할 경우 Vehicle mIoU 5.50으로 급감 (Ours: 27.13) — 작은 객체일수록 독립 인코딩이 중요</li>
+<li><strong>$f_{viz}$ 효과</strong>: visible filter 제거 시 Vehicle mIoU 24.73으로 하락 — 각 카메라 시점에 맞는 박스만 학습하는 것이 중요</li>
+<li><strong>CFG Scale 최적점</strong>: CFG=2.5에서 Vehicle mIoU 최고, 그 이상에서는 이미지 품질(FID) 저하</li>
+</ul>
+<h2 id="핵심-개념-정리">핵심 개념 정리<a class="anchor" href="#%ed%95%b5%ec%8b%ac-%ea%b0%9c%eb%85%90-%ec%a0%95%eb%a6%ac">#</a></h2>
+<ul>
+<li><strong>Latent Diffusion Model (LDM)</strong>: 픽셀 공간 대신 잠재 공간에서 노이즈 제거를 수행하는 이미지 생성 모델. Stable Diffusion이 대표적</li>
+<li><strong>ControlNet</strong>: 사전학습된 Text-to-Image 모델에 추가적인 조건(스케치, 세그멘테이션 맵 등)을 주입하는 additive encoder branch 구조</li>
+<li><strong>Classifier-Free Guidance (CFG)</strong>: 조건부 생성과 무조건부 생성을 선형 보간하여 조건 강도를 추론 시 조절하는 기법</li>
+<li><strong>Cross-view Attention</strong>: 서로 다른 카메라 뷰 간 정보를 교환하여 물리적 일관성을 보장하는 attention 메커니즘</li>
+<li><strong>BEV (Bird&rsquo;s Eye View)</strong>: 자율주행에서 차량 위에서 내려다보는 시점으로 장면을 표현하는 방식</li>
+<li><strong>Fourier Embedding</strong>: 위치나 방향 같은 연속적인 값을 주파수 성분으로 변환하여 신경망이 고주파 패턴을 학습하기 쉽게 만드는 기법</li>
+<li><strong>Visible Object Filter</strong>: 각 카메라 시점에서 실제로 보이는 3D 박스만 선택하여 학습에 활용하는 필터링 전략</li>
+<li><strong>nuScenes</strong>: 자율주행 연구를 위한 대규모 멀티센서 데이터셋 (6카메라, LiDAR, Radar 포함)</li>
+</ul>
+<h2 id="결론-및-시사점">결론 및 시사점<a class="anchor" href="#%ea%b2%b0%eb%a1%a0-%eb%b0%8f-%ec%8b%9c%ec%82%ac%ec%a0%90">#</a></h2>
+<p>MagicDrive는 3D 기하 정보를 조건으로 고품질 멀티카메라 스트리트뷰 이미지와 비디오를 생성하는 최초의 통합 프레임워크다. 별도 인코더로 장면·배경·전경 조건을 독립 처리하고, Cross-view Attention으로 멀티카메라 일관성을 보장한다.</p>
+<p><strong>실무 시사점</strong></p>
+<ul>
+<li><strong>합성 데이터 증강</strong>: MagicDrive로 생성한 데이터로 BEV 세그멘테이션(+4.34 Vehicle mIoU)과 3D 검출(+2.46 mAP) 모두 향상 — 실제 데이터 수집 비용을 줄이는 실용적 방법</li>
+<li><strong>희귀 시나리오 생성</strong>: 우천, 야간, 특정 차량 방향 등 데이터셋에서 드문 상황을 텍스트와 박스 조작으로 쉽게 생성 가능</li>
+<li><strong>비디오 확장</strong>: Self-attention을 ST-Attention으로 교체하고 temporal attention을 추가하면 16프레임 12Hz 비디오 생성까지 확장 가능</li>
+</ul>
+<p><strong>한계</strong></p>
+<ul>
+<li>야간 장면이 실제만큼 어둡지 않음 (diffusion model의 밝기 편향)</li>
+<li>nuScenes에서 보지 못한 기상 조건(눈 등) 생성 불가 — 도메인 일반화 능력 부족</li>
+<li>CFG 조건이 많아질수록 추론 시 최적 CFG 조합 탐색이 복잡해짐</li>
+</ul>
+<hr>
+<p><em>관련 논문: <a href="/posts/papers/high-resolution-image-synthesis-with-latent-diffusion-models/">LDM</a>, <a href="/posts/papers/denoising-diffusion-probabilistic-models/">DDPM</a>, <a href="/posts/papers/GAIA-1/">GAIA-1</a>, <a href="/posts/papers/DriveDreamer/">DriveDreamer</a>, <a href="/posts/papers/BEVFormer/">BEVFormer</a>, <a href="/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/">nuScenes</a></em></p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/paper/docs/omnire-omni-urban-scene-reconstruction/" class="flex align-center">
+        <img src="/paper/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>OmniRe: Omni Urban Scene Reconstruction</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/paper/docs/surroundocc/" class="flex align-center">
+        <span>SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving</span>
+        <img src="/paper/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#section-1-introduction">Section 1: Introduction</a></li>
+    <li><a href="#section-3-preliminary">Section 3: Preliminary</a></li>
+    <li><a href="#section-4-street-view-generation-with-3d-information">Section 4: Street View Generation with 3D Information</a>
+      <ul>
+        <li><a href="#41-geometric-conditions-encoding">4.1 Geometric Conditions Encoding</a></li>
+        <li><a href="#42-cross-view-attention-module">4.2 Cross-view Attention Module</a></li>
+        <li><a href="#43-model-training">4.3 Model Training</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-5-experiments">Section 5: Experiments</a></li>
+    <li><a href="#section-6-ablation-study">Section 6: Ablation Study</a></li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

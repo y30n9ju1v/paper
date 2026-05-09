@@ -5,6 +5,10 @@ draft: false
 categories: ["Papers", "Autonomous Driving", "Benchmark & Dataset"]
 tags: ["Autonomous Driving", "Benchmark", "End-to-End Planning", "Closed-Loop", "Simulation"]
 year: 2024
+references:
+  - "CARLA-An-Open-Urban-Driving-Simulator"
+  - "uniad-planning-oriented-autonomous-driving"
+  - "TransFuser"
 ---
 
 ## 개요

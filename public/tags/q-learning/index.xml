@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Q-Learning on Paper</title>
+    <link>https://y30n9ju1v.github.io/paper/tags/q-learning/</link>
+    <description>Recent content in Q-Learning on Paper</description>
+    <generator>Hugo</generator>
+    <language>ko-KR</language>
+    <lastBuildDate>Tue, 14 Apr 2026 09:00:00 +0900</lastBuildDate>
+    <atom:link href="https://y30n9ju1v.github.io/paper/tags/q-learning/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Playing Atari with Deep Reinforcement Learning</title>
+      <link>https://y30n9ju1v.github.io/paper/docs/deep-learning/dqn-playing-atari-with-deep-reinforcement-learning/</link>
+      <pubDate>Tue, 14 Apr 2026 09:00:00 +0900</pubDate>
+      <guid>https://y30n9ju1v.github.io/paper/docs/deep-learning/dqn-playing-atari-with-deep-reinforcement-learning/</guid>
+      <description>&lt;h2 id=&#34;개요&#34;&gt;개요&lt;a class=&#34;anchor&#34; href=&#34;#%ea%b0%9c%ec%9a%94&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;strong&gt;저자&lt;/strong&gt;: Volodymyr Mnih, Koray Kavukcuoglu, David Silver, Alex Graves, Ioannis Antonoglou, Daan Wierstra, Martin Riedmiller (DeepMind Technologies)&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;발행년도&lt;/strong&gt;: 2013 (arXiv:1312.5602)&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;주요 내용&lt;/strong&gt;: 원시 픽셀 이미지만을 입력으로 받아 강화학습으로 Atari 2600 게임을 스스로 학습하는 최초의 딥러닝 모델 &lt;strong&gt;DQN(Deep Q-Network)&lt;/strong&gt; 제안. Experience Replay와 CNN을 결합한 Q-learning으로 7개 게임 중 6개에서 기존 방법 전체를 능가하고, 3개 게임에서 인간 전문가를 초월.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;한계-극복&#34;&gt;한계 극복&lt;a class=&#34;anchor&#34; href=&#34;#%ed%95%9c%ea%b3%84-%ea%b7%b9%eb%b3%b5&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;p&gt;이 논문은 딥러닝과 강화학습을 결합하려는 기존 연구들이 직면한 세 가지 핵심 한계를 극복하기 위해 작성되었습니다.&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

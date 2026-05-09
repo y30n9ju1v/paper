@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="ko-KR" dir="ltr">
+<head><script src="/paper/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=paper/livereload" data-no-instant defer></script>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="개요# 저자: Xiaoyu Tian, Tao Jiang, Longfei Yun, Yucheng Mao, Huitong Yang, Yue Wang, Yilun Wang, Hang Zhao 소속: Tsinghua University, University of Southern California, Shanghai AI Lab, Shanghai Qi Zhi Institute 발행년도: 2023 (NeurIPS 2023, Datasets and Benchmarks Track) arXiv: 2304.14365 주요 내용: 자율주행을 위한 대규모 3D 점유 예측 벤치마크(Occ3D) 구축 및 반자동 레이블 생성 파이프라인 제안, 새로운 Coarse-to-Fine 점유 예측 네트워크(CTF-Occ) 소개 한계 극복# 이 논문이 기존 연구의 어떤 한계를 극복하기 위해 작성되었는지 설명합니다.
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/paper/docs/occ3d-large-scale-3d-occupancy-prediction-benchmark/">
+  <meta property="og:site_name" content="Paper">
+  <meta property="og:title" content="Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving">
+  <meta property="og:description" content="개요# 저자: Xiaoyu Tian, Tao Jiang, Longfei Yun, Yucheng Mao, Huitong Yang, Yue Wang, Yilun Wang, Hang Zhao 소속: Tsinghua University, University of Southern California, Shanghai AI Lab, Shanghai Qi Zhi Institute 발행년도: 2023 (NeurIPS 2023, Datasets and Benchmarks Track) arXiv: 2304.14365 주요 내용: 자율주행을 위한 대규모 3D 점유 예측 벤치마크(Occ3D) 구축 및 반자동 레이블 생성 파이프라인 제안, 새로운 Coarse-to-Fine 점유 예측 네트워크(CTF-Occ) 소개 한계 극복# 이 논문이 기존 연구의 어떤 한계를 극복하기 위해 작성되었는지 설명합니다.">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:published_time" content="2026-04-17T09:10:00+09:00">
+    <meta property="article:modified_time" content="2026-04-17T09:10:00+09:00">
+    <meta property="article:tag" content="Autonomous Driving">
+    <meta property="article:tag" content="3D Occupancy">
+    <meta property="article:tag" content="LiDAR">
+    <meta property="article:tag" content="Dataset">
+    <meta property="article:tag" content="Benchmark">
+
+
+  <meta itemprop="name" content="Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving">
+  <meta itemprop="description" content="개요# 저자: Xiaoyu Tian, Tao Jiang, Longfei Yun, Yucheng Mao, Huitong Yang, Yue Wang, Yilun Wang, Hang Zhao 소속: Tsinghua University, University of Southern California, Shanghai AI Lab, Shanghai Qi Zhi Institute 발행년도: 2023 (NeurIPS 2023, Datasets and Benchmarks Track) arXiv: 2304.14365 주요 내용: 자율주행을 위한 대규모 3D 점유 예측 벤치마크(Occ3D) 구축 및 반자동 레이블 생성 파이프라인 제안, 새로운 Coarse-to-Fine 점유 예측 네트워크(CTF-Occ) 소개 한계 극복# 이 논문이 기존 연구의 어떤 한계를 극복하기 위해 작성되었는지 설명합니다.">
+  <meta itemprop="datePublished" content="2026-04-17T09:10:00+09:00">
+  <meta itemprop="dateModified" content="2026-04-17T09:10:00+09:00">
+  <meta itemprop="wordCount" content="2070">
+  <meta itemprop="keywords" content="Autonomous Driving,3D Occupancy,LiDAR,Dataset,Benchmark">
+
+<title>Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving | Paper</title>
+<link rel="icon" href="/paper/favicon.png" >
+<link rel="manifest" href="/paper/manifest.json">
+<link rel="canonical" href="http://localhost:1313/paper/docs/occ3d-large-scale-3d-occupancy-prediction-benchmark/">
+<link rel="stylesheet" href="/paper/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/paper/fuse.min.js"></script>
+  <script defer src="/paper/en.search.min.136303f53f731e7f187e59dca354807444ce24732e128843ea97e041d47b7d93.js" integrity="sha256-E2MD9T9zHn8Yflnco1SAdETOJHMuEohD6pfgQdR7fZM=" crossorigin="anonymous"></script>
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '\\[', right: '\\]', display: true},
+      {left: '\\(', right: '\\)', display: false},
+      {left: '$', right: '$', display: false}
+    ]
+  });
+});
+</script>
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/paper/"><span>Paper</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/controlnet-adding-conditional-control-to-text-to-image-diffusion-models/" class="">
+      ControlNet: Adding Conditional Control to Text-to-Image Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/clip-learning-transferable-visual-models-from-natural-language-supervision/" class="">
+      CLIP: Learning Transferable Visual Models From Natural Language Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointnet-plus-plus-deep-hierarchical-feature-learning/" class="">
+      PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/" class="">
+      GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/lidarsim-realistic-lidar-simulation-by-leveraging-the-real-world/" class="">
+      LiDARsim: Realistic LiDAR Simulation by Leveraging the Real World</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vit-an-image-is-worth-16x16-words/" class="">
+      ViT: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/resnet-deep-residual-learning-for-image-recognition/" class="">
+      ResNet: Deep Residual Learning for Image Recognition</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/" class="">
+      StreamMapNet: Streaming Mapping Network for Vectorized Online HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vectormapnet-end-to-end-vectorized-hd-map-learning/" class="">
+      VectorMapNet: End-to-end Vectorized HD Map Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/detr-end-to-end-object-detection-with-transformers/" class="">
+      DETR: End-to-End Object Detection with Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/attention-is-all-you-need/" class="">
+      Attention Is All You Need</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/maptr-structured-modeling-online-vectorized-hd-map-construction/" class="">
+      MapTR: Structured Modeling and Learning for Online Vectorized HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/high-resolution-image-synthesis-with-latent-diffusion-models/" class="">
+      High-Resolution Image Synthesis with Latent Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/proximal-policy-optimization/" class="">
+      Proximal Policy Optimization Algorithms (PPO)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/denoising-diffusion-probabilistic-models/" class="">
+      Denoising Diffusion Probabilistic Models (DDPM)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/" class="">
+      PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointpillars-fast-encoders-object-detection-point-clouds/" class="">
+      PointPillars: Fast Encoders for Object Detection from Point Clouds</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/centerpoint-center-based-3d-object-detection-and-tracking/" class="">
+      CenterPoint: Center-based 3D Object Detection and Tracking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/monoscene-monocular-3d-semantic-scene-completion/" class="">
+      MonoScene: Monocular 3D Semantic Scene Completion</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/tpvformer-tri-perspective-view-3d-semantic-occupancy/" class="">
+      TPVFormer: Tri-Perspective View for Vision-Based 3D Semantic Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/drivearena/" class="">
+      DriveArena: A Closed-loop Generative Simulation Platform for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/neurad-neural-rendering-for-autonomous-driving/" class="">
+      NeuRAD: Neural Rendering for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/omnire-omni-urban-scene-reconstruction/" class="">
+      OmniRe: Omni Urban Scene Reconstruction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/magicdrive-street-view-generation-3d-geometry-control/" class="">
+      MagicDrive: Street View Generation with Diverse 3D Geometry Control</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/surroundocc/" class="">
+      SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/drivedreamer/" class="">
+      DriveDreamer: Towards Real-world-driven World Models for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/street-gaussians-modeling-dynamic-urban-scenes/" class="">
+      Street Gaussians: Modeling Dynamic Urban Scenes with Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bench2drive-multi-ability-benchmarking-e2e-autonomous-driving/" class="">
+      Bench2Drive: Towards Multi-Ability Benchmarking of Closed-Loop End-To-End Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/emernerf/" class="">
+      EmerNeRF: Emergent Spatial-Temporal Scene Decomposition via Self-Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/detr3d-3d-object-detection-multi-view-images/" class="">
+      DETR3D: 3D Object Detection from Multi-view Images via 3D-to-2D Queries</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/occ3d-large-scale-3d-occupancy-prediction-benchmark/" class="active">
+      Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/unisim-neural-closed-loop-sensor-simulator/" class="">
+      UniSim: A Neural Closed-Loop Sensor Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevfusion-multi-task-multi-sensor-fusion/" class="">
+      BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/instant-ngp-multiresolution-hash-encoding/" class="">
+      Instant Neural Graphics Primitives with a Multiresolution Hash Encoding</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/lift-splat-shoot/" class="">
+      Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevdepth/" class="">
+      BEVDepth: Acquisition of Reliable Depth for Multi-view 3D Object Detection</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/4d-gaussian-splatting/" class="">
+      4D Gaussian Splatting for Real-Time Dynamic Scene Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/gaia-1/" class="">
+      GAIA-1: A Generative World Model for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/dqn-playing-atari-with-deep-reinforcement-learning/" class="">
+      Playing Atari with Deep Reinforcement Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevformer/" class="">
+      BEVFormer: Learning Bird&#39;s-Eye-View Representation from Multi-Camera Images via Spatiotemporal Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/navsim/" class="">
+      NAVSIM: Data-Driven Non-Reactive Autonomous Vehicle Simulation and Benchmarking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nuplan/" class="">
+      nuPlan: A closed-loop ML-based planning benchmark for autonomous vehicles</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/transfuser/" class="">
+      TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3d-gaussian-splatting/" class="">
+      3D Gaussian Splatting for Real-Time Radiance Field Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/driving-gaussian-composite-gaussian-splatting/" class="">
+      DrivingGaussian: Composite Gaussian Splatting for Surrounding Dynamic Autonomous Driving Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3d-gaussian-ray-tracing/" class="">
+      3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/" class="">
+      3DGUT: Enabling Distorted Cameras and Secondary Rays in Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/carla-an-open-urban-driving-simulator/" class="">
+      CARLA: An Open Urban Driving Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/difix3d-plus/" class="">
+      DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/hugsim-real-time-photorealistic-closed-loop-simulator/" class="">
+      HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/" class="">
+      NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nuscenes-multimodal-dataset-autonomous-driving/" class="">
+      nuScenes: A Multimodal Dataset for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/waymo-open-dataset/" class="">
+      Scalability in Perception for Autonomous Driving: Waymo Open Dataset</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/uniad-planning-oriented-autonomous-driving/" class="">
+      UniAD: Planning-oriented Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vad/" class="">
+      VAD: Vectorized Scene Representation for Efficient Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/paper/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving</h3>
+
+  <label for="toc-control">
+    
+    <img src="/paper/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#section-1-introduction">Section 1: Introduction</a></li>
+    <li><a href="#section-2-related-work">Section 2: Related Work</a></li>
+    <li><a href="#section-3-occ3d-dataset">Section 3: Occ3D Dataset</a>
+      <ul>
+        <li><a href="#31-태스크-정의">3.1 태스크 정의</a></li>
+        <li><a href="#32-데이터셋-통계">3.2 데이터셋 통계</a></li>
+        <li><a href="#33-데이터셋-구축-파이프라인">3.3 데이터셋 구축 파이프라인</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-33-레이블-생성-파이프라인-3단계">Section 3.3: 레이블 생성 파이프라인 (3단계)</a>
+      <ul>
+        <li><a href="#단계-1-복셀-밀도화voxel-densification">단계 1: 복셀 밀도화(Voxel Densification)</a></li>
+        <li><a href="#단계-2-폐색-추론occlusion-reasoning">단계 2: 폐색 추론(Occlusion Reasoning)</a></li>
+        <li><a href="#단계-3-이미지-기반-복셀-정제image-guided-voxel-refinement">단계 3: 이미지 기반 복셀 정제(Image-guided Voxel Refinement)</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-4-quality-check">Section 4: Quality Check</a></li>
+    <li><a href="#section-5-coarse-to-fine-occupancy-network-ctf-occ">Section 5: Coarse-to-Fine Occupancy Network (CTF-Occ)</a>
+      <ul>
+        <li><a href="#이미지-백본image-backbone">이미지 백본(Image Backbone)</a></li>
+        <li><a href="#coarse-to-fine-복셀-인코더voxel-encoder">Coarse-to-Fine 복셀 인코더(Voxel Encoder)</a></li>
+        <li><a href="#암묵적-점유-디코더implicit-occupancy-decoder">암묵적 점유 디코더(Implicit Occupancy Decoder)</a></li>
+        <li><a href="#손실-함수">손실 함수</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-6-experiments">Section 6: Experiments</a>
+      <ul>
+        <li><a href="#실험-설정">실험 설정</a></li>
+        <li><a href="#주요-결과">주요 결과</a></li>
+        <li><a href="#ablation-study-구성-요소-분석">Ablation Study (구성 요소 분석)</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-7-conclusion">Section 7: Conclusion</a></li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h2 id="개요">개요<a class="anchor" href="#%ea%b0%9c%ec%9a%94">#</a></h2>
+<ul>
+<li><strong>저자</strong>: Xiaoyu Tian, Tao Jiang, Longfei Yun, Yucheng Mao, Huitong Yang, Yue Wang, Yilun Wang, Hang Zhao</li>
+<li><strong>소속</strong>: Tsinghua University, University of Southern California, Shanghai AI Lab, Shanghai Qi Zhi Institute</li>
+<li><strong>발행년도</strong>: 2023 (NeurIPS 2023, Datasets and Benchmarks Track)</li>
+<li><strong>arXiv</strong>: 2304.14365</li>
+<li><strong>주요 내용</strong>: 자율주행을 위한 대규모 3D 점유 예측 벤치마크(Occ3D) 구축 및 반자동 레이블 생성 파이프라인 제안, 새로운 Coarse-to-Fine 점유 예측 네트워크(CTF-Occ) 소개</li>
+</ul>
+<h2 id="한계-극복">한계 극복<a class="anchor" href="#%ed%95%9c%ea%b3%84-%ea%b7%b9%eb%b3%b5">#</a></h2>
+<p>이 논문이 기존 연구의 어떤 한계를 극복하기 위해 작성되었는지 설명합니다.</p>
+<ul>
+<li><strong>기존 한계 1 - 3D 바운딩 박스의 표현력 제한</strong>: 기존 3D 객체 탐지는 미리 정의된 온톨로지 트리 안의 객체만 인식하며, 바운딩 박스는 객체의 세밀한 기하학적 형태를 지워버립니다. 예를 들어 불규칙한 형태의 건설 장비나 도로 위 쓰레기통 같은 일반 객체를 표현하지 못합니다.</li>
+<li><strong>기존 한계 2 - Out-of-Vocabulary 객체 처리 불가</strong>: 온톨로지 트리에 없는 일반 객체(General Objects, GOs)는 데이터셋에 레이블되지 않아 무시됩니다. 이는 안전 사각지대를 만들 수 있습니다.</li>
+<li><strong>기존 한계 3 - 고품질 데이터셋 부재</strong>: 기존 3D 점유 예측 데이터셋들(NYUv2, ScanNet, SemanticKITTI, KITTI-360)은 실외 자율주행 환경에서의 서라운드뷰 이미지를 제공하지 않거나, 해상도가 낮거나, 시퀀스 수가 적습니다.</li>
+<li><strong>이 논문의 접근 방식</strong>: 밀도 높고 가시성-인식(visibility-aware) 레이블을 생성하는 반자동 파이프라인을 개발하고, Waymo 및 nuScenes 기반의 대규모 벤치마크(Occ3D-Waymo, Occ3D-nuScenes)를 구축하며, 이를 효과적으로 풀기 위한 CTF-Occ 네트워크를 제안합니다.</li>
+</ul>
+<h2 id="목차">목차<a class="anchor" href="#%eb%aa%a9%ec%b0%a8">#</a></h2>
+<ul>
+<li>Section 1: Introduction</li>
+<li>Section 2: Related Work</li>
+<li>Section 3: Occ3D Dataset</li>
+<li>Section 4: Quality Check</li>
+<li>Section 5: Coarse-to-Fine Occupancy Network (CTF-Occ)</li>
+<li>Section 6: Experiments</li>
+<li>Section 7: Conclusion</li>
+</ul>
+<hr>
+<h2 id="section-1-introduction">Section 1: Introduction<a class="anchor" href="#section-1-introduction">#</a></h2>
+<p><strong>요약</strong></p>
+<p>자율주행 같은 비전 기반 로봇 시스템에서 3D 인식은 핵심 요소입니다. 기존 가장 인기 있는 방법은 3D 객체 탐지로, 미리 정의된 카테고리의 객체를 3D 바운딩 박스로 추정합니다. 그러나 이 방식은 두 가지 근본적 한계가 있습니다.</p>
+<p>첫째, 바운딩 박스는 객체의 기하학적 세부 정보를 지워버립니다. 예를 들어 팔이 달린 건설 장비는 박스로 표현하면 실제 형태를 잃게 됩니다. 둘째, 도로 위의 쓰레기통처럼 미리 정의된 카테고리에 없는 객체(General Objects, GOs)는 감지되지 않습니다.</p>
+<p>이를 극복하기 위해 <strong>3D 점유 예측(3D Occupancy Prediction)</strong> 이 등장했습니다. 이 태스크는 3D 공간의 모든 복셀(voxel, 3D 픽셀)에 대해 점유 상태와 의미론적 레이블을 동시에 추정합니다. 논문은 이를 지원하기 위해 세 단계로 구성된 레이블 생성 파이프라인(복셀 밀도화 → 폐색 추론 → 이미지 기반 복셀 정제)을 제안하고, Occ3D-Waymo 및 Occ3D-nuScenes 두 벤치마크를 구축합니다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>3D Occupancy Prediction</strong>: 3D 공간의 모든 복셀에 대해 &ldquo;점유됨/비어있음/미관측&rdquo; 상태와 의미론적 카테고리를 동시에 추정하는 태스크. 기존 3D 탐지보다 훨씬 풍부한 장면 표현을 제공합니다.</li>
+<li><strong>General Objects (GOs)</strong>: 온톨로지에 정의되지 않은 일반 객체들. 예: 도로 위 쓰레기통, 야외 의자 등. 안전 주행을 위해 이런 객체도 인식해야 하지만 기존 방법은 무시합니다.</li>
+<li><strong>Voxel</strong>: 3D 공간을 균등하게 나눈 격자 단위. 2D 이미지의 픽셀을 3D로 확장한 개념입니다.</li>
+<li><strong>Surround-View Images</strong>: 자율주행 차량 주변을 모든 방향에서 촬영한 다중 카메라 이미지. 360도 시야를 제공합니다.</li>
+</ul>
+<hr>
+<h2 id="section-2-related-work">Section 2: Related Work<a class="anchor" href="#section-2-related-work">#</a></h2>
+<p><strong>요약</strong></p>
+<p>관련 연구는 크게 세 분야로 나뉩니다.</p>
+<ol>
+<li>
+<p><strong>3D 객체 탐지</strong>: LiDAR 포인트 클라우드나 이미지에서 미리 정의된 카테고리 객체의 3D 위치와 크기를 추정합니다. 최근 비전 전용 방법(BEVDet, BEVFormer 등)이 주목받고 있지만, 고정된 카테고리와 바운딩 박스 표현의 한계를 갖습니다.</p>
+</li>
+<li>
+<p><strong>3D 점유 예측</strong>: Occupancy Grid Mapping(OGM)은 로봇에서 오래된 관련 태스크로, 범위 센서로부터 확률적 지도를 생성합니다. 최근에는 TPVFormer처럼 3D 점유를 예측하는 방법도 제안되고 있으나 LiDAR 감독에 의존해 희소한 출력을 생성합니다.</p>
+</li>
+<li>
+<p><strong>Semantic Scene Completion (SSC)</strong>: 부분적으로 관찰된 장면에서 전체 밀도 의미론적 공간을 추론합니다. SSC는 정적 장면에 집중하고 보이지 않는 영역을 채우는 것이 목표인 반면, 점유 예측은 보이지 않는 영역 추론보다는 동적 장면의 점유 상태를 정확히 추정하는 데 집중합니다.</p>
+</li>
+</ol>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>BEV (Bird&rsquo;s Eye View)</strong>: 위에서 내려다본 시점. 자율주행에서 주변 환경을 표현하는 대표적인 방법입니다.</li>
+<li><strong>LiDAR (Light Detection And Ranging)</strong>: 레이저를 이용해 주변 물체까지의 거리를 측정하는 센서. 정밀한 3D 포인트 클라우드를 생성하지만 데이터가 희소합니다.</li>
+</ul>
+<hr>
+<h2 id="section-3-occ3d-dataset">Section 3: Occ3D Dataset<a class="anchor" href="#section-3-occ3d-dataset">#</a></h2>
+<p><strong>요약</strong></p>
+<h3 id="31-태스크-정의">3.1 태스크 정의<a class="anchor" href="#31-%ed%83%9c%ec%8a%a4%ed%81%ac-%ec%a0%95%ec%9d%98">#</a></h3>
+<p>3D 점유 예측의 입력은 T 프레임 연속 N개의 서라운드 카메라 이미지입니다. 각 복셀의 ground truth 레이블은 두 가지로 구성됩니다:</p>
+<ul>
+<li><strong>점유 상태(occupancy state)</strong>: &ldquo;점유됨&rdquo;, &ldquo;비어있음&rdquo;, &ldquo;미관측&rdquo;</li>
+<li><strong>의미론적 레이블(semantic label)</strong>: 카테고리(예: 차량, 보행자) 또는 &ldquo;알 수 없음&rdquo;</li>
+</ul>
+$$\{I_{i,t} \in \mathbb{R}^{H_i \times W_i \times 3}\}, \text{ where } i=1,...,N \text{ and } t=1,...,T$$<p><strong>수식 설명</strong>: 입력 데이터 형태를 나타냅니다:</p>
+<ul>
+<li><strong>$I_{i,t}$</strong>: $i$번째 카메라의 $t$번째 시간 프레임 이미지</li>
+<li><strong>$H_i, W_i$</strong>: 각 이미지의 높이와 너비</li>
+<li><strong>$3$</strong>: RGB 채널 수</li>
+<li><strong>$N$</strong>: 카메라 수 (서라운드 뷰)</li>
+<li><strong>$T$</strong>: 시간적으로 입력되는 프레임 수 (과거 프레임 활용)</li>
+</ul>
+<h3 id="32-데이터셋-통계">3.2 데이터셋 통계<a class="anchor" href="#32-%eb%8d%b0%ec%9d%b4%ed%84%b0%ec%85%8b-%ed%86%b5%ea%b3%84">#</a></h3>
+<ul>
+<li><strong>Occ3D-nuScenes</strong>: 600개 훈련, 150개 검증, 150개 테스트 시퀀스 (총 40,000 프레임). 18개 클래스 (16개 일반 + GO 클래스). 범위: [-40m, 40m] X/Y, [-1m, 5.4m] Z, 복셀 크기 [0.4m, 0.4m, 0.4m].</li>
+<li><strong>Occ3D-Waymo</strong>: 798개 훈련, 202개 검증 시퀀스 (총 200,000 프레임). 15개 클래스 (14개 일반 + GO 클래스). 범위: [-80m, 80m] X/Y, [-5m, 7.8m] Z, 매우 세밀한 복셀 크기 [0.05m, 0.05m, 0.05m].</li>
+</ul>
+<p>기존 데이터셋(SemanticKITTI: 22개 시퀀스/43,000 프레임, KITTI-360: 11개 시퀀스/90,960 프레임)에 비해 훨씬 대규모이며, 서라운드 뷰를 지원하는 최초의 고해상도 실외 3D 점유 데이터셋입니다.</p>
+<h3 id="33-데이터셋-구축-파이프라인">3.3 데이터셋 구축 파이프라인<a class="anchor" href="#33-%eb%8d%b0%ec%9d%b4%ed%84%b0%ec%85%8b-%ea%b5%ac%ec%b6%95-%ed%8c%8c%ec%9d%b4%ed%94%84%eb%9d%bc%ec%9d%b8">#</a></h3>
+<p>이미지만으로 3D 점유를 직접 주석하는 것은 깊이와 기하학 정보 부족으로 불가능합니다. 따라서 LiDAR 스캔을 활용하되, 세 가지 핵심 문제를 해결해야 합니다: <strong>희소성(Sparsity)</strong>, <strong>폐색(Occlusion)</strong>, <strong>3D-2D 정렬 불일치(Misalignment)</strong>.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>희소성(Sparsity)</strong>: LiDAR 포인트 클라우드는 본질적으로 희소합니다. 특히 원거리 객체나 작은 객체는 포인트가 거의 없어 레이블 생성이 어렵습니다.</li>
+<li><strong>폐색(Occlusion)</strong>: 어떤 복셀은 밀도화 후 카메라 시점에서 보이지 않게 됩니다. 이런 복셀을 잘못 &ldquo;비어있음&quot;으로 처리하면 안 됩니다.</li>
+<li><strong>3D-2D 정렬 불일치(Misalignment)</strong>: LiDAR 노이즈나 포즈 오차로 인해 3D 복셀을 2D 이미지에 투영할 때 오정렬이 발생합니다.</li>
+</ul>
+<hr>
+<h2 id="section-33-레이블-생성-파이프라인-3단계">Section 3.3: 레이블 생성 파이프라인 (3단계)<a class="anchor" href="#section-33-%eb%a0%88%ec%9d%b4%eb%b8%94-%ec%83%9d%ec%84%b1-%ed%8c%8c%ec%9d%b4%ed%94%84%eb%9d%bc%ec%9d%b8-3%eb%8b%a8%ea%b3%84">#</a></h2>
+<p><strong>요약</strong></p>
+<p>파이프라인은 세 단계로 구성됩니다:</p>
+<h3 id="단계-1-복셀-밀도화voxel-densification">단계 1: 복셀 밀도화(Voxel Densification)<a class="anchor" href="#%eb%8b%a8%ea%b3%84-1-%eb%b3%b5%ec%85%80-%eb%b0%80%eb%8f%84%ed%99%94voxel-densification">#</a></h3>
+<p>LiDAR 데이터는 희소하므로 밀도 높은 포인트 클라우드를 획득하기 위해 멀티-프레임 집계를 수행합니다.</p>
+<ul>
+<li><strong>동적/정적 객체 분리</strong>: 포인트 클라우드를 &ldquo;동적 객체&rdquo;(차량, 보행자 등 움직이는 것)와 &ldquo;정적 장면&rdquo;(건물, 도로 등)으로 분리합니다.</li>
+<li><strong>멀티-프레임 집계</strong>: 동적 객체는 어노테이션/추적 박스 안의 포인트를 추출해 센서 좌표계에서 박스 좌표계로 변환 후 집계합니다. 정적 장면은 전체 시퀀스의 포인트를 전역 좌표계에서 단순 집계합니다.</li>
+<li><strong>KNN 레이블 할당</strong>: 레이블이 없는 프레임은 키프레임(레이블 있는 프레임)의 K-최근접 이웃 알고리즘으로 의미론적 레이블을 할당합니다.</li>
+<li><strong>메쉬 재구성</strong>: 집계 후에도 남은 구멍(hole)을 채우기 위해 VDBFusion 기반 메쉬 재구성을 수행합니다.</li>
+</ul>
+<h3 id="단계-2-폐색-추론occlusion-reasoning">단계 2: 폐색 추론(Occlusion Reasoning)<a class="anchor" href="#%eb%8b%a8%ea%b3%84-2-%ed%8f%90%ec%83%89-%ec%b6%94%eb%a1%a0occlusion-reasoning">#</a></h3>
+<p>밀도화된 포인트 클라우드에서 복셀의 가시성을 판단합니다.</p>
+<ul>
+<li><strong>LiDAR 가시성 마스크</strong>: 레이 캐스팅(ray casting)을 통해 각 복셀의 가시성을 결정합니다. LiDAR 포인트를 반사하면 &ldquo;점유됨&rdquo;, 레이가 통과하면 &ldquo;비어있음&rdquo;, 둘 다 아니면 &ldquo;미관측&quot;으로 분류합니다.</li>
+<li><strong>카메라 가시성 마스크</strong>: 카메라 원점과 복셀 중심을 연결하는 레이를 따라, 첫 번째 점유 복셀은 &ldquo;관측됨&rdquo;, 이후는 &ldquo;미관측&quot;으로 설정합니다. 평가는 LiDAR와 카메라 양쪽에서 &ldquo;관측된&rdquo; 복셀에 대해서만 수행합니다.</li>
+</ul>
+<h3 id="단계-3-이미지-기반-복셀-정제image-guided-voxel-refinement">단계 3: 이미지 기반 복셀 정제(Image-guided Voxel Refinement)<a class="anchor" href="#%eb%8b%a8%ea%b3%84-3-%ec%9d%b4%eb%af%b8%ec%a7%80-%ea%b8%b0%eb%b0%98-%eb%b3%b5%ec%85%80-%ec%a0%95%ec%a0%9cimage-guided-voxel-refinement">#</a></h3>
+<p>LiDAR 노이즈와 포즈 오차로 인한 오정렬된 복셀을 제거합니다.</p>
+<ul>
+<li>각 점유 복셀 중심에서 카메라 원점으로 레이를 쏘아 해당 픽셀의 의미론적 레이블과 일치하는 첫 복셀을 만날 때까지 이전 복셀들을 &ldquo;비어있음&quot;으로 설정합니다.</li>
+<li>이 과정은 객체 경계의 형태를 크게 개선합니다.</li>
+</ul>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>레이 캐스팅(Ray Casting)</strong>: 카메라나 LiDAR 원점에서 특정 방향으로 가상의 광선을 쏘아 교차하는 복셀을 탐지하는 기법. 컴퓨터 그래픽스에서 렌더링에 사용되는 기법을 역으로 적용합니다.</li>
+<li><strong>VDBFusion</strong>: TSDF(Truncated Signed Distance Functions) 기반 체적 표면 재구성 방법. Poisson 표면 재구성보다 유연하고 효과적입니다.</li>
+<li><strong>KNN (K-Nearest Neighbors)</strong>: K개의 가장 가까운 이웃 포인트의 다수결 레이블을 할당하는 알고리즘.</li>
+</ul>
+<hr>
+<h2 id="section-4-quality-check">Section 4: Quality Check<a class="anchor" href="#section-4-quality-check">#</a></h2>
+<p><strong>요약</strong></p>
+<p>데이터셋 품질을 검증하기 위해 <strong>3D-2D 일관성 지표</strong>를 제안합니다. 2D 이미지의 의미론적 세그멘테이션 마스크(사람이 직접 주석한 고품질 레이블)와 3D 복셀의 의미론적 레이블의 일치도를 측정합니다.</p>
+<p>세 단계로 계산됩니다:</p>
+<ol>
+<li><strong>2D ROI 결정</strong>: 현재 프레임의 단일 LiDAR 스캔 범위 내의 이미지 영역을 2D 관심 영역(ROI)으로 설정합니다.</li>
+<li><strong>3D 레이블 쿼리</strong>: ROI 내 각 2D 픽셀에 대해, 레이 캐스팅으로 가장 가까운 3D 복셀을 찾아 해당 의미론적 레이블을 가져옵니다.</li>
+<li><strong>지표 계산</strong>: Precision, Recall, IoU, mIoU로 3D-2D 일관성을 측정합니다.</li>
+</ol>
+<p>실험 결과, 각 파이프라인 단계(SFP → MFP → 복셀화 → 메쉬 → IGR)를 추가할수록 mIoU가 지속적으로 향상되어 최종 <strong>58.50 mIoU</strong>를 달성합니다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>mIoU (mean Intersection over Union)</strong>: 각 클래스별 IoU의 평균. 세그멘테이션/점유 예측 성능의 표준 지표입니다.</li>
+</ul>
+$$\text{IoU} = \frac{TP}{TP + FP + FN}$$<p><strong>수식 설명</strong>:</p>
+<ul>
+<li><strong>$TP$ (True Positive)</strong>: 예측과 ground truth 모두 해당 클래스로 맞은 복셀 수</li>
+<li><strong>$FP$ (False Positive)</strong>: 잘못 해당 클래스로 예측한 복셀 수</li>
+<li><strong>$FN$ (False Negative)</strong>: 놓친 해당 클래스 복셀 수</li>
+<li><strong>IoU</strong>: 예측과 실제의 교집합을 합집합으로 나눈 값. 1에 가까울수록 정확합니다.</li>
+</ul>
+<hr>
+<h2 id="section-5-coarse-to-fine-occupancy-network-ctf-occ">Section 5: Coarse-to-Fine Occupancy Network (CTF-Occ)<a class="anchor" href="#section-5-coarse-to-fine-occupancy-network-ctf-occ">#</a></h2>
+<p><strong>요약</strong></p>
+<p>3D 점유 예측 문제를 해결하기 위해 새로운 트랜스포머 기반 모델 <strong>CTF-Occ(Coarse-to-Fine Occupancy Network)</strong> 를 제안합니다.</p>
+<p>아키텍처는 세 모듈로 구성됩니다:</p>
+<h3 id="이미지-백본image-backbone">이미지 백본(Image Backbone)<a class="anchor" href="#%ec%9d%b4%eb%af%b8%ec%a7%80-%eb%b0%b1%eb%b3%b8image-backbone">#</a></h3>
+<p>멀티뷰 이미지에서 멀티레벨 2D 특징을 추출합니다(ResNet-101 + FPN 구조 사용).</p>
+<h3 id="coarse-to-fine-복셀-인코더voxel-encoder">Coarse-to-Fine 복셀 인코더(Voxel Encoder)<a class="anchor" href="#coarse-to-fine-%eb%b3%b5%ec%85%80-%ec%9d%b8%ec%bd%94%eb%8d%94voxel-encoder">#</a></h3>
+<p>피라미드 구조로 복셀 특징을 점진적으로 개선합니다. 각 피라미드 레벨에서 두 핵심 기법을 사용합니다:</p>
+<ol>
+<li>
+<p><strong>증분적 토큰 선택(Incremental Token Selection)</strong>: 대부분의 복셀이 비어있으므로, 이진 분류기로 비어있지 않은 &ldquo;불확실한&rdquo; 복셀 토큰 Top-K개만 선택해 크로스-어텐션에 사용합니다. 이는 계산 효율성을 크게 향상시킵니다.</p>
+</li>
+<li>
+<p><strong>공간적 크로스-어텐션(Spatial Cross-Attention)</strong>: 선택된 Top-K 복셀 토큰이 변형 가능한(deformable) 샘플링으로 2D 이미지 특징을 집계합니다.</p>
+</li>
+<li>
+<p><strong>합성곱 특징 추출기(Convolutional Feature Extractor)</strong>: 크로스-어텐션 후 3D 합성곱으로 전체 복셀 특징 맵의 특징 상호작용을 강화하고, 상위 레벨에서 쌍선형 보간으로 업샘플링합니다.</p>
+</li>
+</ol>
+<h3 id="암묵적-점유-디코더implicit-occupancy-decoder">암묵적 점유 디코더(Implicit Occupancy Decoder)<a class="anchor" href="#%ec%95%94%eb%ac%b5%ec%a0%81-%ec%a0%90%ec%9c%a0-%eb%94%94%ec%bd%94%eb%8d%94implicit-occupancy-decoder">#</a></h3>
+$$O \in \mathbb{R}^{W \times H \times L \times C'}$$<p><strong>수식 설명</strong>:</p>
+<ul>
+<li><strong>$O$</strong>: 최종 점유 예측 출력</li>
+<li><strong>$W, H, L$</strong>: 3D 공간의 너비, 높이, 길이(복셀 격자 크기)</li>
+<li><strong>$C'$</strong>: 의미론적 클래스 수</li>
+<li>복셀 특징 벡터와 복셀 내부의 3D 좌표 두 가지를 입력받는 MLP로 구현됩니다. 이를 통해 임의 해상도 출력이 가능한 <strong>암묵적 신경 표현</strong>을 활용합니다.</li>
+</ul>
+<h3 id="손실-함수">손실 함수<a class="anchor" href="#%ec%86%90%ec%8b%a4-%ed%95%a8%ec%88%98">#</a></h3>
+$$\mathcal{L}_{occ} = \sum_k W_k \mathcal{L}(g_k, p_k)$$<p><strong>수식 설명</strong>:</p>
+<ul>
+<li><strong>$\mathcal{L}_{occ}$</strong>: 전체 점유 예측 손실</li>
+<li><strong>$W_k$</strong>: k번째 의미론적 클래스의 손실 가중치</li>
+<li><strong>$g_k, p_k$</strong>: k번째 클래스의 ground truth 레이블과 예측 결과</li>
+<li><strong>OHEM(Online Hard Example Mining) 손실</strong>: 어려운 샘플에 더 높은 가중치를 부여해 학습 효율을 높입니다.</li>
+<li>이진 분류 헤드(empty/non-empty 판별)에 대한 손실도 별도로 계산합니다.</li>
+</ul>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Coarse-to-Fine (거친 것에서 정밀한 것으로)</strong>: 낮은 해상도에서 전체 구조를 파악한 후 점진적으로 고해상도로 세부 사항을 정제하는 전략. 직소 퍼즐을 먼저 큰 조각으로 맞추고 나중에 세부적으로 정렬하는 것과 유사합니다.</li>
+<li><strong>Cross-Attention</strong>: 쿼리(복셀 특징)가 키/밸류(이미지 특징)에서 관련 정보를 가져오는 트랜스포머 메커니즘.</li>
+<li><strong>Deformable Sampling</strong>: 고정된 격자 대신 학습된 오프셋으로 불규칙한 위치에서 특징을 샘플링하는 기법. 계산량을 줄이면서 유연한 특징 집계를 가능하게 합니다.</li>
+<li><strong>암묵적 신경 표현(Implicit Neural Representation)</strong>: 연속적인 함수로 3D 공간을 표현하는 방법. 명시적 복셀 격자와 달리 임의의 해상도로 쿼리할 수 있습니다.</li>
+</ul>
+<hr>
+<h2 id="section-6-experiments">Section 6: Experiments<a class="anchor" href="#section-6-experiments">#</a></h2>
+<p><strong>요약</strong></p>
+<h3 id="실험-설정">실험 설정<a class="anchor" href="#%ec%8b%a4%ed%97%98-%ec%84%a4%ec%a0%95">#</a></h3>
+<ul>
+<li><strong>Occ3D-Waymo</strong>: 798개 훈련, 202개 검증 시퀀스. X/Y 범위 [-40m, 40m], Z 범위 [-5m, 7.8m], 복셀 크기 0.4m.</li>
+<li><strong>Occ3D-nuScenes</strong>: 700개 훈련, 150개 검증 시퀀스. X/Y 범위 [-40m, 40m], Z 범위 [-1m, 5.4m], 복셀 크기 0.4m.</li>
+<li><strong>평가 지표</strong>: IoU 및 mIoU.</li>
+</ul>
+<p>비교 베이스라인: MonoScene, TPVFormer, BEVDet, BEVFormer, OccFormer.</p>
+<h3 id="주요-결과">주요 결과<a class="anchor" href="#%ec%a3%bc%ec%9a%94-%ea%b2%b0%ea%b3%bc">#</a></h3>
+<p><strong>Occ3D-nuScenes에서</strong>:</p>
+<ul>
+<li>CTF-Occ: <strong>28.53 mIoU</strong> — 모든 클래스에서 기존 방법 능가</li>
+<li>BEVFormer 대비 <strong>1.65 mIoU</strong> 향상</li>
+</ul>
+<p><strong>Occ3D-Waymo에서</strong>:</p>
+<ul>
+<li>CTF-Occ: <strong>18.73 mIoU</strong> — 모든 비교 방법 중 최고</li>
+<li>교통 콘(traffic cone): BEVDet 대비 <strong>+10.23 IoU</strong> 향상 (복셀 공간에서 높이를 압축하지 않아 세밀한 기하학 보존)</li>
+<li>차량(vehicle): BEVDet 대비 <strong>+2.88 IoU</strong> 향상</li>
+</ul>
+<h3 id="ablation-study-구성-요소-분석">Ablation Study (구성 요소 분석)<a class="anchor" href="#ablation-study-%ea%b5%ac%ec%84%b1-%ec%9a%94%ec%86%8c-%eb%b6%84%ec%84%9d">#</a></h3>
+<table>
+  <thead>
+      <tr>
+          <th style="text-align: center">OHEM Loss</th>
+          <th style="text-align: center">Token Selection</th>
+          <th style="text-align: center">mIoU</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center">-</td>
+          <td style="text-align: center">random</td>
+          <td style="text-align: center">14.06</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">✓</td>
+          <td style="text-align: center">uncertain</td>
+          <td style="text-align: center">16.62</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">-</td>
+          <td style="text-align: center">top-k</td>
+          <td style="text-align: center">17.37</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">✓</td>
+          <td style="text-align: center">top-k</td>
+          <td style="text-align: center"><strong>18.43</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p>OHEM 손실과 Top-K 불확실 토큰 선택을 함께 사용할 때 최고 성능(18.43 mIoU)을 달성합니다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>OHEM (Online Hard Example Mining)</strong>: 학습 중 손실이 큰 &ldquo;어려운 샘플&quot;을 온라인으로 선별해 더 집중적으로 학습하는 기법. 클래스 불균형 문제에 효과적입니다.</li>
+</ul>
+<hr>
+<h2 id="section-7-conclusion">Section 7: Conclusion<a class="anchor" href="#section-7-conclusion">#</a></h2>
+<p><strong>요약</strong></p>
+<p>Occ3D는 시각 인식을 위한 대규모 고품질 3D 점유 예측 벤치마크입니다. 엄격한 반자동 레이블 생성 파이프라인과 새로운 CTF-Occ 네트워크를 함께 공개합니다.</p>
+<p><strong>한계점</strong>:</p>
+<ol>
+<li><strong>센서 캘리브레이션 오차</strong>: LiDAR-카메라 간 정밀 캘리브레이션이 필요하며, 멀티-프레임 집계도 정확한 센서 캘리브레이션에 의존합니다.</li>
+<li><strong>동적 변형 객체</strong>: 달리는 동물이나 팔을 흔드는 사람 등 강체(rigid body) 가정을 충족하지 못하는 객체는 모션 블러가 발생합니다.</li>
+<li><strong>General Objects 한계</strong>: nuScenes와 Waymo 데이터셋 모두 제한된 카테고리만 주석되어 있어, 쓰레기통이나 교통 콘 같은 객체는 GO 클래스로 묶입니다. 더 세밀한 인간 주석이 필요합니다.</li>
+</ol>
+<hr>
+<h2 id="핵심-개념-정리">핵심 개념 정리<a class="anchor" href="#%ed%95%b5%ec%8b%ac-%ea%b0%9c%eb%85%90-%ec%a0%95%eb%a6%ac">#</a></h2>
+<table>
+  <thead>
+      <tr>
+          <th>개념</th>
+          <th>설명</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>3D Occupancy Prediction</strong></td>
+          <td>3D 공간의 모든 복셀에 점유 상태(occupied/free/unobserved)와 의미론적 레이블을 추정하는 태스크</td>
+      </tr>
+      <tr>
+          <td><strong>Voxel</strong></td>
+          <td>3D 공간을 균등 분할한 최소 단위. 2D 픽셀의 3D 확장 개념</td>
+      </tr>
+      <tr>
+          <td><strong>General Objects (GOs)</strong></td>
+          <td>미리 정의된 카테고리에 없는 일반 객체. 안전을 위해 인식이 필요하지만 기존 방법은 무시</td>
+      </tr>
+      <tr>
+          <td><strong>Voxel Densification</strong></td>
+          <td>희소한 LiDAR 포인트를 멀티-프레임 집계와 메쉬 재구성으로 밀도 높게 만드는 과정</td>
+      </tr>
+      <tr>
+          <td><strong>Occlusion Reasoning</strong></td>
+          <td>레이 캐스팅으로 각 복셀의 가시성(관측됨/비어있음/미관측)을 판단하는 과정</td>
+      </tr>
+      <tr>
+          <td><strong>Image-guided Voxel Refinement</strong></td>
+          <td>이미지 의미론적 마스크를 이용해 오정렬된 복셀을 제거하는 과정</td>
+      </tr>
+      <tr>
+          <td><strong>Coarse-to-Fine</strong></td>
+          <td>낮은 해상도에서 높은 해상도로 점진적으로 정밀도를 높이는 전략</td>
+      </tr>
+      <tr>
+          <td><strong>Incremental Token Selection</strong></td>
+          <td>비어있지 않은 복셀 토큰만 선별해 크로스-어텐션 계산량을 줄이는 기법</td>
+      </tr>
+      <tr>
+          <td><strong>Spatial Cross-Attention</strong></td>
+          <td>복셀 특징이 2D 이미지 특징에서 관련 정보를 수집하는 트랜스포머 메커니즘</td>
+      </tr>
+      <tr>
+          <td><strong>Implicit Occupancy Decoder</strong></td>
+          <td>연속 함수(MLP)로 3D 공간을 표현해 임의 해상도 출력이 가능한 디코더</td>
+      </tr>
+      <tr>
+          <td><strong>3D-2D Consistency</strong></td>
+          <td>3D 복셀 레이블과 2D 이미지 의미론적 세그멘테이션 간 일치도. 데이터셋 품질 검증 지표</td>
+      </tr>
+      <tr>
+          <td><strong>OHEM Loss</strong></td>
+          <td>어려운 샘플에 집중하는 온라인 하드 예제 마이닝 손실 함수</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="결론-및-시사점">결론 및 시사점<a class="anchor" href="#%ea%b2%b0%eb%a1%a0-%eb%b0%8f-%ec%8b%9c%ec%82%ac%ec%a0%90">#</a></h2>
+<p><strong>논문의 핵심 기여</strong>:</p>
+<ol>
+<li>
+<p><strong>Occ3D 벤치마크 구축</strong>: Waymo와 nuScenes 기반의 대규모, 고해상도, 서라운드뷰 3D 점유 예측 벤치마크. 기존 데이터셋보다 훨씬 다양한 시나리오를 포함합니다.</p>
+</li>
+<li>
+<p><strong>반자동 레이블 생성 파이프라인</strong>: 복셀 밀도화 → 폐색 추론 → 이미지 기반 정제 3단계 파이프라인으로 dense하고 visibility-aware한 레이블을 자동 생성합니다. 3D-2D 일관성 지표로 각 단계의 효과를 검증합니다.</p>
+</li>
+<li>
+<p><strong>CTF-Occ 네트워크</strong>: 증분적 토큰 선택과 피라미드 크로스-어텐션을 결합한 효율적인 Coarse-to-Fine 점유 예측 모델. Occ3D 벤치마크에서 기존 방법들을 능가합니다.</p>
+</li>
+</ol>
+<p><strong>실무적 시사점</strong>:</p>
+<ul>
+<li>자율주행의 안전성을 위해 3D 바운딩 박스를 넘어 전체 복셀 수준의 장면 이해가 중요합니다.</li>
+<li>고품질 3D 레이블 생성에서 LiDAR와 카메라의 상호 보완적 활용(LiDAR로 기하학, 카메라로 의미론적 정제)이 핵심입니다.</li>
+<li>복셀 공간에서 높이 압축 없이 3D 공간을 유지하면 교통 콘, 보행자 같은 작은 객체의 정확도가 크게 향상됩니다.</li>
+<li>General Objects 클래스 도입은 실세계의 불확실성을 인정하는 현실적인 접근으로, 장기적으로 개방형 어휘(open-vocabulary) 3D 인식 연구로 발전할 가능성이 있습니다.</li>
+</ul>
+<hr>
+<p><em>관련 논문: <a href="/posts/papers/monoscene-monocular-3d-semantic-scene-completion/">MonoScene</a>, <a href="/posts/papers/tpvformer-tri-perspective-view-3d-semantic-occupancy/">TPVFormer</a>, <a href="/posts/papers/SurroundOcc/">SurroundOcc</a>, <a href="/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/">nuScenes</a>, <a href="/posts/papers/waymo-open-dataset/">Waymo Open Dataset</a></em></p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/paper/docs/detr3d-3d-object-detection-multi-view-images/" class="flex align-center">
+        <img src="/paper/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>DETR3D: 3D Object Detection from Multi-view Images via 3D-to-2D Queries</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/paper/docs/unisim-neural-closed-loop-sensor-simulator/" class="flex align-center">
+        <span>UniSim: A Neural Closed-Loop Sensor Simulator</span>
+        <img src="/paper/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#section-1-introduction">Section 1: Introduction</a></li>
+    <li><a href="#section-2-related-work">Section 2: Related Work</a></li>
+    <li><a href="#section-3-occ3d-dataset">Section 3: Occ3D Dataset</a>
+      <ul>
+        <li><a href="#31-태스크-정의">3.1 태스크 정의</a></li>
+        <li><a href="#32-데이터셋-통계">3.2 데이터셋 통계</a></li>
+        <li><a href="#33-데이터셋-구축-파이프라인">3.3 데이터셋 구축 파이프라인</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-33-레이블-생성-파이프라인-3단계">Section 3.3: 레이블 생성 파이프라인 (3단계)</a>
+      <ul>
+        <li><a href="#단계-1-복셀-밀도화voxel-densification">단계 1: 복셀 밀도화(Voxel Densification)</a></li>
+        <li><a href="#단계-2-폐색-추론occlusion-reasoning">단계 2: 폐색 추론(Occlusion Reasoning)</a></li>
+        <li><a href="#단계-3-이미지-기반-복셀-정제image-guided-voxel-refinement">단계 3: 이미지 기반 복셀 정제(Image-guided Voxel Refinement)</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-4-quality-check">Section 4: Quality Check</a></li>
+    <li><a href="#section-5-coarse-to-fine-occupancy-network-ctf-occ">Section 5: Coarse-to-Fine Occupancy Network (CTF-Occ)</a>
+      <ul>
+        <li><a href="#이미지-백본image-backbone">이미지 백본(Image Backbone)</a></li>
+        <li><a href="#coarse-to-fine-복셀-인코더voxel-encoder">Coarse-to-Fine 복셀 인코더(Voxel Encoder)</a></li>
+        <li><a href="#암묵적-점유-디코더implicit-occupancy-decoder">암묵적 점유 디코더(Implicit Occupancy Decoder)</a></li>
+        <li><a href="#손실-함수">손실 함수</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-6-experiments">Section 6: Experiments</a>
+      <ul>
+        <li><a href="#실험-설정">실험 설정</a></li>
+        <li><a href="#주요-결과">주요 결과</a></li>
+        <li><a href="#ablation-study-구성-요소-분석">Ablation Study (구성 요소 분석)</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-7-conclusion">Section 7: Conclusion</a></li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

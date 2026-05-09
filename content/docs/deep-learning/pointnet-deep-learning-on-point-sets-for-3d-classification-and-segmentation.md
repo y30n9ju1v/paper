@@ -5,6 +5,7 @@ draft: false
 categories: ["Papers", "Computer Vision"]
 tags: ["Point Cloud", "3D Classification", "3D Segmentation", "Deep Learning"]
 year: 2017
+references: []
 ---
 
 ## 개요

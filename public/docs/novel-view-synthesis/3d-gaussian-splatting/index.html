@@ -1,0 +1,1869 @@
+<!DOCTYPE html>
+<html lang="ko-KR" dir="ltr">
+<head>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="개요# 저자: Bernhard Kerbl, Georgios Kopanas, Thomas Leimkühler, George Drettakis 발행년도: 2023 (August) 출처: ACM Transactions on Graphics (SIGGRAPH 2023) 논문 아이디: arXiv:2308.04079v1 이 논문은 3D Gaussian Splatting이라는 혁신적인 방법을 제시하여, 신경 방사장(Neural Radiance Field, NeRF)의 높은 품질을 유지하면서도 실시간 렌더링(≥30fps @ 1080p)을 가능하게 합니다. 기존의 NeRF 방식은 훈련 속도와 렌더링 속도 사이에서 품질 손실이 불가피했으나, 이 연구는 그 균형을 깨뜨렸습니다.
+주요 혁신# 성능 비교
+InstantNGP: 7분 훈련, 9.2fps (PSNR: 22.1) Plenoxels: 26분 훈련, 8.2fps (PSNR: 21.9) Mip-NeRF360: 48시간 훈련, 0.071fps (PSNR: 24.3) 제안 방법: 51분 훈련, 93fps (PSNR: 25.2) - 최고 품질 달성 주요 내용# 1. 기존 방법의 한계# 신경 방사장(NeRF) 방식의 문제
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://y30n9ju1v.github.io/paper/docs/novel-view-synthesis/3d-gaussian-splatting/">
+  <meta property="og:site_name" content="Paper">
+  <meta property="og:title" content="3D Gaussian Splatting for Real-Time Radiance Field Rendering">
+  <meta property="og:description" content="개요# 저자: Bernhard Kerbl, Georgios Kopanas, Thomas Leimkühler, George Drettakis 발행년도: 2023 (August) 출처: ACM Transactions on Graphics (SIGGRAPH 2023) 논문 아이디: arXiv:2308.04079v1 이 논문은 3D Gaussian Splatting이라는 혁신적인 방법을 제시하여, 신경 방사장(Neural Radiance Field, NeRF)의 높은 품질을 유지하면서도 실시간 렌더링(≥30fps @ 1080p)을 가능하게 합니다. 기존의 NeRF 방식은 훈련 속도와 렌더링 속도 사이에서 품질 손실이 불가피했으나, 이 연구는 그 균형을 깨뜨렸습니다.
+주요 혁신# 성능 비교
+InstantNGP: 7분 훈련, 9.2fps (PSNR: 22.1) Plenoxels: 26분 훈련, 8.2fps (PSNR: 21.9) Mip-NeRF360: 48시간 훈련, 0.071fps (PSNR: 24.3) 제안 방법: 51분 훈련, 93fps (PSNR: 25.2) - 최고 품질 달성 주요 내용# 1. 기존 방법의 한계# 신경 방사장(NeRF) 방식의 문제">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:published_time" content="2026-04-10T10:00:00+09:00">
+    <meta property="article:modified_time" content="2026-04-10T10:00:00+09:00">
+    <meta property="article:tag" content="3D Gaussian Splatting">
+    <meta property="article:tag" content="Novel View Synthesis">
+    <meta property="article:tag" content="Real-Time Rendering">
+    <meta property="article:tag" content="Neural Rendering">
+
+
+  <meta itemprop="name" content="3D Gaussian Splatting for Real-Time Radiance Field Rendering">
+  <meta itemprop="description" content="개요# 저자: Bernhard Kerbl, Georgios Kopanas, Thomas Leimkühler, George Drettakis 발행년도: 2023 (August) 출처: ACM Transactions on Graphics (SIGGRAPH 2023) 논문 아이디: arXiv:2308.04079v1 이 논문은 3D Gaussian Splatting이라는 혁신적인 방법을 제시하여, 신경 방사장(Neural Radiance Field, NeRF)의 높은 품질을 유지하면서도 실시간 렌더링(≥30fps @ 1080p)을 가능하게 합니다. 기존의 NeRF 방식은 훈련 속도와 렌더링 속도 사이에서 품질 손실이 불가피했으나, 이 연구는 그 균형을 깨뜨렸습니다.
+주요 혁신# 성능 비교
+InstantNGP: 7분 훈련, 9.2fps (PSNR: 22.1) Plenoxels: 26분 훈련, 8.2fps (PSNR: 21.9) Mip-NeRF360: 48시간 훈련, 0.071fps (PSNR: 24.3) 제안 방법: 51분 훈련, 93fps (PSNR: 25.2) - 최고 품질 달성 주요 내용# 1. 기존 방법의 한계# 신경 방사장(NeRF) 방식의 문제">
+  <meta itemprop="datePublished" content="2026-04-10T10:00:00+09:00">
+  <meta itemprop="dateModified" content="2026-04-10T10:00:00+09:00">
+  <meta itemprop="wordCount" content="1939">
+  <meta itemprop="keywords" content="3D Gaussian Splatting,Novel View Synthesis,Real-Time Rendering,Neural Rendering">
+
+<title>3D Gaussian Splatting for Real-Time Radiance Field Rendering | Paper</title>
+<link rel="icon" href="/paper/favicon.png" >
+<link rel="manifest" href="/paper/manifest.json">
+<link rel="canonical" href="https://y30n9ju1v.github.io/paper/docs/novel-view-synthesis/3d-gaussian-splatting/">
+<link rel="stylesheet" href="/paper/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/paper/fuse.min.js"></script>
+  <script defer src="/paper/en.search.min.b1685711fcbce34e51ac4e2f3f34db3464d1f2809b936b8ce7ecb2014e6bf361.js" integrity="sha256-sWhXEfy8405RrE4vPzTbNGTR8oCbk2uM5&#43;yyAU5r82E=" crossorigin="anonymous"></script>
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '\\[', right: '\\]', display: true},
+      {left: '\\(', right: '\\)', display: false},
+      {left: '$', right: '$', display: false}
+    ]
+  });
+});
+</script>
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/paper/"><span>Paper</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-26dad33899f9ff5c8eb940bf3bc5c8c6" class="toggle"  />
+    <label for="section-26dad33899f9ff5c8eb940bf3bc5c8c6" class="flex">
+      <a role="button" class="">
+        Deep Learning</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/clip-learning-transferable-visual-models-from-natural-language-supervision/" class="">
+      CLIP: Learning Transferable Visual Models From Natural Language Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/pointnet-plus-plus-deep-hierarchical-feature-learning/" class="">
+      PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/vit-an-image-is-worth-16x16-words/" class="">
+      ViT: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/resnet-deep-residual-learning-for-image-recognition/" class="">
+      ResNet: Deep Residual Learning for Image Recognition</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/detr-end-to-end-object-detection-with-transformers/" class="">
+      DETR: End-to-End Object Detection with Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/attention-is-all-you-need/" class="">
+      Attention Is All You Need</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/proximal-policy-optimization/" class="">
+      Proximal Policy Optimization Algorithms (PPO)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/" class="">
+      PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/dqn-playing-atari-with-deep-reinforcement-learning/" class="">
+      Playing Atari with Deep Reinforcement Learning</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-55a967b32f0d01d82a62069db60bc9a4" class="toggle" checked />
+    <label for="section-55a967b32f0d01d82a62069db60bc9a4" class="flex">
+      <a role="button" class="">
+        Novel View Synthesis</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/instant-ngp-multiresolution-hash-encoding/" class="">
+      Instant Neural Graphics Primitives with a Multiresolution Hash Encoding</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/4d-gaussian-splatting/" class="">
+      4D Gaussian Splatting for Real-Time Dynamic Scene Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3d-gaussian-splatting/" class="active">
+      3D Gaussian Splatting for Real-Time Radiance Field Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3d-gaussian-ray-tracing/" class="">
+      3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/" class="">
+      3DGUT: Enabling Distorted Cameras and Secondary Rays in Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/difix3d-plus/" class="">
+      DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/" class="">
+      NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-bba278969cd1a39a02e4f40a6eceba0d" class="toggle"  />
+    <label for="section-bba278969cd1a39a02e4f40a6eceba0d" class="flex">
+      <a role="button" class="">
+        Generative Models</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/controlnet-adding-conditional-control-to-text-to-image-diffusion-models/" class="">
+      ControlNet: Adding Conditional Control to Text-to-Image Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/high-resolution-image-synthesis-with-latent-diffusion-models/" class="">
+      High-Resolution Image Synthesis with Latent Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/denoising-diffusion-probabilistic-models/" class="">
+      Denoising Diffusion Probabilistic Models (DDPM)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/drivearena/" class="">
+      DriveArena: A Closed-loop Generative Simulation Platform for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/magicdrive-street-view-generation-3d-geometry-control/" class="">
+      MagicDrive: Street View Generation with Diverse 3D Geometry Control</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/drivedreamer/" class="">
+      DriveDreamer: Towards Real-world-driven World Models for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/gaia-1/" class="">
+      GAIA-1: A Generative World Model for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-ba66afb2e4f86c05dd02e329f85a3a79" class="toggle"  />
+    <label for="section-ba66afb2e4f86c05dd02e329f85a3a79" class="flex">
+      <a role="button" class="">
+        Autonomous Driving</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-d7ba9eb4570c2bfc131b9c6410bbe7ec" class="toggle"  />
+    <label for="section-d7ba9eb4570c2bfc131b9c6410bbe7ec" class="flex">
+      <a role="button" class="">
+        Perception</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/" class="">
+      GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/" class="">
+      StreamMapNet: Streaming Mapping Network for Vectorized Online HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/vectormapnet-end-to-end-vectorized-hd-map-learning/" class="">
+      VectorMapNet: End-to-end Vectorized HD Map Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/maptr-structured-modeling-online-vectorized-hd-map-construction/" class="">
+      MapTR: Structured Modeling and Learning for Online Vectorized HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/pointpillars-fast-encoders-object-detection-point-clouds/" class="">
+      PointPillars: Fast Encoders for Object Detection from Point Clouds</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/centerpoint-center-based-3d-object-detection-and-tracking/" class="">
+      CenterPoint: Center-based 3D Object Detection and Tracking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/monoscene-monocular-3d-semantic-scene-completion/" class="">
+      MonoScene: Monocular 3D Semantic Scene Completion</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/tpvformer-tri-perspective-view-3d-semantic-occupancy/" class="">
+      TPVFormer: Tri-Perspective View for Vision-Based 3D Semantic Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/surroundocc/" class="">
+      SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/detr3d-3d-object-detection-multi-view-images/" class="">
+      DETR3D: 3D Object Detection from Multi-view Images via 3D-to-2D Queries</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/occ3d-large-scale-3d-occupancy-prediction-benchmark/" class="">
+      Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevfusion-multi-task-multi-sensor-fusion/" class="">
+      BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/lift-splat-shoot/" class="">
+      Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevdepth/" class="">
+      BEVDepth: Acquisition of Reliable Depth for Multi-view 3D Object Detection</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevformer/" class="">
+      BEVFormer: Learning Bird&#39;s-Eye-View Representation from Multi-Camera Images via Spatiotemporal Transformers</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-7a9153220f9190837dca18e7bc97c48d" class="toggle"  />
+    <label for="section-7a9153220f9190837dca18e7bc97c48d" class="flex">
+      <a role="button" class="">
+        Simulation</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/lidarsim-realistic-lidar-simulation-by-leveraging-the-real-world/" class="">
+      LiDARsim: Realistic LiDAR Simulation by Leveraging the Real World</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/neurad-neural-rendering-for-autonomous-driving/" class="">
+      NeuRAD: Neural Rendering for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/omnire-omni-urban-scene-reconstruction/" class="">
+      OmniRe: Omni Urban Scene Reconstruction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/street-gaussians-modeling-dynamic-urban-scenes/" class="">
+      Street Gaussians: Modeling Dynamic Urban Scenes with Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/emernerf/" class="">
+      EmerNeRF: Emergent Spatial-Temporal Scene Decomposition via Self-Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/unisim-neural-closed-loop-sensor-simulator/" class="">
+      UniSim: A Neural Closed-Loop Sensor Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/driving-gaussian-composite-gaussian-splatting/" class="">
+      DrivingGaussian: Composite Gaussian Splatting for Surrounding Dynamic Autonomous Driving Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/carla-an-open-urban-driving-simulator/" class="">
+      CARLA: An Open Urban Driving Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/hugsim-real-time-photorealistic-closed-loop-simulator/" class="">
+      HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-e9f19cbf840aaca3029a9a86c6765e7f" class="toggle"  />
+    <label for="section-e9f19cbf840aaca3029a9a86c6765e7f" class="flex">
+      <a role="button" class="">
+        Planning</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/bench2drive-multi-ability-benchmarking-e2e-autonomous-driving/" class="">
+      Bench2Drive: Towards Multi-Ability Benchmarking of Closed-Loop End-To-End Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/navsim/" class="">
+      NAVSIM: Data-Driven Non-Reactive Autonomous Vehicle Simulation and Benchmarking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/transfuser/" class="">
+      TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/uniad-planning-oriented-autonomous-driving/" class="">
+      UniAD: Planning-oriented Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/vad/" class="">
+      VAD: Vectorized Scene Representation for Efficient Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-c1644e2152ae0bb887d703d1c6a373f2" class="toggle"  />
+    <label for="section-c1644e2152ae0bb887d703d1c6a373f2" class="flex">
+      <a role="button" class="">
+        Dataset &amp; Benchmark</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/nuplan/" class="">
+      nuPlan: A closed-loop ML-based planning benchmark for autonomous vehicles</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/nuscenes-multimodal-dataset-autonomous-driving/" class="">
+      nuScenes: A Multimodal Dataset for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/waymo-open-dataset/" class="">
+      Scalability in Perception for Autonomous Driving: Waymo Open Dataset</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/paper/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>3D Gaussian Splatting for Real-Time Radiance Field Rendering</h3>
+
+  <label for="toc-control">
+    
+    <img src="/paper/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#주요-혁신">주요 혁신</a></li>
+    <li><a href="#주요-내용">주요 내용</a>
+      <ul>
+        <li><a href="#1-기존-방법의-한계">1. 기존 방법의 한계</a></li>
+        <li><a href="#2-제안-방법의-핵심-아이디어">2. 제안 방법의 핵심 아이디어</a></li>
+        <li><a href="#3-최적화-및-밀도-제어">3. 최적화 및 밀도 제어</a></li>
+        <li><a href="#4-고속-렌더링-알고리즘">4. 고속 렌더링 알고리즘</a></li>
+        <li><a href="#5-실험-결과">5. 실험 결과</a></li>
+        <li><a href="#6-메모리-효율성">6. 메모리 효율성</a></li>
+      </ul>
+    </li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a>
+      <ul>
+        <li><a href="#기술적-개념">기술적 개념</a></li>
+        <li><a href="#렌더링-관련-개념">렌더링 관련 개념</a></li>
+      </ul>
+    </li>
+    <li><a href="#빠른-미분-가능-래스터라이저-fast-differentiable-rasterizer">빠른 미분 가능 래스터라이저 (Fast Differentiable Rasterizer)</a>
+      <ul>
+        <li><a href="#설계-목표">설계 목표</a></li>
+        <li><a href="#algorithm-2-gpu-래스터라이저-개요">Algorithm 2: GPU 래스터라이저 개요</a></li>
+        <li><a href="#핵심-최적화-기법">핵심 최적화 기법</a></li>
+        <li><a href="#수치-안정성">수치 안정성</a></li>
+      </ul>
+    </li>
+    <li><a href="#구현-세부사항">구현 세부사항</a>
+      <ul>
+        <li><a href="#손실-함수의-선택">손실 함수의 선택</a></li>
+        <li><a href="#최적화기-설정">최적화기 설정</a></li>
+      </ul>
+    </li>
+    <li><a href="#실무적-시사점">실무적 시사점</a>
+      <ul>
+        <li><a href="#1-실시간-3d-응용의-가능성-확대">1. 실시간 3D 응용의 가능성 확대</a></li>
+        <li><a href="#2-데이터-효율성">2. 데이터 효율성</a></li>
+        <li><a href="#3-학습-시간의-획기적-단축">3. 학습 시간의 획기적 단축</a></li>
+        <li><a href="#4-기하학과-신경-표현의-융합">4. 기하학과 신경 표현의 융합</a></li>
+        <li><a href="#5-향후-연구-방향">5. 향후 연구 방향</a></li>
+      </ul>
+    </li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+    <li><a href="#참고-자료">참고 자료</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h2 id="개요">개요<a class="anchor" href="#%ea%b0%9c%ec%9a%94">#</a></h2>
+<ul>
+<li><strong>저자</strong>: Bernhard Kerbl, Georgios Kopanas, Thomas Leimkühler, George Drettakis</li>
+<li><strong>발행년도</strong>: 2023 (August)</li>
+<li><strong>출처</strong>: ACM Transactions on Graphics (SIGGRAPH 2023)</li>
+<li><strong>논문 아이디</strong>: arXiv:2308.04079v1</li>
+</ul>
+<p>이 논문은 <strong>3D Gaussian Splatting</strong>이라는 혁신적인 방법을 제시하여, 신경 방사장(Neural Radiance Field, NeRF)의 높은 품질을 유지하면서도 실시간 렌더링(≥30fps @ 1080p)을 가능하게 합니다. 기존의 NeRF 방식은 훈련 속도와 렌더링 속도 사이에서 품질 손실이 불가피했으나, 이 연구는 그 균형을 깨뜨렸습니다.</p>
+<h2 id="주요-혁신">주요 혁신<a class="anchor" href="#%ec%a3%bc%ec%9a%94-%ed%98%81%ec%8b%a0">#</a></h2>
+<p><strong>성능 비교</strong></p>
+<ul>
+<li>InstantNGP: 7분 훈련, 9.2fps (PSNR: 22.1)</li>
+<li>Plenoxels: 26분 훈련, 8.2fps (PSNR: 21.9)</li>
+<li>Mip-NeRF360: 48시간 훈련, 0.071fps (PSNR: 24.3)</li>
+<li><strong>제안 방법</strong>: 51분 훈련, 93fps (PSNR: 25.2) - 최고 품질 달성</li>
+</ul>
+<h2 id="주요-내용">주요 내용<a class="anchor" href="#%ec%a3%bc%ec%9a%94-%eb%82%b4%ec%9a%a9">#</a></h2>
+<h3 id="1-기존-방법의-한계">1. 기존 방법의 한계<a class="anchor" href="#1-%ea%b8%b0%ec%a1%b4-%eb%b0%a9%eb%b2%95%ec%9d%98-%ed%95%9c%ea%b3%84">#</a></h3>
+<p><strong>신경 방사장(NeRF) 방식의 문제</strong></p>
+<ul>
+<li>연속적인 장면 표현을 위해 MLP 신경망 사용</li>
+<li>체적 광선 추적(volumetric ray-marching)으로 인해 렌더링이 느림</li>
+<li>확률적 샘플링으로 인한 노이즈 발생</li>
+</ul>
+<p><strong>최근 빠른 방법들의 한계</strong></p>
+<ul>
+<li>속도를 위해 품질을 포기</li>
+<li>메시(mesh)나 점(point) 기반 표현은 명시적이지만 최적화 어려움</li>
+<li>그리드 기반 방식(voxel, hash grid)도 렌더링 속도와 품질의 트레이드오프 존재</li>
+</ul>
+<h3 id="2-제안-방법의-핵심-아이디어">2. 제안 방법의 핵심 아이디어<a class="anchor" href="#2-%ec%a0%9c%ec%95%88-%eb%b0%a9%eb%b2%95%ec%9d%98-%ed%95%b5%ec%8b%ac-%ec%95%84%ec%9d%b4%eb%94%94%ec%96%b4">#</a></h3>
+<h4 id="3d-가우시안-표현-3d-gaussian-representation">3D 가우시안 표현 (3D Gaussian Representation)<a class="anchor" href="#3d-%ea%b0%80%ec%9a%b0%ec%8b%9c%ec%95%88-%ed%91%9c%ed%98%84-3d-gaussian-representation">#</a></h4>
+<p>3D 가우시안은 다음과 같이 정의됩니다:</p>
+$$G(\mathbf{x}) = \exp\left(-\frac{1}{2}(\mathbf{x} - \boldsymbol{\mu})^T \Sigma^{-1}(\mathbf{x} - \boldsymbol{\mu})\right)$$<p><strong>수식 설명</strong>
+이 수식은 3차원 공간에서 종 모양의 분포를 나타냅니다:</p>
+<ul>
+<li><strong>$G(\mathbf{x})$</strong>: 위치 $\mathbf{x}$에서의 가우시안 값 (중심에서 멀어질수록 작아짐)</li>
+<li><strong>$\mathbf{x}$</strong>: 3D 공간의 좌표 (x, y, z)</li>
+<li><strong>$\boldsymbol{\mu}$</strong>: 가우시안의 중심 위치 (mean) - 초점 역할</li>
+<li><strong>$\Sigma$</strong>: 공분산 행렬(covariance matrix) - 가우시안의 크기와 형태 결정</li>
+<li><strong>$\Sigma^{-1}$</strong>: 공분산 행렬의 역행렬 - 수식을 계산하기 위한 수학적 도구</li>
+<li><strong>지수 함수</strong>: 중심에서 먼 거리의 점들은 지수적으로 빠르게 0에 가까워짐</li>
+</ul>
+<p><strong>직관</strong>: 연기가 중심에서 짙고 멀어질수록 옅어지는 모양을 생각하면 됩니다.</p>
+<p><strong>장점</strong></p>
+<ul>
+<li>카메라 캘리브레이션에서 생성된 희소 점(sparse point)들로부터 시작</li>
+<li>연속적인 볼륨 방사장의 좋은 성질 유지</li>
+<li>빈 공간에서의 불필요한 계산 제거</li>
+</ul>
+<h3 id="3-최적화-및-밀도-제어">3. 최적화 및 밀도 제어<a class="anchor" href="#3-%ec%b5%9c%ec%a0%81%ed%99%94-%eb%b0%8f-%eb%b0%80%eb%8f%84-%ec%a0%9c%ec%96%b4">#</a></h3>
+<h4 id="교대-최적화밀도-제어-interleaved-optimizationdensity-control">교대 최적화/밀도 제어 (Interleaved Optimization/Density Control)<a class="anchor" href="#%ea%b5%90%eb%8c%80-%ec%b5%9c%ec%a0%81%ed%99%94%eb%b0%80%eb%8f%84-%ec%a0%9c%ec%96%b4-interleaved-optimizationdensity-control">#</a></h4>
+<p>장면을 최적으로 표현하기 위해 다음을 수행합니다:</p>
+<ol>
+<li><strong>이방성 공분산 최적화</strong>: 장면의 정확한 표현을 위해 3D 가우시안의 방향성 있는 공분산 최적화</li>
+<li><strong>적응적 밀도 제어</strong>:
+<ul>
+<li>높은 기울기 영역에서는 가우시안 분할(split)</li>
+<li>낮은 기울기 영역에서는 가우시안 제거(prune)</li>
+<li>투명도(opacity)에 따른 동적 조정</li>
+</ul>
+</li>
+</ol>
+<p><strong>손실 함수 (Loss Function)</strong></p>
+$$\mathcal{L} = (1-\lambda) \cdot L_1(\hat{C}, C) + \lambda \cdot L_{SSIM}(\hat{C}, C)$$<p><strong>수식 설명</strong>
+이 수식은 훈련 중 모델이 정답에 얼마나 가까운지 측정하는 방법입니다:</p>
+<ul>
+<li><strong>$\mathcal{L}$</strong>: 총 손실값 (작을수록 좋음)</li>
+<li><strong>$L_1(\hat{C}, C)$</strong>: 색상 오차 - 예측 색상($\hat{C}$)과 실제 색상($C$)의 픽셀별 차이
+<ul>
+<li>예: 예측 RGB(255, 0, 0)와 실제 RGB(254, 1, 0)의 차이 = 1+1+0 = 2</li>
+</ul>
+</li>
+<li><strong>$L_{SSIM}(\hat{C}, C)$</strong>: 구조 유사성 손실 - 사람 눈이 인지하는 이미지 품질 오차
+<ul>
+<li>세부 구조, 엣지, 질감 등을 함께 고려</li>
+</ul>
+</li>
+<li><strong>$\lambda$</strong>: 가중치 파라미터 (보통 0.2) - 두 손실의 중요도 조정
+<ul>
+<li>$\lambda = 0.2$이면 색상 오차 80% + 구조 유사성 20% 반영</li>
+</ul>
+</li>
+</ul>
+<p><strong>직관</strong>: 두 가지 다른 방식으로 오차를 측정해서 더 정확한 훈련이 가능합니다.</p>
+<h3 id="4-고속-렌더링-알고리즘">4. 고속 렌더링 알고리즘<a class="anchor" href="#4-%ea%b3%a0%ec%86%8d-%eb%a0%8c%eb%8d%94%eb%a7%81-%ec%95%8c%ea%b3%a0%eb%a6%ac%ec%a6%98">#</a></h3>
+<h4 id="가시성-인식-렌더링-visibility-aware-rendering">가시성 인식 렌더링 (Visibility-Aware Rendering)<a class="anchor" href="#%ea%b0%80%ec%8b%9c%ec%84%b1-%ec%9d%b8%ec%8b%9d-%eb%a0%8c%eb%8d%94%eb%a7%81-visibility-aware-rendering">#</a></h4>
+<p>핵심은 **타일 기반 스플래팅(tile-based splatting)**입니다:</p>
+$$C(\mathbf{p}) = \sum_{i=1}^{n} T_i c_i \alpha_i, \quad T_i = \prod_{j=1}^{i-1}(1-\alpha_j)$$<p><strong>수식 설명</strong>
+이 수식은 여러 가우시안을 투명도를 고려하여 합치는 과정입니다:</p>
+<ul>
+<li><strong>$C(\mathbf{p})$</strong>: 픽셀 p의 최종 색상 (화면에 표시되는 색)</li>
+<li><strong>$n$</strong>: 이 픽셀에 영향을 주는 가우시안의 개수</li>
+<li><strong>$c_i$</strong>: i번째 가우시안의 색상 (RGB 값)</li>
+<li><strong>$\alpha_i$</strong>: i번째 가우시안의 투명도 (0 = 완전 투명, 1 = 완전 불투명)</li>
+<li><strong>$T_i$</strong>: i번째 가우시안에 도달하는 빛의 투과율
+<ul>
+<li>앞의 모든 가우시안(1번부터 i-1번까지)을 통과한 빛의 양</li>
+</ul>
+</li>
+<li><strong>$\prod_{j=1}^{i-1}(1-\alpha_j)$</strong>: 누적 투과율 계산
+<ul>
+<li>예: 1번과 2번 가우시안이 각각 투명도 0.5라면, 3번째는 0.5 × 0.5 = 0.25만 투과</li>
+</ul>
+</li>
+</ul>
+<p><strong>직관 예시</strong>:
+색유리 3장을 겹쳐서 본다고 생각하세요:</p>
+<ul>
+<li>1번 유리: 빨간색, 투명도 0.7 (30% 투과)</li>
+<li>2번 유리: 파란색, 투명도 0.8 (20% 투과)</li>
+<li>3번 유리: 녹색, 투명도 1.0 (100% 투과)</li>
+</ul>
+<p>최종 색상 = 빨강(0.7) + 파랑(0.8 × 0.3) + 녹색(1.0 × 0.3 × 0.2)</p>
+<p><strong>렌더링 최적화</strong></p>
+<ol>
+<li>
+<p><strong>타일 기반 접근</strong>: 이미지를 16×16 픽셀 타일로 분할</p>
+<ul>
+<li>GPU 캐시 효율 향상</li>
+<li>스레드 병렬 처리 최적화</li>
+</ul>
+</li>
+<li>
+<p><strong>깊이 정렬</strong>: 각 타일 내에서 가우시안을 깊이 순서로 정렬</p>
+<ul>
+<li>카메라에서 가까운 것부터 먼 것 순서로 정렬</li>
+</ul>
+</li>
+<li>
+<p><strong>조기 종료(Early Termination)</strong>: 투명도 누적이 임계값에 도달하면 계산 중단</p>
+<ul>
+<li>누적된 투명도가 0.9999에 도달하면 (남은 투명도 &lt; 0.0001) 뒤의 가우시안 무시</li>
+<li>필요 없는 계산 제거로 속도 향상</li>
+</ul>
+</li>
+<li>
+<p><strong>CUDA 병렬화</strong>: GPU에서 효율적인 병렬 처리</p>
+</li>
+</ol>
+<h3 id="5-실험-결과">5. 실험 결과<a class="anchor" href="#5-%ec%8b%a4%ed%97%98-%ea%b2%b0%ea%b3%bc">#</a></h3>
+<p><strong>데이터셋</strong></p>
+<ul>
+<li>Mip-NeRF 360: 야외 장면의 고품질 벤치마크 (9개 장면)</li>
+<li>Tanks and Temples: 복잡한 기하학 구조 (Truck, Train)</li>
+<li>Deep Blending: 반투명성과 복잡한 조명 (Dr Johnson, Playroom)</li>
+</ul>
+<p><strong>정량적 평가 (Mip-NeRF360 기준)</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>방법</th>
+          <th>훈련 시간</th>
+          <th>렌더링 FPS</th>
+          <th>PSNR</th>
+          <th>SSIM</th>
+          <th>LPIPS</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Mip-NeRF360</td>
+          <td>48h</td>
+          <td>0.071</td>
+          <td>24.37</td>
+          <td>0.692</td>
+          <td>0.192</td>
+      </tr>
+      <tr>
+          <td>Plenoxels</td>
+          <td>26min</td>
+          <td>8.2</td>
+          <td>23.08</td>
+          <td>0.626</td>
+          <td>0.241</td>
+      </tr>
+      <tr>
+          <td>InstantNGP</td>
+          <td>7min</td>
+          <td>9.2</td>
+          <td>24.16</td>
+          <td>0.657</td>
+          <td>0.180</td>
+      </tr>
+      <tr>
+          <td><strong>제안 방법 (7K)</strong></td>
+          <td><strong>7min</strong></td>
+          <td><strong>134</strong></td>
+          <td><strong>23.6</strong></td>
+          <td><strong>0.668</strong></td>
+          <td><strong>0.183</strong></td>
+      </tr>
+      <tr>
+          <td><strong>제안 방법 (30K)</strong></td>
+          <td><strong>51min</strong></td>
+          <td><strong>93</strong></td>
+          <td><strong>27.21</strong></td>
+          <td><strong>0.815</strong></td>
+          <td><strong>0.214</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>평가 지표 설명</strong></p>
+<ul>
+<li><strong>PSNR (픽셀 신호 대 잡음비)</strong>: 높을수록 좋음 (데이터셋 예시: 24 이상 = 고품질)</li>
+<li><strong>SSIM (구조 유사성 지수)</strong>: 0~1 사이, 1에 가까울수록 좋음</li>
+<li><strong>LPIPS (학습 인식 지각 이미지 유사성)</strong>: 낮을수록 좋음 (인간의 시각에 더 가까움)</li>
+</ul>
+<p><strong>Ablation 연구 결과 (Table 3)</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>설정</th>
+          <th>Truck-5K</th>
+          <th>Garden-5K</th>
+          <th>Bicycle-5K</th>
+          <th>평균</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Limited-BW (경량화)</td>
+          <td>13.84</td>
+          <td>22.00</td>
+          <td>20.87</td>
+          <td>19.16</td>
+      </tr>
+      <tr>
+          <td>Random Init</td>
+          <td>16.75</td>
+          <td>20.90</td>
+          <td>19.86</td>
+          <td>19.17</td>
+      </tr>
+      <tr>
+          <td>No-SH (구면 조화 제거)</td>
+          <td>18.31</td>
+          <td>23.98</td>
+          <td>21.21</td>
+          <td>21.50</td>
+      </tr>
+      <tr>
+          <td>No-Split (분할 제거)</td>
+          <td>22.36</td>
+          <td>25.22</td>
+          <td>22.88</td>
+          <td>23.48</td>
+      </tr>
+      <tr>
+          <td>No-Clone (복제 제거)</td>
+          <td>22.29</td>
+          <td>25.61</td>
+          <td>22.15</td>
+          <td>23.35</td>
+      </tr>
+      <tr>
+          <td>Isotropic (이방성 제거)</td>
+          <td>22.40</td>
+          <td>25.49</td>
+          <td>22.81</td>
+          <td>23.56</td>
+      </tr>
+      <tr>
+          <td><strong>Full (전체)</strong></td>
+          <td><strong>22.71</strong></td>
+          <td><strong>25.82</strong></td>
+          <td><strong>23.18</strong></td>
+          <td><strong>23.90</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p>각 구성요소가 모두 품질에 기여함을 확인.</p>
+<h3 id="6-메모리-효율성">6. 메모리 효율성<a class="anchor" href="#6-%eb%a9%94%eb%aa%a8%eb%a6%ac-%ed%9a%a8%ec%9c%a8%ec%84%b1">#</a></h3>
+<p><strong>메모리 구성</strong></p>
+<ul>
+<li>훈련 중: 약 2-3GB (백만 개 가우시안 기준)</li>
+<li>추론 중: 고정된 메모리 (가우시안 수에만 의존)</li>
+</ul>
+<p><strong>이전 방법 대비 장점</strong></p>
+<ul>
+<li>NeRF: 신경망 가중치로 수백 MB 필요</li>
+<li>해시 그리드: 동적 해시 테이블로 변수적 메모리</li>
+<li>3D 가우시안: 구조화된 고정 메모리</li>
+</ul>
+<h2 id="핵심-개념-정리">핵심 개념 정리<a class="anchor" href="#%ed%95%b5%ec%8b%ac-%ea%b0%9c%eb%85%90-%ec%a0%95%eb%a6%ac">#</a></h2>
+<h3 id="기술적-개념">기술적 개념<a class="anchor" href="#%ea%b8%b0%ec%88%a0%ec%a0%81-%ea%b0%9c%eb%85%90">#</a></h3>
+<h4 id="1-가우시안-표현의-장점">1. 가우시안 표현의 장점<a class="anchor" href="#1-%ea%b0%80%ec%9a%b0%ec%8b%9c%ec%95%88-%ed%91%9c%ed%98%84%ec%9d%98-%ec%9e%a5%ec%a0%90">#</a></h4>
+<ul>
+<li><strong>명시적 기하학</strong>: 가우시안의 위치와 크기가 명확하게 정의됨</li>
+<li><strong>미분 가능성</strong>: 모든 파라미터에 대해 미분 가능 (SGD 최적화 가능)</li>
+<li><strong>유연성</strong>: 이방성 공분산으로 임의의 형태 표현 가능</li>
+<li><strong>효율성</strong>: 빈 공간을 자동으로 무시</li>
+</ul>
+<h4 id="2-공분산-행렬-표현">2. 공분산 행렬 표현<a class="anchor" href="#2-%ea%b3%b5%eb%b6%84%ec%82%b0-%ed%96%89%eb%a0%ac-%ed%91%9c%ed%98%84">#</a></h4>
+<p>공분산 행렬은 다음과 같이 인수분해됩니다:</p>
+$$\Sigma = \mathbf{R} \mathbf{S} \mathbf{S}^T \mathbf{R}^T$$<p><strong>수식 설명</strong>
+이 수식은 3D 가우시안의 모양을 회전과 확대/축소의 조합으로 표현합니다:</p>
+<ul>
+<li><strong>$\Sigma$</strong>: 공분산 행렬 - 전체 모양을 정의</li>
+<li><strong>$\mathbf{R}$</strong>: 회전 행렬 - 가우시안의 방향을 결정
+<ul>
+<li>예: (1,0,0) 방향으로 늘어난 모양</li>
+<li>쿼터니언(quaternion)으로 표현하여 계산 안정성 향상</li>
+</ul>
+</li>
+<li><strong>$\mathbf{S}$</strong>: 스케일 행렬 (대각 행렬) - 각 축 방향의 크기 결정
+<ul>
+<li>예: x축 길이 2, y축 길이 1, z축 길이 1.5</li>
+<li>더 정확히는 $\mathbf{S} = \text{diag}(\sigma_x, \sigma_y, \sigma_z)$</li>
+</ul>
+</li>
+</ul>
+<p><strong>직관</strong>: 공 모양의 가우시안을 회전시키고 확대/축소하여 원하는 형태를 만드는 과정입니다.</p>
+<h4 id="3-스플래팅splatting---3d를-2d로-투영">3. 스플래팅(Splatting) - 3D를 2D로 투영<a class="anchor" href="#3-%ec%8a%a4%ed%94%8c%eb%9e%98%ed%8c%85splatting---3d%eb%a5%bc-2d%eb%a1%9c-%ed%88%ac%ec%98%81">#</a></h4>
+<p>2D 이미지 평면에 3D 가우시안을 투영하는 과정:</p>
+$$\Sigma' = \mathbf{J} \Sigma \mathbf{J}^T$$<p><strong>수식 설명</strong>
+이 수식은 3D 가우시안이 카메라를 통해 2D 이미지에 어떻게 나타나는지 계산합니다:</p>
+<ul>
+<li><strong>$\Sigma'$</strong>: 투영된 2D 가우시안의 공분산</li>
+<li><strong>$\mathbf{J}$</strong>: 야코비안 행렬 - 3D의 작은 변화가 2D에서 얼마나 변하는지 나타냄
+<ul>
+<li>예: 카메라에 가까운 객체는 작은 이동이 2D에서 큰 변화를 일으킴</li>
+</ul>
+</li>
+<li><strong>$\Sigma$</strong>: 원래 3D 가우시안의 공분산</li>
+</ul>
+<p><strong>직관</strong>: 카메라가 3D 장면을 2D 사진으로 찍을 때, 3D 가우시안의 모양이 어떻게 변하는지 수학적으로 계산하는 것입니다.</p>
+<h4 id="4-밀도-제어-알고리즘">4. 밀도 제어 알고리즘<a class="anchor" href="#4-%eb%b0%80%eb%8f%84-%ec%a0%9c%ec%96%b4-%ec%95%8c%ea%b3%a0%eb%a6%ac%ec%a6%98">#</a></h4>
+<pre tabindex="0"><code>훈련 반복마다:
+1. 기울기(gradient)가 높은 곳: 가우시안 분할 (split)
+   - 너무 큰 가우시안을 작은 것들로 나눔
+   - 더 정확한 표현 가능
+
+2. 기울기가 낮은 곳 &amp; 투명도 &lt; 임계값: 가우시안 제거 (prune)
+   - 덜 중요한 가우시안 삭제
+   - 메모리 효율성 향상
+
+3. 투명도가 매우 높은 경우 &amp; 크기가 큼: 투명도 리셋
+   - 거의 불투명한 큰 가우시안이 너무 오래 유지되지 않도록 조정
+
+4. 투명도가 낮은 모든 가우시안: 최종 제거</code></pre><h3 id="렌더링-관련-개념">렌더링 관련 개념<a class="anchor" href="#%eb%a0%8c%eb%8d%94%eb%a7%81-%ea%b4%80%eb%a0%a8-%ea%b0%9c%eb%85%90">#</a></h3>
+<h4 id="1-알파-블렌딩-alpha-blending---투명도를-고려한-합성">1. 알파 블렌딩 (Alpha Blending) - 투명도를 고려한 합성<a class="anchor" href="#1-%ec%95%8c%ed%8c%8c-%eb%b8%94%eb%a0%8c%eb%94%a9-alpha-blending---%ed%88%ac%eb%aa%85%eb%8f%84%eb%a5%bc-%ea%b3%a0%eb%a0%a4%ed%95%9c-%ed%95%a9%ec%84%b1">#</a></h4>
+<p>깊이 순서로 정렬된 가우시안들을 조합:</p>
+$$C = \sum_{i=1}^{n} T_i c_i \alpha_i, \quad T_i = \prod_{j=1}^{i-1}(1-\alpha_j)$$<p><strong>이미 위에서 설명한 내용 참고</strong></p>
+<h4 id="2-타일-기반-최적화">2. 타일 기반 최적화<a class="anchor" href="#2-%ed%83%80%ec%9d%bc-%ea%b8%b0%eb%b0%98-%ec%b5%9c%ec%a0%81%ed%99%94">#</a></h4>
+<ul>
+<li>
+<p>16×16 픽셀 타일 단위로 처리하는 이유:</p>
+<ul>
+<li>CPU 캐시 지역성 향상 (한 번에 많은 데이터 읽음)</li>
+<li>GPU 스레드 블록 최적화 (한 번에 256개 스레드 처리)</li>
+<li>메모리 접근 패턴 규칙화</li>
+</ul>
+</li>
+<li>
+<p>타일당 평균 100개 미만의 가우시안만 영향</p>
+<ul>
+<li>대부분의 타일은 소수의 가우시안으로만 렌더링됨</li>
+</ul>
+</li>
+</ul>
+<h4 id="3-조기-종료-early-termination">3. 조기 종료 (Early Termination)<a class="anchor" href="#3-%ec%a1%b0%ea%b8%b0-%ec%a2%85%eb%a3%8c-early-termination">#</a></h4>
+<p>누적 알파(accumulated alpha)가 0.9999에 도달하면 계산 종료:</p>
+$$T_{remaining} = \prod_{j=1}^{i}(1-\alpha_j) < 0.0001$$<p><strong>수식 설명</strong>
+남은 투명도(빛의 투과율)가 매우 작으면, 더 이상 뒤의 가우시안이 보이지 않으므로 계산 중단:</p>
+<ul>
+<li><strong>$T_{remaining}$</strong>: 누적 투명도 이후 남은 투명도</li>
+<li><strong>&lt; 0.0001</strong>: 더 이상 화면에 유의미한 영향을 주지 않음</li>
+<li>99.99% 이상이 불투명해지면 중단</li>
+</ul>
+<p><strong>효과</strong>: 평균적으로 불필요한 계산의 30~40% 절감</p>
+<h2 id="빠른-미분-가능-래스터라이저-fast-differentiable-rasterizer">빠른 미분 가능 래스터라이저 (Fast Differentiable Rasterizer)<a class="anchor" href="#%eb%b9%a0%eb%a5%b8-%eb%af%b8%eb%b6%84-%ea%b0%80%eb%8a%a5-%eb%9e%98%ec%8a%a4%ed%84%b0%eb%9d%bc%ec%9d%b4%ec%a0%80-fast-differentiable-rasterizer">#</a></h2>
+<p>논문의 핵심 기여 중 하나는 GPU 최적화된 CUDA 타일 기반 래스터라이저입니다.</p>
+<h3 id="설계-목표">설계 목표<a class="anchor" href="#%ec%84%a4%ea%b3%84-%eb%aa%a9%ed%91%9c">#</a></h3>
+<ol>
+<li><strong>근사적 알파 블렌딩 지원</strong>: 이방성 스플랫을 포함한 정확한 알파 블렌딩</li>
+<li><strong>가시성 순서 준수</strong>: 정확한 depth ordering 유지</li>
+<li><strong>역방향 패스 지원</strong>: 임의 수의 가우시안에 대해 기울기 계산</li>
+</ol>
+<h3 id="algorithm-2-gpu-래스터라이저-개요">Algorithm 2: GPU 래스터라이저 개요<a class="anchor" href="#algorithm-2-gpu-%eb%9e%98%ec%8a%a4%ed%84%b0%eb%9d%bc%ec%9d%b4%ec%a0%80-%ea%b0%9c%ec%9a%94">#</a></h3>
+<pre tabindex="0"><code>함수 Rasterize(w, h, M, S, C, A, V):
+  # 입력: 이미지 크기(w,h), 가우시안 중심/공분산/색상/투명도, 카메라 설정
+  
+  1. CullGaussian(p, V)           → 뷰 프러스텀 밖 가우시안 제거
+  2. ScreenSpaceGaussians(M, S, V) → 3D를 2D 스크린 공간으로 변환
+  3. CreateTiles(w, h)             → 이미지를 16×16 타일로 분할
+  4. DuplicateWithKeys(M&#39;, T)      → 각 가우시안에 타일-깊이 키 부여
+  5. SortByKeys(K, I)              → 키 기준으로 전역 정렬
+  6. IdentifyTileRanges(T, K)      → 타일별 가우시안 범위 인덱스
+  
+  7. 각 타일 t에 대해 (병렬):
+     각 픽셀 i에 대해:
+       I[i] = BlendInOrder(i, l, r, K, M&#39;, S&#39;, C, A)
+  
+  8. return I  # 최종 렌더링 이미지</code></pre><h3 id="핵심-최적화-기법">핵심 최적화 기법<a class="anchor" href="#%ed%95%b5%ec%8b%ac-%ec%b5%9c%ec%a0%81%ed%99%94-%ea%b8%b0%eb%b2%95">#</a></h3>
+<h4 id="1-radix-sort를-이용한-전역-정렬">1. Radix Sort를 이용한 전역 정렬<a class="anchor" href="#1-radix-sort%eb%a5%bc-%ec%9d%b4%ec%9a%a9%ed%95%9c-%ec%a0%84%ec%97%ad-%ec%a0%95%eb%a0%ac">#</a></h4>
+<p>각 가우시안의 키는 <strong>64비트</strong>로 인코딩됩니다:</p>
+<ul>
+<li>하위 32비트: 타일 인덱스 (어느 타일에 속하는지)</li>
+<li>상위 32비트: 투영된 깊이값 (카메라로부터의 거리)</li>
+</ul>
+<p>이 설계로 타일-깊이 기준의 단일 GPU Radix 정렬만으로 모든 정렬 완료.</p>
+<h4 id="2-공유-메모리shared-memory-활용">2. 공유 메모리(Shared Memory) 활용<a class="anchor" href="#2-%ea%b3%b5%ec%9c%a0-%eb%a9%94%eb%aa%a8%eb%a6%acshared-memory-%ed%99%9c%ec%9a%a9">#</a></h4>
+<pre tabindex="0"><code>타일당 처리 방식:
+  1. 블록 내 스레드들이 협동으로 가우시안 데이터를 공유 메모리에 로드
+  2. 앞→뒤 순서로 각 픽셀에 대해 알파 블렌딩
+  3. 픽셀의 누적 투명도가 포화 상태 → 해당 스레드 종료
+  4. 모든 스레드가 종료되면 타일 처리 완료</code></pre><h4 id="3-역방향-패스backward-pass-최적화">3. 역방향 패스(Backward Pass) 최적화<a class="anchor" href="#3-%ec%97%ad%eb%b0%a9%ed%96%a5-%ed%8c%a8%ec%8a%a4backward-pass-%ec%b5%9c%ec%a0%81%ed%99%94">#</a></h4>
+<p>역방향 패스에서 중간 투명도 값의 재계산 문제를 해결:</p>
+<ul>
+<li>순방향 패스에서 <strong>최종 누적 투명도</strong>만 저장 (메모리 절약)</li>
+<li>역방향 패스는 <strong>뒤→앞</strong> 방향으로 진행</li>
+<li>각 점의 투명도를 누적 투명도로 나누어 중간값 복원</li>
+</ul>
+$$\alpha_i^{intermediate} = \frac{T_{final}}{T_i}$$<p>이 방식으로 중간 값을 저장하는 대신 $O(1)$ 추가 메모리만 사용.</p>
+<h3 id="수치-안정성">수치 안정성<a class="anchor" href="#%ec%88%98%ec%b9%98-%ec%95%88%ec%a0%95%ec%84%b1">#</a></h3>
+<ul>
+<li>순방향: $\alpha < \epsilon = \frac{1}{255}$ 인 가우시안 블렌딩 건너뜀</li>
+<li>역방향: 누적 투명도를 0.9999로 클램핑하여 0 나눗셈 방지</li>
+</ul>
+<h2 id="구현-세부사항">구현 세부사항<a class="anchor" href="#%ea%b5%ac%ed%98%84-%ec%84%b8%eb%b6%80%ec%82%ac%ed%95%ad">#</a></h2>
+<h3 id="손실-함수의-선택">손실 함수의 선택<a class="anchor" href="#%ec%86%90%ec%8b%a4-%ed%95%a8%ec%88%98%ec%9d%98-%ec%84%a0%ed%83%9d">#</a></h3>
+$$\mathcal{L}_{total} = (1-\lambda) \cdot L_1(\hat{C}, C) + \lambda \cdot L_{SSIM}(\hat{C}, C)$$<p><strong>각 항의 의미</strong></p>
+<ul>
+<li>
+<p><strong>$(1-\lambda) \cdot L_1$</strong> (보통 80%):</p>
+<ul>
+<li>각 픽셀의 절대 오차를 직접 계산</li>
+<li>색상 정확도에 민감</li>
+</ul>
+</li>
+<li>
+<p><strong>$\lambda \cdot L_{SSIM}$</strong> (보통 20%):</p>
+<ul>
+<li>이미지의 구조적 유사성 측정</li>
+<li>선명도, 대비, 구조 보존</li>
+</ul>
+</li>
+<li>
+<p><strong>$\lambda = 0.2$</strong>: 실험적으로 최적이 증명됨</p>
+</li>
+</ul>
+<h3 id="최적화기-설정">최적화기 설정<a class="anchor" href="#%ec%b5%9c%ec%a0%81%ed%99%94%ea%b8%b0-%ec%84%a4%ec%a0%95">#</a></h3>
+<ul>
+<li>
+<p><strong>옵티마이저</strong>: Adam (적응형 학습률 사용)</p>
+</li>
+<li>
+<p><strong>학습률 설정</strong>:</p>
+<ul>
+<li>Position (위치): $10^{-3}$에서 시작하여 지수적으로 감소</li>
+<li>Other (회전, 스케일 등): $10^{-2}$에서 시작</li>
+<li>감소 방식: 훈련 진행에 따라 자동 감소</li>
+</ul>
+</li>
+<li>
+<p><strong>배치 처리</strong>:</p>
+<ul>
+<li>전체 이미지 또는 랜덤 샘플 사용</li>
+<li>한 번에 여러 이미지의 픽셀들을 섞어서 처리</li>
+</ul>
+</li>
+<li>
+<p><strong>반복 횟수</strong>: 30,000<del>50,000 반복 (대부분 7</del>51분 소요)</p>
+</li>
+</ul>
+<h2 id="실무적-시사점">실무적 시사점<a class="anchor" href="#%ec%8b%a4%eb%ac%b4%ec%a0%81-%ec%8b%9c%ec%82%ac%ec%a0%90">#</a></h2>
+<h3 id="1-실시간-3d-응용의-가능성-확대">1. 실시간 3D 응용의 가능성 확대<a class="anchor" href="#1-%ec%8b%a4%ec%8b%9c%ea%b0%84-3d-%ec%9d%91%ec%9a%a9%ec%9d%98-%ea%b0%80%eb%8a%a5%ec%84%b1-%ed%99%95%eb%8c%80">#</a></h3>
+<ul>
+<li><strong>증강 현실(AR)</strong>: 실시간 장면 렌더링으로 AR 응용에 직접 활용 가능</li>
+<li><strong>게임 엔진</strong>: 고품질 배경 자동 생성 가능</li>
+<li><strong>건축 시각화</strong>: 신축 건물의 사실적 미리보기</li>
+<li><strong>의료 영상</strong>: 수술 계획을 위한 3D 재구성</li>
+</ul>
+<h3 id="2-데이터-효율성">2. 데이터 효율성<a class="anchor" href="#2-%eb%8d%b0%ec%9d%b4%ed%84%b0-%ed%9a%a8%ec%9c%a8%ec%84%b1">#</a></h3>
+<ul>
+<li>불과 수십 장의 이미지로부터 고품질 3D 장면 재구성</li>
+<li>이전의 NeRF는 수백~수천 장 필요</li>
+<li>모바일 디바이스에서 경량 모델 배포 가능</li>
+</ul>
+<h3 id="3-학습-시간의-획기적-단축">3. 학습 시간의 획기적 단축<a class="anchor" href="#3-%ed%95%99%ec%8a%b5-%ec%8b%9c%ea%b0%84%ec%9d%98-%ed%9a%8d%ea%b8%b0%ec%a0%81-%eb%8b%a8%ec%b6%95">#</a></h3>
+<ul>
+<li>48시간 → 51분 (약 57배 단축)</li>
+<li>병렬 처리와 효율적 알고리즘의 중요성 입증</li>
+<li>GPU 활용도 극대화의 중요성</li>
+</ul>
+<h3 id="4-기하학과-신경-표현의-융합">4. 기하학과 신경 표현의 융합<a class="anchor" href="#4-%ea%b8%b0%ed%95%98%ed%95%99%ea%b3%bc-%ec%8b%a0%ea%b2%bd-%ed%91%9c%ed%98%84%ec%9d%98-%ec%9c%b5%ed%95%a9">#</a></h3>
+<ul>
+<li>순수 신경망 방식의 한계 극복</li>
+<li>기하학적 직관과 심층 학습의 결합</li>
+<li>명시적 표현의 해석 가능성 향상</li>
+</ul>
+<h3 id="5-향후-연구-방향">5. 향후 연구 방향<a class="anchor" href="#5-%ed%96%a5%ed%9b%84-%ec%97%b0%ea%b5%ac-%eb%b0%a9%ed%96%a5">#</a></h3>
+<p><strong>제한사항</strong></p>
+<ul>
+<li>동적 장면 처리 미흡 (정적 장면 가정)</li>
+<li>매우 큰 실외 장면의 메모리 효율성 문제</li>
+<li>투명성 있는 물체 표현의 어려움</li>
+</ul>
+<p><strong>확장 가능성</strong></p>
+<ul>
+<li>시간 차원 추가로 동적 장면 지원</li>
+<li>계층적 가우시안 표현으로 대규모 장면 지원</li>
+<li>조건부 생성으로 스타일 제어 가능성</li>
+</ul>
+<h2 id="결론-및-시사점">결론 및 시사점<a class="anchor" href="#%ea%b2%b0%eb%a1%a0-%eb%b0%8f-%ec%8b%9c%ec%82%ac%ec%a0%90">#</a></h2>
+<p><strong>핵심 기여</strong></p>
+<p>이 논문은 단순하면서도 혁신적인 아이디어를 통해 3D 장면 렌더링의 패러다임을 전환했습니다:</p>
+<ol>
+<li><strong>3D 가우시안 표현</strong>: 최적화와 렌더링의 효율성이 뛰어난 새로운 표현</li>
+<li><strong>효율적인 렌더링</strong>: 타일 기반 스플래팅으로 GPU 최대 활용</li>
+<li><strong>실시간 가능성</strong>: 실시간 고품질 렌더링 처음 달성</li>
+</ol>
+<p><strong>학문적 의미</strong></p>
+<ul>
+<li>신경 표현과 기하학적 표현의 경계 무너뜨림</li>
+<li>렌더링 알고리즘의 GPU 친화성 재조명</li>
+<li>단순한 표현이 복잡한 신경망보다 우수할 수 있음 증명</li>
+</ul>
+<p><strong>산업적 영향</strong></p>
+<ul>
+<li>메타(Meta), 구글, 애플 등 대형 기술 회사들이 후속 연구 진행</li>
+<li>3D 디지털화의 실시간 처리 시대 개막</li>
+<li>메타버스, XR 기술의 현실화 가속</li>
+</ul>
+<p><strong>종합 평가</strong></p>
+<p>2023년 SIGGRAPH 최우수 논문 중 하나로 평가되며, 3D 그래픽스 분야에 깊은 영향을 미치고 있습니다. 단순하면서도 강력한 아이디어, 철저한 실험, 그리고 즉각적인 실용성이 결합된 모범적 연구입니다.</p>
+<hr>
+<h2 id="참고-자료">참고 자료<a class="anchor" href="#%ec%b0%b8%ea%b3%a0-%ec%9e%90%eb%a3%8c">#</a></h2>
+<p><strong>관련 논문</strong></p>
+<ul>
+<li>NeRF (Mildenhall et al., 2020)</li>
+<li>Instant-NGP (Müller et al., 2022)</li>
+<li>Mip-NeRF 360 (Barron et al., 2022)</li>
+<li>Plenoxels (Fridovich-Keil &amp; Yu, 2022)</li>
+</ul>
+<p><strong>공개 자료</strong></p>
+<ul>
+<li><a href="https://repo-sam.inria.fr/fungraph/3d-gaussian-splatting/">공식 프로젝트 페이지</a></li>
+<li><a href="https://github.com/graphdeco-inria/gaussian-splatting">CUDA 구현</a></li>
+<li><a href="https://huggingface.co/spaces/dylanebert/3dgaussiansplats">WebGL 데모</a></li>
+</ul>
+<hr>
+<p><em>관련 논문: <a href="/posts/papers/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/">NeRF</a>, <a href="/posts/papers/instant-ngp-multiresolution-hash-encoding/">Instant-NGP</a>, <a href="/posts/papers/mip-nerf-360/">Mip-NeRF 360</a>, <a href="/posts/papers/4d-gaussian-splatting/">4D Gaussian Splatting</a>, <a href="/posts/papers/3d-gaussian-ray-tracing/">3D Gaussian Ray Tracing</a>, <a href="/posts/papers/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/">3DGUT</a>, <a href="/posts/papers/street-gaussians-modeling-dynamic-urban-scenes/">Street Gaussians</a>, <a href="/posts/papers/driving-gaussian-composite-gaussian-splatting/">DrivingGaussian</a>, <a href="/posts/papers/omnire-omni-urban-scene-reconstruction/">OmniRe</a>, <a href="/posts/papers/hugsim-real-time-photorealistic-closed-loop-simulator/">HUGSIM</a></em></p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/paper/docs/novel-view-synthesis/4d-gaussian-splatting/" class="flex align-center">
+        <img src="/paper/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>4D Gaussian Splatting for Real-Time Dynamic Scene Rendering</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/paper/docs/novel-view-synthesis/3d-gaussian-ray-tracing/" class="flex align-center">
+        <span>3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes</span>
+        <img src="/paper/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#주요-혁신">주요 혁신</a></li>
+    <li><a href="#주요-내용">주요 내용</a>
+      <ul>
+        <li><a href="#1-기존-방법의-한계">1. 기존 방법의 한계</a></li>
+        <li><a href="#2-제안-방법의-핵심-아이디어">2. 제안 방법의 핵심 아이디어</a></li>
+        <li><a href="#3-최적화-및-밀도-제어">3. 최적화 및 밀도 제어</a></li>
+        <li><a href="#4-고속-렌더링-알고리즘">4. 고속 렌더링 알고리즘</a></li>
+        <li><a href="#5-실험-결과">5. 실험 결과</a></li>
+        <li><a href="#6-메모리-효율성">6. 메모리 효율성</a></li>
+      </ul>
+    </li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a>
+      <ul>
+        <li><a href="#기술적-개념">기술적 개념</a></li>
+        <li><a href="#렌더링-관련-개념">렌더링 관련 개념</a></li>
+      </ul>
+    </li>
+    <li><a href="#빠른-미분-가능-래스터라이저-fast-differentiable-rasterizer">빠른 미분 가능 래스터라이저 (Fast Differentiable Rasterizer)</a>
+      <ul>
+        <li><a href="#설계-목표">설계 목표</a></li>
+        <li><a href="#algorithm-2-gpu-래스터라이저-개요">Algorithm 2: GPU 래스터라이저 개요</a></li>
+        <li><a href="#핵심-최적화-기법">핵심 최적화 기법</a></li>
+        <li><a href="#수치-안정성">수치 안정성</a></li>
+      </ul>
+    </li>
+    <li><a href="#구현-세부사항">구현 세부사항</a>
+      <ul>
+        <li><a href="#손실-함수의-선택">손실 함수의 선택</a></li>
+        <li><a href="#최적화기-설정">최적화기 설정</a></li>
+      </ul>
+    </li>
+    <li><a href="#실무적-시사점">실무적 시사점</a>
+      <ul>
+        <li><a href="#1-실시간-3d-응용의-가능성-확대">1. 실시간 3D 응용의 가능성 확대</a></li>
+        <li><a href="#2-데이터-효율성">2. 데이터 효율성</a></li>
+        <li><a href="#3-학습-시간의-획기적-단축">3. 학습 시간의 획기적 단축</a></li>
+        <li><a href="#4-기하학과-신경-표현의-융합">4. 기하학과 신경 표현의 융합</a></li>
+        <li><a href="#5-향후-연구-방향">5. 향후 연구 방향</a></li>
+      </ul>
+    </li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+    <li><a href="#참고-자료">참고 자료</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

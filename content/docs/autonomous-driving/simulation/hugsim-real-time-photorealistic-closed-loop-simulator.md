@@ -5,6 +5,11 @@ draft: false
 categories: ["Papers", "Autonomous Driving", "Novel View Synthesis"]
 tags: ["3D Gaussian Splatting", "Autonomous Driving", "Simulation", "Closed-Loop"]
 year: 2024
+references:
+  - "3d-gaussian-splatting"
+  - "street-gaussians-modeling-dynamic-urban-scenes"
+  - "nuscenes-multimodal-dataset-autonomous-driving"
+  - "CARLA-An-Open-Urban-Driving-Simulator"
 ---
 
 ## 개요

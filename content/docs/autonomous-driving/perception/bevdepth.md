@@ -5,6 +5,10 @@ draft: false
 categories: ["Papers", "Autonomous Driving"]
 tags: ["3D Object Detection", "BEV", "Depth Estimation", "Autonomous Driving"]
 year: 2022
+references:
+  - "lift-splat-shoot"
+  - "BEVFormer"
+  - "nuscenes-multimodal-dataset-autonomous-driving"
 ---
 
 ## 개요

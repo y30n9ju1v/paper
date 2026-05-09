@@ -5,6 +5,10 @@ draft: false
 categories: ["Papers", "Autonomous Driving"]
 tags: ["Autonomous Driving", "End-to-End Planning", "Transformer", "Multi-Task Learning"]
 year: 2023
+references:
+  - "BEVFormer"
+  - "detr-end-to-end-object-detection-with-transformers"
+  - "nuscenes-multimodal-dataset-autonomous-driving"
 ---
 
 ## 개요

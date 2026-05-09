@@ -1,0 +1,1547 @@
+<!DOCTYPE html>
+<html lang="ko-KR" dir="ltr">
+<head>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="개요# 저자: Yi Wei, Linqing Zhao, Wenzhao Zheng, Zheng Zhu, Jie Zhou, Jiwen Lu 소속: Tsinghua University, Tianjin University, PhiGent Robotics arXiv: 2303.09551v2 (2023) 주요 내용: 멀티카메라 RGB 이미지만으로 주변 3D 공간의 밀집 시맨틱 점유(occupancy)를 예측하는 SurroundOcc 프레임워크 제안. 2D-3D 공간 어텐션, 멀티스케일 3D 볼륨 특징, Poisson Reconstruction 기반 밀집 GT 생성 파이프라인이 핵심. 한계 극복# 이 논문이 기존 연구의 어떤 한계를 극복하기 위해 작성되었는지 설명합니다.
+기존 한계 1 — 3D 객체 검출의 불완전성: 기존 3D 검출 방법은 bounding box 기반으로, 임의의 형태나 무한한 클래스의 객체를 표현하기 어렵습니다. 기존 한계 2 — Depth map의 한계: depth-based 방법은 각 광선에서 가장 가까운 점만 예측하므로, 가려진(occluded) 영역을 복원할 수 없습니다. 기존 한계 3 — BEV 표현의 정보 손실: BEV(Bird’s Eye View) 특징은 높이 방향 정보를 압축하여 3D 공간 정보를 손실합니다. 기존 한계 4 — 희소한 GT 레이블: nuScenes 같은 데이터셋은 단일 프레임 희소 LiDAR 포인트만 제공하여, 밀집 점유 예측 학습에 부적합합니다. 이 논문의 접근 방식: 2D-3D 공간 어텐션으로 BEV 대신 3D 볼륨 쿼리를 구성하고, 멀티프레임 LiDAR &#43; Poisson Reconstruction으로 밀집 GT를 자동 생성하여 위 한계들을 동시에 해결합니다. 목차# Section 1: Introduction Section 2: Related Work Section 3: Approach (2D-3D Spatial Attention, Multi-scale Occupancy Prediction) Section 4: Dense Occupancy Ground Truth Generation Section 5: Experiments Section 6: Limitations and Future Work Section 7: Conclusion Section 1: Introduction# 요약
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://y30n9ju1v.github.io/paper/docs/autonomous-driving/perception/surroundocc/">
+  <meta property="og:site_name" content="Paper">
+  <meta property="og:title" content="SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving">
+  <meta property="og:description" content="개요# 저자: Yi Wei, Linqing Zhao, Wenzhao Zheng, Zheng Zhu, Jie Zhou, Jiwen Lu 소속: Tsinghua University, Tianjin University, PhiGent Robotics arXiv: 2303.09551v2 (2023) 주요 내용: 멀티카메라 RGB 이미지만으로 주변 3D 공간의 밀집 시맨틱 점유(occupancy)를 예측하는 SurroundOcc 프레임워크 제안. 2D-3D 공간 어텐션, 멀티스케일 3D 볼륨 특징, Poisson Reconstruction 기반 밀집 GT 생성 파이프라인이 핵심. 한계 극복# 이 논문이 기존 연구의 어떤 한계를 극복하기 위해 작성되었는지 설명합니다.
+기존 한계 1 — 3D 객체 검출의 불완전성: 기존 3D 검출 방법은 bounding box 기반으로, 임의의 형태나 무한한 클래스의 객체를 표현하기 어렵습니다. 기존 한계 2 — Depth map의 한계: depth-based 방법은 각 광선에서 가장 가까운 점만 예측하므로, 가려진(occluded) 영역을 복원할 수 없습니다. 기존 한계 3 — BEV 표현의 정보 손실: BEV(Bird’s Eye View) 특징은 높이 방향 정보를 압축하여 3D 공간 정보를 손실합니다. 기존 한계 4 — 희소한 GT 레이블: nuScenes 같은 데이터셋은 단일 프레임 희소 LiDAR 포인트만 제공하여, 밀집 점유 예측 학습에 부적합합니다. 이 논문의 접근 방식: 2D-3D 공간 어텐션으로 BEV 대신 3D 볼륨 쿼리를 구성하고, 멀티프레임 LiDAR &#43; Poisson Reconstruction으로 밀집 GT를 자동 생성하여 위 한계들을 동시에 해결합니다. 목차# Section 1: Introduction Section 2: Related Work Section 3: Approach (2D-3D Spatial Attention, Multi-scale Occupancy Prediction) Section 4: Dense Occupancy Ground Truth Generation Section 5: Experiments Section 6: Limitations and Future Work Section 7: Conclusion Section 1: Introduction# 요약">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:published_time" content="2026-04-19T10:00:00+09:00">
+    <meta property="article:modified_time" content="2026-04-19T10:00:00+09:00">
+    <meta property="article:tag" content="3D Occupancy">
+    <meta property="article:tag" content="Autonomous Driving">
+    <meta property="article:tag" content="Multi-Camera">
+    <meta property="article:tag" content="Scene Understanding">
+
+
+  <meta itemprop="name" content="SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving">
+  <meta itemprop="description" content="개요# 저자: Yi Wei, Linqing Zhao, Wenzhao Zheng, Zheng Zhu, Jie Zhou, Jiwen Lu 소속: Tsinghua University, Tianjin University, PhiGent Robotics arXiv: 2303.09551v2 (2023) 주요 내용: 멀티카메라 RGB 이미지만으로 주변 3D 공간의 밀집 시맨틱 점유(occupancy)를 예측하는 SurroundOcc 프레임워크 제안. 2D-3D 공간 어텐션, 멀티스케일 3D 볼륨 특징, Poisson Reconstruction 기반 밀집 GT 생성 파이프라인이 핵심. 한계 극복# 이 논문이 기존 연구의 어떤 한계를 극복하기 위해 작성되었는지 설명합니다.
+기존 한계 1 — 3D 객체 검출의 불완전성: 기존 3D 검출 방법은 bounding box 기반으로, 임의의 형태나 무한한 클래스의 객체를 표현하기 어렵습니다. 기존 한계 2 — Depth map의 한계: depth-based 방법은 각 광선에서 가장 가까운 점만 예측하므로, 가려진(occluded) 영역을 복원할 수 없습니다. 기존 한계 3 — BEV 표현의 정보 손실: BEV(Bird’s Eye View) 특징은 높이 방향 정보를 압축하여 3D 공간 정보를 손실합니다. 기존 한계 4 — 희소한 GT 레이블: nuScenes 같은 데이터셋은 단일 프레임 희소 LiDAR 포인트만 제공하여, 밀집 점유 예측 학습에 부적합합니다. 이 논문의 접근 방식: 2D-3D 공간 어텐션으로 BEV 대신 3D 볼륨 쿼리를 구성하고, 멀티프레임 LiDAR &#43; Poisson Reconstruction으로 밀집 GT를 자동 생성하여 위 한계들을 동시에 해결합니다. 목차# Section 1: Introduction Section 2: Related Work Section 3: Approach (2D-3D Spatial Attention, Multi-scale Occupancy Prediction) Section 4: Dense Occupancy Ground Truth Generation Section 5: Experiments Section 6: Limitations and Future Work Section 7: Conclusion Section 1: Introduction# 요약">
+  <meta itemprop="datePublished" content="2026-04-19T10:00:00+09:00">
+  <meta itemprop="dateModified" content="2026-04-19T10:00:00+09:00">
+  <meta itemprop="wordCount" content="1440">
+  <meta itemprop="keywords" content="3D Occupancy,Autonomous Driving,Multi-Camera,Scene Understanding">
+
+<title>SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving | Paper</title>
+<link rel="icon" href="/paper/favicon.png" >
+<link rel="manifest" href="/paper/manifest.json">
+<link rel="canonical" href="https://y30n9ju1v.github.io/paper/docs/autonomous-driving/perception/surroundocc/">
+<link rel="stylesheet" href="/paper/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/paper/fuse.min.js"></script>
+  <script defer src="/paper/en.search.min.b1685711fcbce34e51ac4e2f3f34db3464d1f2809b936b8ce7ecb2014e6bf361.js" integrity="sha256-sWhXEfy8405RrE4vPzTbNGTR8oCbk2uM5&#43;yyAU5r82E=" crossorigin="anonymous"></script>
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '\\[', right: '\\]', display: true},
+      {left: '\\(', right: '\\)', display: false},
+      {left: '$', right: '$', display: false}
+    ]
+  });
+});
+</script>
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/paper/"><span>Paper</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-26dad33899f9ff5c8eb940bf3bc5c8c6" class="toggle"  />
+    <label for="section-26dad33899f9ff5c8eb940bf3bc5c8c6" class="flex">
+      <a role="button" class="">
+        Deep Learning</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/clip-learning-transferable-visual-models-from-natural-language-supervision/" class="">
+      CLIP: Learning Transferable Visual Models From Natural Language Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/pointnet-plus-plus-deep-hierarchical-feature-learning/" class="">
+      PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/vit-an-image-is-worth-16x16-words/" class="">
+      ViT: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/resnet-deep-residual-learning-for-image-recognition/" class="">
+      ResNet: Deep Residual Learning for Image Recognition</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/detr-end-to-end-object-detection-with-transformers/" class="">
+      DETR: End-to-End Object Detection with Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/attention-is-all-you-need/" class="">
+      Attention Is All You Need</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/proximal-policy-optimization/" class="">
+      Proximal Policy Optimization Algorithms (PPO)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/" class="">
+      PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/dqn-playing-atari-with-deep-reinforcement-learning/" class="">
+      Playing Atari with Deep Reinforcement Learning</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-55a967b32f0d01d82a62069db60bc9a4" class="toggle"  />
+    <label for="section-55a967b32f0d01d82a62069db60bc9a4" class="flex">
+      <a role="button" class="">
+        Novel View Synthesis</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/instant-ngp-multiresolution-hash-encoding/" class="">
+      Instant Neural Graphics Primitives with a Multiresolution Hash Encoding</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/4d-gaussian-splatting/" class="">
+      4D Gaussian Splatting for Real-Time Dynamic Scene Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3d-gaussian-splatting/" class="">
+      3D Gaussian Splatting for Real-Time Radiance Field Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3d-gaussian-ray-tracing/" class="">
+      3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/" class="">
+      3DGUT: Enabling Distorted Cameras and Secondary Rays in Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/difix3d-plus/" class="">
+      DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/" class="">
+      NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-bba278969cd1a39a02e4f40a6eceba0d" class="toggle"  />
+    <label for="section-bba278969cd1a39a02e4f40a6eceba0d" class="flex">
+      <a role="button" class="">
+        Generative Models</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/controlnet-adding-conditional-control-to-text-to-image-diffusion-models/" class="">
+      ControlNet: Adding Conditional Control to Text-to-Image Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/high-resolution-image-synthesis-with-latent-diffusion-models/" class="">
+      High-Resolution Image Synthesis with Latent Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/denoising-diffusion-probabilistic-models/" class="">
+      Denoising Diffusion Probabilistic Models (DDPM)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/drivearena/" class="">
+      DriveArena: A Closed-loop Generative Simulation Platform for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/magicdrive-street-view-generation-3d-geometry-control/" class="">
+      MagicDrive: Street View Generation with Diverse 3D Geometry Control</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/drivedreamer/" class="">
+      DriveDreamer: Towards Real-world-driven World Models for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/gaia-1/" class="">
+      GAIA-1: A Generative World Model for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-ba66afb2e4f86c05dd02e329f85a3a79" class="toggle" checked />
+    <label for="section-ba66afb2e4f86c05dd02e329f85a3a79" class="flex">
+      <a role="button" class="">
+        Autonomous Driving</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-d7ba9eb4570c2bfc131b9c6410bbe7ec" class="toggle" checked />
+    <label for="section-d7ba9eb4570c2bfc131b9c6410bbe7ec" class="flex">
+      <a role="button" class="">
+        Perception</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/" class="">
+      GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/" class="">
+      StreamMapNet: Streaming Mapping Network for Vectorized Online HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/vectormapnet-end-to-end-vectorized-hd-map-learning/" class="">
+      VectorMapNet: End-to-end Vectorized HD Map Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/maptr-structured-modeling-online-vectorized-hd-map-construction/" class="">
+      MapTR: Structured Modeling and Learning for Online Vectorized HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/pointpillars-fast-encoders-object-detection-point-clouds/" class="">
+      PointPillars: Fast Encoders for Object Detection from Point Clouds</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/centerpoint-center-based-3d-object-detection-and-tracking/" class="">
+      CenterPoint: Center-based 3D Object Detection and Tracking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/monoscene-monocular-3d-semantic-scene-completion/" class="">
+      MonoScene: Monocular 3D Semantic Scene Completion</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/tpvformer-tri-perspective-view-3d-semantic-occupancy/" class="">
+      TPVFormer: Tri-Perspective View for Vision-Based 3D Semantic Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/surroundocc/" class="active">
+      SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/detr3d-3d-object-detection-multi-view-images/" class="">
+      DETR3D: 3D Object Detection from Multi-view Images via 3D-to-2D Queries</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/occ3d-large-scale-3d-occupancy-prediction-benchmark/" class="">
+      Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevfusion-multi-task-multi-sensor-fusion/" class="">
+      BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/lift-splat-shoot/" class="">
+      Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevdepth/" class="">
+      BEVDepth: Acquisition of Reliable Depth for Multi-view 3D Object Detection</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevformer/" class="">
+      BEVFormer: Learning Bird&#39;s-Eye-View Representation from Multi-Camera Images via Spatiotemporal Transformers</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-7a9153220f9190837dca18e7bc97c48d" class="toggle"  />
+    <label for="section-7a9153220f9190837dca18e7bc97c48d" class="flex">
+      <a role="button" class="">
+        Simulation</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/lidarsim-realistic-lidar-simulation-by-leveraging-the-real-world/" class="">
+      LiDARsim: Realistic LiDAR Simulation by Leveraging the Real World</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/neurad-neural-rendering-for-autonomous-driving/" class="">
+      NeuRAD: Neural Rendering for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/omnire-omni-urban-scene-reconstruction/" class="">
+      OmniRe: Omni Urban Scene Reconstruction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/street-gaussians-modeling-dynamic-urban-scenes/" class="">
+      Street Gaussians: Modeling Dynamic Urban Scenes with Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/emernerf/" class="">
+      EmerNeRF: Emergent Spatial-Temporal Scene Decomposition via Self-Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/unisim-neural-closed-loop-sensor-simulator/" class="">
+      UniSim: A Neural Closed-Loop Sensor Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/driving-gaussian-composite-gaussian-splatting/" class="">
+      DrivingGaussian: Composite Gaussian Splatting for Surrounding Dynamic Autonomous Driving Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/carla-an-open-urban-driving-simulator/" class="">
+      CARLA: An Open Urban Driving Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/hugsim-real-time-photorealistic-closed-loop-simulator/" class="">
+      HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-e9f19cbf840aaca3029a9a86c6765e7f" class="toggle"  />
+    <label for="section-e9f19cbf840aaca3029a9a86c6765e7f" class="flex">
+      <a role="button" class="">
+        Planning</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/bench2drive-multi-ability-benchmarking-e2e-autonomous-driving/" class="">
+      Bench2Drive: Towards Multi-Ability Benchmarking of Closed-Loop End-To-End Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/navsim/" class="">
+      NAVSIM: Data-Driven Non-Reactive Autonomous Vehicle Simulation and Benchmarking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/transfuser/" class="">
+      TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/uniad-planning-oriented-autonomous-driving/" class="">
+      UniAD: Planning-oriented Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/vad/" class="">
+      VAD: Vectorized Scene Representation for Efficient Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-c1644e2152ae0bb887d703d1c6a373f2" class="toggle"  />
+    <label for="section-c1644e2152ae0bb887d703d1c6a373f2" class="flex">
+      <a role="button" class="">
+        Dataset &amp; Benchmark</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/nuplan/" class="">
+      nuPlan: A closed-loop ML-based planning benchmark for autonomous vehicles</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/nuscenes-multimodal-dataset-autonomous-driving/" class="">
+      nuScenes: A Multimodal Dataset for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/waymo-open-dataset/" class="">
+      Scalability in Perception for Autonomous Driving: Waymo Open Dataset</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/paper/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving</h3>
+
+  <label for="toc-control">
+    
+    <img src="/paper/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#section-1-introduction">Section 1: Introduction</a></li>
+    <li><a href="#section-2-related-work">Section 2: Related Work</a></li>
+    <li><a href="#section-3-approach">Section 3: Approach</a></li>
+    <li><a href="#section-4-dense-occupancy-ground-truth-generation">Section 4: Dense Occupancy Ground Truth Generation</a></li>
+    <li><a href="#section-5-experiments">Section 5: Experiments</a></li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h2 id="개요">개요<a class="anchor" href="#%ea%b0%9c%ec%9a%94">#</a></h2>
+<ul>
+<li><strong>저자</strong>: Yi Wei, Linqing Zhao, Wenzhao Zheng, Zheng Zhu, Jie Zhou, Jiwen Lu</li>
+<li><strong>소속</strong>: Tsinghua University, Tianjin University, PhiGent Robotics</li>
+<li><strong>arXiv</strong>: 2303.09551v2 (2023)</li>
+<li><strong>주요 내용</strong>: 멀티카메라 RGB 이미지만으로 주변 3D 공간의 밀집 시맨틱 점유(occupancy)를 예측하는 SurroundOcc 프레임워크 제안. 2D-3D 공간 어텐션, 멀티스케일 3D 볼륨 특징, Poisson Reconstruction 기반 밀집 GT 생성 파이프라인이 핵심.</li>
+</ul>
+<h2 id="한계-극복">한계 극복<a class="anchor" href="#%ed%95%9c%ea%b3%84-%ea%b7%b9%eb%b3%b5">#</a></h2>
+<p>이 논문이 기존 연구의 어떤 한계를 극복하기 위해 작성되었는지 설명합니다.</p>
+<ul>
+<li><strong>기존 한계 1 — 3D 객체 검출의 불완전성</strong>: 기존 3D 검출 방법은 bounding box 기반으로, 임의의 형태나 무한한 클래스의 객체를 표현하기 어렵습니다.</li>
+<li><strong>기존 한계 2 — Depth map의 한계</strong>: depth-based 방법은 각 광선에서 가장 가까운 점만 예측하므로, 가려진(occluded) 영역을 복원할 수 없습니다.</li>
+<li><strong>기존 한계 3 — BEV 표현의 정보 손실</strong>: BEV(Bird&rsquo;s Eye View) 특징은 높이 방향 정보를 압축하여 3D 공간 정보를 손실합니다.</li>
+<li><strong>기존 한계 4 — 희소한 GT 레이블</strong>: nuScenes 같은 데이터셋은 단일 프레임 희소 LiDAR 포인트만 제공하여, 밀집 점유 예측 학습에 부적합합니다.</li>
+<li><strong>이 논문의 접근 방식</strong>: 2D-3D 공간 어텐션으로 BEV 대신 3D 볼륨 쿼리를 구성하고, 멀티프레임 LiDAR + Poisson Reconstruction으로 밀집 GT를 자동 생성하여 위 한계들을 동시에 해결합니다.</li>
+</ul>
+<h2 id="목차">목차<a class="anchor" href="#%eb%aa%a9%ec%b0%a8">#</a></h2>
+<ul>
+<li>Section 1: Introduction</li>
+<li>Section 2: Related Work</li>
+<li>Section 3: Approach (2D-3D Spatial Attention, Multi-scale Occupancy Prediction)</li>
+<li>Section 4: Dense Occupancy Ground Truth Generation</li>
+<li>Section 5: Experiments</li>
+<li>Section 6: Limitations and Future Work</li>
+<li>Section 7: Conclusion</li>
+</ul>
+<hr>
+<h2 id="section-1-introduction">Section 1: Introduction<a class="anchor" href="#section-1-introduction">#</a></h2>
+<p><strong>요약</strong></p>
+<p>자율주행 시스템에서 주변 3D 공간을 이해하는 것은 필수적입니다. LiDAR는 정확한 기하 정보를 제공하지만 고가이고 희소하여 실용성이 제한됩니다. 최근 비전 기반 자율주행이 주목받으며, 멀티카메라 이미지로 3D 장면을 재구성하는 연구가 활발해졌습니다.</p>
+<p>기존 depth map 방법은 각 픽셀에서 가장 가까운 표면만 예측하므로 가려진 영역을 복원하지 못합니다. 반면 3D 점유(occupancy)는 공간의 모든 복셀(voxel)에 점유 확률을 부여하여 가려진 영역까지 표현 가능합니다. SurroundOcc는 멀티카메라 이미지를 입력받아 밀집하고 정확한 3D 시맨틱 점유를 예측합니다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>3D Occupancy (3D 점유)</strong>: 3D 공간을 격자(복셀)로 나누고 각 격자가 차지되어 있는지(occupied) 여부와 그 의미(semantic class)를 예측하는 표현 방식. depth map보다 포괄적이고 다운스트림 태스크(분할, 흐름 추정)에 유연하게 활용 가능</li>
+<li><strong>Multi-camera Vision</strong>: LiDAR 없이 여러 대의 RGB 카메라만으로 3D 공간을 추론하는 비전 중심(vision-centric) 접근법</li>
+<li><strong>BEV vs. Volumetric</strong>: BEV(새의 눈 시점)는 2D 평면에 3D 정보를 투영하여 높이 정보를 잃는 반면, 볼류메트릭(volumetric) 표현은 전체 3D 구조를 보존</li>
+</ul>
+<hr>
+<h2 id="section-2-related-work">Section 2: Related Work<a class="anchor" href="#section-2-related-work">#</a></h2>
+<p><strong>요약</strong></p>
+<p>관련 연구는 세 가지 흐름으로 나뉩니다.</p>
+<ol>
+<li><strong>Voxel 기반 장면 표현</strong>: LiDAR 분할 등에서 성공한 복셀 표현을 실외 장면 재구성에 적용. MonoScene(단안 카메라), TPVFormer(멀티카메라) 등이 선행 연구.</li>
+<li><strong>3D 장면 재구성</strong>: depth estimation → 3D 공간 투영 방식(BEVFormer 등) 또는 직접 3D 특징 학습 방식(SurfaceNet, Atlas, TransformerFusion 등). 대부분 실내 환경 대상.</li>
+<li><strong>비전 기반 3D 인식</strong>: BEVFormer처럼 2D 이미지 특징을 BEV 그리드로 변환하는 방법이 주류. SurroundOcc는 BEV 대신 완전한 3D 볼륨을 사용하여 정보 손실을 방지.</li>
+</ol>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>MonoScene</strong>: 단안 카메라 이미지로 3D 시맨틱 장면을 재구성하는 최초 시도 중 하나</li>
+<li><strong>TPVFormer</strong>: 희소 LiDAR를 supervision으로 사용하는 멀티카메라 3D 시맨틱 점유 예측. 희소 GT로 인해 예측도 희소함</li>
+<li><strong>BEVFormer</strong>: cross-attention으로 2D 특징을 BEV 그리드로 점진적으로 정제하는 대표적 BEV 방법</li>
+</ul>
+<hr>
+<h2 id="section-3-approach">Section 3: Approach<a class="anchor" href="#section-3-approach">#</a></h2>
+<p><strong>요약</strong></p>
+<p>SurroundOcc의 전체 파이프라인은 세 단계로 구성됩니다.</p>
+<ol>
+<li><strong>2D 백본(backbone)</strong>: ResNet-101-DCN으로 N개 카메라의 멀티스케일 2D 특징 추출</li>
+<li><strong>2D-3D 공간 어텐션</strong>: 각 3D 복셀 쿼리를 2D 뷰에 투영하여 deformable attention으로 특징 집계 → 3D 볼륨 특징 구성</li>
+<li><strong>멀티스케일 3D U-Net</strong>: 3D convolution으로 저해상도 볼륨을 점진적으로 업샘플하고, 각 레벨에서 점유 예측에 decayed loss 적용</li>
+</ol>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li>
+<p><strong>2D-3D Spatial Attention</strong>: BEV 쿼리 대신 3D 볼륨 쿼리 $Q \in \mathbb{R}^{C \times H \times W \times Z}$ 를 정의하고, 각 쿼리의 3D 기준점을 카메라 내/외부 파라미터로 2D에 투영하여 샘플링</p>
+</li>
+<li>
+<p><strong>Cross-view Attention</strong>: 동일 3D 위치에 대해 여러 카메라에서 다르게 기여하는 정보를 deformable attention으로 통합. BEV 어텐션과 달리 가려짐(occlusion)이나 흐림이 있는 뷰의 가중치를 자동 조절</p>
+</li>
+<li>
+<p><strong>Multi-scale 3D U-Net</strong>: 여러 해상도에서 3D 볼륨 특징 $\{F_j\}_{j=1}^M$을 추출하고, 낮은 해상도 특징을 3D deconv로 업샘플하여 상위 레벨 특징과 합산:</p>
+</li>
+</ul>
+<p><strong>수식 — Deformable Attention</strong></p>
+$$\text{DeformAttn}(q, p, x) = \sum_{i=1}^{N_\text{head}} \mathcal{W}_i \sum_{j=1}^{N_\text{key}} \mathcal{A}_{ij} \cdot \mathcal{W}'_i x(p + \Delta p_{ij})$$<p><strong>수식 설명</strong></p>
+<p>이 수식은 3D 볼륨 쿼리가 여러 카메라 이미지에서 관련 특징을 선택적으로 집계하는 방법을 나타냅니다:</p>
+<ul>
+<li><strong>$q$</strong>: 3D 볼륨 쿼리 벡터 (어디에 있는 복셀인지 나타내는 질문)</li>
+<li><strong>$p$</strong>: 3D 기준점을 2D 이미지에 투영한 2D 위치</li>
+<li><strong>$\Delta p_{ij}$</strong>: $i$번째 헤드, $j$번째 샘플링 포인트의 오프셋 (기준점에서 얼마나 이동하여 샘플링할지)</li>
+<li><strong>$\mathcal{A}_{ij}$</strong>: 어텐션 가중치 (쿼리와 키의 내적으로 계산, 중요한 위치에 더 큰 가중치 부여)</li>
+<li><strong>$\mathcal{W}_i, \mathcal{W}'_i$</strong>: 학습 가능한 projection 행렬</li>
+<li><strong>$N_\text{head}$</strong>: 멀티헤드 어텐션의 헤드 수 (여러 관점에서 병렬로 어텐션 계산)</li>
+<li><strong>직관</strong>: &ldquo;이 복셀을 설명하는 2D 특징이 이미지 어디에 있는지&rdquo; 를 네트워크가 스스로 학습하여 찾아냄</li>
+</ul>
+<p><strong>수식 — Multi-scale Upsampling</strong></p>
+$$Y_j = F_j + \text{Deconv}(Y_{j-1})$$<p><strong>수식 설명</strong></p>
+<p>3D U-Net에서 저해상도 예측을 고해상도로 점진적으로 정제하는 수식입니다:</p>
+<ul>
+<li><strong>$Y_j$</strong>: $j$ 레벨의 최종 볼륨 특징 (고해상도에 가까울수록 $j$가 큼)</li>
+<li><strong>$F_j$</strong>: 2D-3D 어텐션으로 추출한 $j$ 레벨의 원본 볼륨 특징</li>
+<li><strong>$\text{Deconv}(Y_{j-1})$</strong>: 아래 레벨(더 저해상도)의 출력을 3D deconvolution으로 2배 업샘플한 것</li>
+<li><strong>직관</strong>: skip connection처럼 원본 특징을 보존하면서 전역 맥락(저해상도)과 지역 세부 정보(고해상도)를 모두 학습</li>
+</ul>
+<p><strong>수식 — Decayed Loss Weight</strong></p>
+$$\alpha_j = \frac{1}{2^j}$$<p><strong>수식 설명</strong></p>
+<p>멀티스케일 supervision에서 각 레벨의 loss 가중치를 정하는 수식입니다:</p>
+<ul>
+<li><strong>$\alpha_j$</strong>: $j$ 레벨(낮을수록 저해상도)의 loss 가중치</li>
+<li><strong>직관</strong>: 최종 고해상도 예측($j$가 작음)이 가장 중요하므로 가중치를 크게, 중간 레벨은 보조 supervision 역할</li>
+</ul>
+<hr>
+<h2 id="section-4-dense-occupancy-ground-truth-generation">Section 4: Dense Occupancy Ground Truth Generation<a class="anchor" href="#section-4-dense-occupancy-ground-truth-generation">#</a></h2>
+<p><strong>요약</strong></p>
+<p>nuScenes 데이터셋은 희소 LiDAR 포인트만 제공합니다. 희소 GT로 학습하면 모델도 희소한 점유만 예측합니다. SurroundOcc는 다음 4단계로 밀집 GT를 자동 생성합니다:</p>
+<ol>
+<li><strong>멀티프레임 포인트 클라우드 스티칭</strong>: 동적 객체(차량 등)와 정적 장면을 분리하여 각각 누적. 객체는 bounding box로 분리하고 전역 좌표계로 변환 후 재합성</li>
+<li><strong>Poisson Surface Reconstruction</strong>: 밀집화된 포인트 클라우드의 법선 벡터를 추정하고 Poisson 재구성으로 삼각형 메쉬 $\mathcal{M} = \{\mathcal{V}, \mathcal{E}\}$ 생성 → 구멍(hole) 채움</li>
+<li><strong>복셀화(Voxelization)</strong>: 메쉬를 밀집 복셀 $V_d$로 변환</li>
+<li><strong>NN 시맨틱 레이블링</strong>: 희소 포인트 $V_s$의 시맨틱 레이블을 밀집 복셀 $V_d$에 최근접 이웃(NN)으로 전파</li>
+</ol>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>두 스트림 스티칭</strong>: 움직이는 객체(동적)와 고정 환경(정적)을 별도로 누적하지 않으면, 동적 객체의 잔상(ghost)이 장면에 남아 잘못된 GT가 생성됨</li>
+<li><strong>Poisson Surface Reconstruction</strong>: 포인트 클라우드의 법선 정보를 이용해 연속적인 표면을 재구성하는 알고리즘. 구멍 채움과 균일한 정점 분포가 특징</li>
+<li><strong>NN 시맨틱 전파</strong>: 기하(geometry)와 의미(semantics) 복원을 분리. 기하는 Poisson으로 밀집화하고, 의미는 가장 가까운 기존 포인트의 레이블을 상속</li>
+</ul>
+<hr>
+<h2 id="section-5-experiments">Section 5: Experiments<a class="anchor" href="#section-5-experiments">#</a></h2>
+<p><strong>요약</strong></p>
+<p>nuScenes(멀티카메라)와 SemanticKITTI(단안 카메라 제로샷) 두 벤치마크에서 평가했습니다.</p>
+<p><strong>nuScenes 3D 시맨틱 점유 예측 (Table 1)</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>Method</th>
+          <th>SC IoU</th>
+          <th>SSC mIoU</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>MonoScene</td>
+          <td>23.96</td>
+          <td>7.31</td>
+      </tr>
+      <tr>
+          <td>BEVFormer</td>
+          <td>30.50</td>
+          <td>16.75</td>
+      </tr>
+      <tr>
+          <td>TPVFormer*</td>
+          <td>30.86</td>
+          <td>17.10</td>
+      </tr>
+      <tr>
+          <td><strong>SurroundOcc</strong></td>
+          <td><strong>31.49</strong></td>
+          <td><strong>20.30</strong></td>
+      </tr>
+  </tbody>
+</table>
+<ul>
+<li>SC(Scene Completion) IoU: 점유 여부만 평가</li>
+<li>SSC(Semantic Scene Completion) mIoU: 시맨틱 클래스별 평균 IoU</li>
+</ul>
+<p><strong>nuScenes 3D 장면 재구성 (Table 4)</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>Method</th>
+          <th>CD ↓</th>
+          <th>F-score ↑</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Atlas</td>
+          <td>2.163</td>
+          <td>0.257</td>
+      </tr>
+      <tr>
+          <td>TransformerFusion</td>
+          <td>0.771</td>
+          <td>0.453</td>
+      </tr>
+      <tr>
+          <td><strong>SurroundOcc</strong></td>
+          <td><strong>0.724</strong></td>
+          <td><strong>0.483</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>모델 효율성 (Table 8, RTX 3090 기준)</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>Method</th>
+          <th>Latency(s)</th>
+          <th>Memory(G)</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>BEVFormer</td>
+          <td><strong>0.31</strong></td>
+          <td><strong>4.5</strong></td>
+      </tr>
+      <tr>
+          <td>TPVFormer</td>
+          <td>0.32</td>
+          <td>5.1</td>
+      </tr>
+      <tr>
+          <td><strong>SurroundOcc</strong></td>
+          <td>0.34</td>
+          <td>5.9</td>
+      </tr>
+  </tbody>
+</table>
+<p>SurroundOcc는 BEVFormer 대비 latency 10% 증가로 성능을 크게 향상시킵니다.</p>
+<p><strong>Ablation Study 핵심 결과</strong></p>
+<ul>
+<li>2D-3D 공간 어텐션 제거 시 SSC mIoU 17.34로 하락 (vs. 20.30)</li>
+<li>BEV 기반 어텐션 사용 시 SSC mIoU 18.94로 하락</li>
+<li>희소 LiDAR GT로만 학습 시 SSC mIoU 12.17 (vs. 밀집 GT 사용 시 20.30)</li>
+</ul>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>IoU (Intersection over Union)</strong>: 예측과 정답이 겹치는 비율. $\text{IoU} = \frac{TP}{TP + FP + FN}$</li>
+<li><strong>mIoU</strong>: 모든 클래스의 IoU 평균. 클래스 불균형에 공정한 평가 지표</li>
+<li><strong>Chamfer Distance (CD)</strong>: 예측 포인트 클라우드와 GT 포인트 클라우드 간 최근접 거리의 평균. 낮을수록 좋음</li>
+<li><strong>F-score</strong>: Precision과 Recall의 조화 평균. 재구성 정확도 평가</li>
+</ul>
+<p><strong>수식 — IoU &amp; mIoU</strong></p>
+$$\text{IoU} = \frac{TP}{TP + FP + FN}$$$$\text{mIoU} = \frac{1}{C} \sum_{i=1}^{C} \frac{TP_i}{TP_i + FP_i + FN_i}$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$TP$</strong>: True Positive — 점유했다고 예측했고 실제로도 점유된 복셀 수</li>
+<li><strong>$FP$</strong>: False Positive — 점유했다고 예측했지만 실제로는 비어있는 복셀 수</li>
+<li><strong>$FN$</strong>: False Negative — 비어있다고 예측했지만 실제로는 점유된 복셀 수</li>
+<li><strong>$C$</strong>: 클래스 수 (nuScenes: 17 클래스)</li>
+<li><strong>직관</strong>: IoU = &ldquo;내가 맞혔다고 주장하는 것&rdquo; 중 실제로 맞은 비율. 분모에 FP와 FN이 모두 포함되어 엄격한 지표</li>
+</ul>
+<hr>
+<h2 id="핵심-개념-정리">핵심 개념 정리<a class="anchor" href="#%ed%95%b5%ec%8b%ac-%ea%b0%9c%eb%85%90-%ec%a0%95%eb%a6%ac">#</a></h2>
+<table>
+  <thead>
+      <tr>
+          <th>개념</th>
+          <th>설명</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>3D Occupancy</strong></td>
+          <td>3D 공간을 복셀 격자로 표현하고 각 복셀의 점유 여부와 시맨틱 클래스를 예측</td>
+      </tr>
+      <tr>
+          <td><strong>2D-3D Spatial Attention</strong></td>
+          <td>3D 볼륨 쿼리를 2D 카메라 뷰에 투영하여 deformable attention으로 멀티뷰 특징 집계</td>
+      </tr>
+      <tr>
+          <td><strong>Cross-view Attention</strong></td>
+          <td>여러 카메라에서 동일 3D 위치의 특징을 가중 통합. 가려진 뷰의 가중치를 자동 감소</td>
+      </tr>
+      <tr>
+          <td><strong>Multi-scale 3D U-Net</strong></td>
+          <td>저해상도에서 고해상도로 3D 볼륨을 점진적 업샘플. 각 레벨에서 decayed loss로 supervision</td>
+      </tr>
+      <tr>
+          <td><strong>Poisson Reconstruction</strong></td>
+          <td>포인트 클라우드에서 연속 표면 메쉬 생성. 구멍 채움에 효과적</td>
+      </tr>
+      <tr>
+          <td><strong>두 스트림 GT 생성</strong></td>
+          <td>동적 객체와 정적 장면을 분리 누적하여 잔상 없는 밀집 GT 생성</td>
+      </tr>
+      <tr>
+          <td><strong>Dense Occupancy Supervision</strong></td>
+          <td>희소 LiDAR 대신 밀집 GT로 학습하면 SSC mIoU가 12.17 → 20.30으로 대폭 향상</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="결론-및-시사점">결론 및 시사점<a class="anchor" href="#%ea%b2%b0%eb%a1%a0-%eb%b0%8f-%ec%8b%9c%ec%82%ac%ec%a0%90">#</a></h2>
+<p><strong>결론</strong></p>
+<p>SurroundOcc는 멀티카메라 이미지만으로 밀집하고 정확한 3D 시맨틱 점유를 예측하는 방법을 제시합니다. 핵심 기여는 두 가지입니다:</p>
+<ol>
+<li><strong>방법론</strong>: 2D-3D 공간 어텐션으로 BEV 대신 3D 볼륨 특징을 구성하고, 멀티스케일 3D U-Net으로 고해상도 예측</li>
+<li><strong>데이터</strong>: 멀티프레임 LiDAR 스티칭 + Poisson Reconstruction으로 비용 없이 밀집 GT 자동 생성</li>
+</ol>
+<p>nuScenes와 SemanticKITTI 벤치마크에서 기존 방법 대비 큰 폭의 성능 향상을 달성했습니다.</p>
+<p><strong>실무적 시사점</strong></p>
+<ul>
+<li><strong>자율주행 인식 스택</strong>: occupancy 기반 표현은 detection box보다 임의 형태 객체(공사 구간, 이상 물체)에 강인하여 안전 마진 계산에 유리</li>
+<li><strong>합성 데이터 생성</strong>: 밀집 GT 생성 파이프라인(멀티프레임 스티칭 + Poisson Reconstruction)은 annotation 비용 없이 고품질 3D 레이블을 생성하는 실용적 방법으로, 회귀 테스트용 합성 데이터 생성에도 응용 가능</li>
+<li><strong>한계</strong>: 단일 프레임 입력만 처리하므로 시간적 연속성(occupancy flow)이 없어 motion prediction에 직접 활용 어려움. 향후 멀티프레임 입력으로 확장 예정</li>
+</ul>
+<hr>
+<p><em>관련 논문: <a href="/posts/papers/monoscene-monocular-3d-semantic-scene-completion/">MonoScene</a>, <a href="/posts/papers/tpvformer-tri-perspective-view-3d-semantic-occupancy/">TPVFormer</a>, <a href="/posts/papers/occ3d-large-scale-3d-occupancy-prediction-benchmark/">Occ3D</a>, <a href="/posts/papers/BEVFormer/">BEVFormer</a>, <a href="/posts/papers/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/">GaussianWorld</a></em></p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/paper/docs/autonomous-driving/perception/tpvformer-tri-perspective-view-3d-semantic-occupancy/" class="flex align-center">
+        <img src="/paper/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>TPVFormer: Tri-Perspective View for Vision-Based 3D Semantic Occupancy Prediction</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/paper/docs/autonomous-driving/perception/detr3d-3d-object-detection-multi-view-images/" class="flex align-center">
+        <span>DETR3D: 3D Object Detection from Multi-view Images via 3D-to-2D Queries</span>
+        <img src="/paper/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#section-1-introduction">Section 1: Introduction</a></li>
+    <li><a href="#section-2-related-work">Section 2: Related Work</a></li>
+    <li><a href="#section-3-approach">Section 3: Approach</a></li>
+    <li><a href="#section-4-dense-occupancy-ground-truth-generation">Section 4: Dense Occupancy Ground Truth Generation</a></li>
+    <li><a href="#section-5-experiments">Section 5: Experiments</a></li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

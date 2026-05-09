@@ -5,6 +5,8 @@ draft: false
 categories: ["Papers", "Novel View Synthesis"]
 tags: ["3D Gaussian Splatting", "Ray Tracing", "Novel View Synthesis", "Neural Rendering"]
 year: 2024
+references:
+  - "3d-gaussian-splatting"
 ---
 
 ## 개요

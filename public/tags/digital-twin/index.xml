@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Digital Twin on Paper</title>
+    <link>https://y30n9ju1v.github.io/paper/tags/digital-twin/</link>
+    <description>Recent content in Digital Twin on Paper</description>
+    <generator>Hugo</generator>
+    <language>ko-KR</language>
+    <lastBuildDate>Sun, 19 Apr 2026 11:00:00 +0900</lastBuildDate>
+    <atom:link href="https://y30n9ju1v.github.io/paper/tags/digital-twin/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>OmniRe: Omni Urban Scene Reconstruction</title>
+      <link>https://y30n9ju1v.github.io/paper/docs/autonomous-driving/simulation/omnire-omni-urban-scene-reconstruction/</link>
+      <pubDate>Sun, 19 Apr 2026 11:00:00 +0900</pubDate>
+      <guid>https://y30n9ju1v.github.io/paper/docs/autonomous-driving/simulation/omnire-omni-urban-scene-reconstruction/</guid>
+      <description>&lt;h2 id=&#34;개요&#34;&gt;개요&lt;a class=&#34;anchor&#34; href=&#34;#%ea%b0%9c%ec%9a%94&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;strong&gt;저자&lt;/strong&gt;: Ziyu Chen, Jiawei Yang, Jiahui Huang, Riccardo de Lutio, Janick Martinez Esturo, Boris Ivanovic, Or Litany, Zan Gojcic, Sanja Fidler, Marco Pavone, Li Song, Yue Wang&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;소속&lt;/strong&gt;: Shanghai Jiao Tong University, NVIDIA Research, University of Southern California, Stanford University, University of Toronto&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;발행년도&lt;/strong&gt;: 2025 (arXiv:2408.16760v2, 19 Apr 2025)&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;주요 내용&lt;/strong&gt;: 실제 주행 로그로부터 동적 도심 장면의 고품질 디지털 트윈을 효율적으로 생성하는 종합 시스템. 차량뿐만 아니라 보행자, 자전거, 기타 동적 객체를 모두 포함하는 holistic 재구성을 3D Gaussian Splatting 기반의 동적 Gaussian 씬 그래프로 구현하여 ~60 Hz 시뮬레이션 달성&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;한계-극복&#34;&gt;한계 극복&lt;a class=&#34;anchor&#34; href=&#34;#%ed%95%9c%ea%b3%84-%ea%b7%b9%eb%b3%b5&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;strong&gt;기존 한계 1 — 차량 중심의 재구성&lt;/strong&gt;: StreetGaussians, HUGS 등 기존 방법들은 차량(강체)에 집중하며 보행자·자전거 등 Non-Rigid 객체를 대부분 무시&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;기존 한계 2 — 편집 불가능한 표현&lt;/strong&gt;: EmerNeRF, SUDS 등 단일 동적 필드 방식은 씬 전체를 하나로 모델링하여 객체별 제어 불가&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;기존 한계 3 — 실제 환경에서의 인간 모델링 어려움&lt;/strong&gt;: 드라이빙 로그의 심각한 가림(occlusion), 희소한 관측, 복잡한 자세 등으로 인해 기존 인간 자세 추정기가 실패하는 경우 다수&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;이 논문의 접근 방식&lt;/strong&gt;: Gaussian 씬 그래프에 SMPL 기반 SMPL 노드(보행자), Deformable 노드(자전거·기타), Rigid 노드(차량), Background 노드를 통합하여 모든 동적 요소를 holistic하게 재구성하고 joint-level 제어 지원&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;목차&#34;&gt;목차&lt;a class=&#34;anchor&#34; href=&#34;#%eb%aa%a9%ec%b0%a8&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ol&gt;&#xA;&lt;li&gt;Introduction&lt;/li&gt;&#xA;&lt;li&gt;Related Work&lt;/li&gt;&#xA;&lt;li&gt;Preliminaries (3DGS, SMPL)&lt;/li&gt;&#xA;&lt;li&gt;Method&#xA;&lt;ul&gt;&#xA;&lt;li&gt;4.1 Dynamic Gaussian Scene Graph Modeling&lt;/li&gt;&#xA;&lt;li&gt;4.2 Reconstructing In-The-Wild Humans&lt;/li&gt;&#xA;&lt;li&gt;4.3 Optimization&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;/li&gt;&#xA;&lt;li&gt;Experiments&lt;/li&gt;&#xA;&lt;li&gt;Conclusion&lt;/li&gt;&#xA;&lt;/ol&gt;&#xA;&lt;h2 id=&#34;chapter-3-preliminaries&#34;&gt;Chapter 3: Preliminaries&lt;a class=&#34;anchor&#34; href=&#34;#chapter-3-preliminaries&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;p&gt;&lt;strong&gt;요약&lt;/strong&gt;&#xA;OmniRe의 두 가지 핵심 기반 기술인 3D Gaussian Splatting(3DGS)과 SMPL 인체 모델을 소개합니다. 3DGS는 씬을 수백만 개의 작은 타원체(Gaussian)로 표현하고, SMPL은 인체를 수학적 파라미터로 제어 가능하게 표현합니다.&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

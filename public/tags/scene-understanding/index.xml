@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Scene Understanding on Paper</title>
+    <link>https://y30n9ju1v.github.io/paper/tags/scene-understanding/</link>
+    <description>Recent content in Scene Understanding on Paper</description>
+    <generator>Hugo</generator>
+    <language>ko-KR</language>
+    <lastBuildDate>Sun, 19 Apr 2026 10:00:00 +0900</lastBuildDate>
+    <atom:link href="https://y30n9ju1v.github.io/paper/tags/scene-understanding/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving</title>
+      <link>https://y30n9ju1v.github.io/paper/docs/autonomous-driving/perception/surroundocc/</link>
+      <pubDate>Sun, 19 Apr 2026 10:00:00 +0900</pubDate>
+      <guid>https://y30n9ju1v.github.io/paper/docs/autonomous-driving/perception/surroundocc/</guid>
+      <description>&lt;h2 id=&#34;개요&#34;&gt;개요&lt;a class=&#34;anchor&#34; href=&#34;#%ea%b0%9c%ec%9a%94&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;strong&gt;저자&lt;/strong&gt;: Yi Wei, Linqing Zhao, Wenzhao Zheng, Zheng Zhu, Jie Zhou, Jiwen Lu&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;소속&lt;/strong&gt;: Tsinghua University, Tianjin University, PhiGent Robotics&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;arXiv&lt;/strong&gt;: 2303.09551v2 (2023)&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;주요 내용&lt;/strong&gt;: 멀티카메라 RGB 이미지만으로 주변 3D 공간의 밀집 시맨틱 점유(occupancy)를 예측하는 SurroundOcc 프레임워크 제안. 2D-3D 공간 어텐션, 멀티스케일 3D 볼륨 특징, Poisson Reconstruction 기반 밀집 GT 생성 파이프라인이 핵심.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;한계-극복&#34;&gt;한계 극복&lt;a class=&#34;anchor&#34; href=&#34;#%ed%95%9c%ea%b3%84-%ea%b7%b9%eb%b3%b5&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;p&gt;이 논문이 기존 연구의 어떤 한계를 극복하기 위해 작성되었는지 설명합니다.&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;strong&gt;기존 한계 1 — 3D 객체 검출의 불완전성&lt;/strong&gt;: 기존 3D 검출 방법은 bounding box 기반으로, 임의의 형태나 무한한 클래스의 객체를 표현하기 어렵습니다.&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;기존 한계 2 — Depth map의 한계&lt;/strong&gt;: depth-based 방법은 각 광선에서 가장 가까운 점만 예측하므로, 가려진(occluded) 영역을 복원할 수 없습니다.&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;기존 한계 3 — BEV 표현의 정보 손실&lt;/strong&gt;: BEV(Bird&amp;rsquo;s Eye View) 특징은 높이 방향 정보를 압축하여 3D 공간 정보를 손실합니다.&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;기존 한계 4 — 희소한 GT 레이블&lt;/strong&gt;: nuScenes 같은 데이터셋은 단일 프레임 희소 LiDAR 포인트만 제공하여, 밀집 점유 예측 학습에 부적합합니다.&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;이 논문의 접근 방식&lt;/strong&gt;: 2D-3D 공간 어텐션으로 BEV 대신 3D 볼륨 쿼리를 구성하고, 멀티프레임 LiDAR + Poisson Reconstruction으로 밀집 GT를 자동 생성하여 위 한계들을 동시에 해결합니다.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;목차&#34;&gt;목차&lt;a class=&#34;anchor&#34; href=&#34;#%eb%aa%a9%ec%b0%a8&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Section 1: Introduction&lt;/li&gt;&#xA;&lt;li&gt;Section 2: Related Work&lt;/li&gt;&#xA;&lt;li&gt;Section 3: Approach (2D-3D Spatial Attention, Multi-scale Occupancy Prediction)&lt;/li&gt;&#xA;&lt;li&gt;Section 4: Dense Occupancy Ground Truth Generation&lt;/li&gt;&#xA;&lt;li&gt;Section 5: Experiments&lt;/li&gt;&#xA;&lt;li&gt;Section 6: Limitations and Future Work&lt;/li&gt;&#xA;&lt;li&gt;Section 7: Conclusion&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;hr&gt;&#xA;&lt;h2 id=&#34;section-1-introduction&#34;&gt;Section 1: Introduction&lt;a class=&#34;anchor&#34; href=&#34;#section-1-introduction&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;p&gt;&lt;strong&gt;요약&lt;/strong&gt;&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

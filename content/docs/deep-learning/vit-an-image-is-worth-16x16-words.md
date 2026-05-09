@@ -5,6 +5,9 @@ draft: false
 categories: ["Papers", "Computer Vision", "Deep Learning"]
 tags: ["Vision Transformer", "ViT", "Image Classification", "Self-Attention", "ICLR 2021"]
 year: 2021
+references:
+  - "resnet-deep-residual-learning-for-image-recognition"
+  - "attention-is-all-you-need"
 ---
 
 ## 개요

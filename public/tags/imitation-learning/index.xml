@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Imitation Learning on Paper</title>
+    <link>https://y30n9ju1v.github.io/paper/tags/imitation-learning/</link>
+    <description>Recent content in Imitation Learning on Paper</description>
+    <generator>Hugo</generator>
+    <language>ko-KR</language>
+    <lastBuildDate>Tue, 14 Apr 2026 00:00:00 +0900</lastBuildDate>
+    <atom:link href="https://y30n9ju1v.github.io/paper/tags/imitation-learning/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving</title>
+      <link>https://y30n9ju1v.github.io/paper/docs/autonomous-driving/planning/transfuser/</link>
+      <pubDate>Tue, 14 Apr 2026 00:00:00 +0900</pubDate>
+      <guid>https://y30n9ju1v.github.io/paper/docs/autonomous-driving/planning/transfuser/</guid>
+      <description>&lt;h2 id=&#34;개요&#34;&gt;개요&lt;a class=&#34;anchor&#34; href=&#34;#%ea%b0%9c%ec%9a%94&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;strong&gt;저자&lt;/strong&gt;: Kashyap Chitta, Aditya Prakash, Bernhard Jaeger, Zehao Yu, Katrin Renz, Andreas Geiger&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;소속&lt;/strong&gt;: University of Tübingen, Max Planck Institute for Intelligent Systems&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;발행년도&lt;/strong&gt;: 2022 (arXiv:2205.15997, IEEE TPAMI)&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;주요 내용&lt;/strong&gt;: 카메라와 LiDAR를 Transformer의 self-attention 메커니즘으로 통합하는 **다중 모달 융합 Transformer(TransFuser)**를 제안. 기존 합성곱(CNN) 기반 융합 방식의 locality 한계를 극복하여 전역적(global) 장면 맥락을 포착. CARLA 자율주행 벤치마크에서 이전 최고 방법 대비 충돌을 48% 감소시키며 공식 리더보드 1위 달성. NAVSIM에서도 강력한 baseline으로 활용됨.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;목차&#34;&gt;목차&lt;a class=&#34;anchor&#34; href=&#34;#%eb%aa%a9%ec%b0%a8&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Chapter 1: Introduction — 카메라+LiDAR 융합의 필요성과 Transformer 접근&lt;/li&gt;&#xA;&lt;li&gt;Chapter 2: Related Work — 다중 모달 인식, E2E 주행, 센서 융합 방법 정리&lt;/li&gt;&#xA;&lt;li&gt;Chapter 3: TransFuser 구조 — 다중 모달 융합 Transformer, 웨이포인트 예측, 보조 태스크&lt;/li&gt;&#xA;&lt;li&gt;Chapter 4: Experiments — CARLA 벤치마크, Longestè6 평가, 소거 실험&lt;/li&gt;&#xA;&lt;li&gt;Chapter 5: Discussion &amp;amp; Conclusions&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;hr&gt;&#xA;&lt;h2 id=&#34;chapter-1-introduction&#34;&gt;Chapter 1: Introduction&lt;a class=&#34;anchor&#34; href=&#34;#chapter-1-introduction&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;p&gt;&lt;strong&gt;요약&lt;/strong&gt;&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

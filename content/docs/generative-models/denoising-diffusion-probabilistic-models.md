@@ -5,6 +5,7 @@ draft: false
 categories: ["Papers", "Generative Models", "Deep Learning"]
 tags: ["diffusion models", "generative models", "image synthesis", "deep learning"]
 year: 2020
+references: []
 ---
 
 ## 개요

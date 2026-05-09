@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Latent Space on Paper</title>
+    <link>https://y30n9ju1v.github.io/paper/tags/latent-space/</link>
+    <description>Recent content in Latent Space on Paper</description>
+    <generator>Hugo</generator>
+    <language>ko-KR</language>
+    <lastBuildDate>Mon, 20 Apr 2026 08:00:00 +0900</lastBuildDate>
+    <atom:link href="https://y30n9ju1v.github.io/paper/tags/latent-space/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>High-Resolution Image Synthesis with Latent Diffusion Models</title>
+      <link>https://y30n9ju1v.github.io/paper/docs/generative-models/high-resolution-image-synthesis-with-latent-diffusion-models/</link>
+      <pubDate>Mon, 20 Apr 2026 08:00:00 +0900</pubDate>
+      <guid>https://y30n9ju1v.github.io/paper/docs/generative-models/high-resolution-image-synthesis-with-latent-diffusion-models/</guid>
+      <description>&lt;h2 id=&#34;개요&#34;&gt;개요&lt;a class=&#34;anchor&#34; href=&#34;#%ea%b0%9c%ec%9a%94&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;strong&gt;저자&lt;/strong&gt;: Robin Rombach, Andreas Blattmann, Dominik Lorenz, Patrick Esser, Björn Ommer (LMU Munich &amp;amp; Runway ML)&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;발표&lt;/strong&gt;: CVPR 2022&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;arXiv&lt;/strong&gt;: 2112.10752&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;주요 내용&lt;/strong&gt;: Diffusion Model을 픽셀 공간이 아닌 &lt;strong&gt;압축된 잠재 공간(latent space)&lt;/strong&gt; 에서 학습시켜, 품질 저하 없이 훈련·추론 비용을 대폭 절감한 &lt;strong&gt;Latent Diffusion Models(LDM)&lt;/strong&gt; 제안. Stable Diffusion의 직접적인 기반 논문.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;hr&gt;&#xA;&lt;h2 id=&#34;한계-극복&#34;&gt;한계 극복&lt;a class=&#34;anchor&#34; href=&#34;#%ed%95%9c%ea%b3%84-%ea%b7%b9%eb%b3%b5&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;strong&gt;기존 한계 1 — 픽셀 공간의 계산 비용&lt;/strong&gt;: 기존 Diffusion Model(DDPM, ADM 등)은 고해상도 이미지 픽셀 전체를 대상으로 수백~수천 스텝의 denoising을 반복하므로, 학습에 수백 GPU-day, 추론에 수십 초가 소요됨&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;기존 한계 2 — 지각적으로 무의미한 정보 과다 처리&lt;/strong&gt;: 이미지 픽셀의 상당 부분은 고주파 세부 정보(High-frequency imperceptible detail)로, 생성 품질에 거의 기여하지 않음에도 모델이 모든 픽셀을 동일하게 처리해야 함&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;기존 한계 3 — 조건부 생성의 어려움&lt;/strong&gt;: 텍스트·레이아웃 등 다양한 조건 입력을 Diffusion Model에 통합하는 범용적인 방법이 부재했음&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;이 논문의 접근 방식&lt;/strong&gt;: ① Autoencoder로 이미지를 저차원 latent space로 압축(perceptual compression), ② 그 latent space에서 Diffusion Model을 학습(semantic compression), ③ Cross-attention으로 텍스트·시맨틱맵 등 다양한 조건 입력을 통합&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;hr&gt;&#xA;&lt;h2 id=&#34;목차&#34;&gt;목차&lt;a class=&#34;anchor&#34; href=&#34;#%eb%aa%a9%ec%b0%a8&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Section 1: Introduction&lt;/li&gt;&#xA;&lt;li&gt;Section 2: Related Work&lt;/li&gt;&#xA;&lt;li&gt;Section 3: Method — Perceptual Compression / Latent Diffusion / Conditioning&lt;/li&gt;&#xA;&lt;li&gt;Section 4: Experiments — 이미지 생성·텍스트→이미지·슈퍼해상도·인페인팅&lt;/li&gt;&#xA;&lt;li&gt;Section 5: Limitations &amp;amp; Societal Impact&lt;/li&gt;&#xA;&lt;li&gt;Section 6: Conclusion&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;hr&gt;&#xA;&lt;h2 id=&#34;section-1-introduction&#34;&gt;Section 1: Introduction&lt;a class=&#34;anchor&#34; href=&#34;#section-1-introduction&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;p&gt;&lt;strong&gt;요약&lt;/strong&gt;&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

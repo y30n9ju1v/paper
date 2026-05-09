@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="ko-KR" dir="ltr">
+<head><script src="/paper/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=paper/livereload" data-no-instant defer></script>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="개요# 저자: Charles R. Qi, Li Yi, Hao Su, Leonidas J. Guibas (Stanford University) 발행년도: 2017 arXiv: 1706.02413 주요 내용: PointNet의 핵심 한계인 “로컬 구조 무시&#34;를 계층적 특징 학습으로 해결한 후속 논문. FPS &#43; Ball Query &#43; Mini-PointNet 조합으로 CNN과 유사한 다중 스케일 특징 추출을 비정형 포인트 클라우드에서 실현. 한계 극복# 기존 한계 1 — PointNet의 글로벌 집계: PointNet은 모든 점의 특징을 단일 max pooling으로 합쳐 전역 특징만 추출. 세밀한 로컬 기하 구조를 학습하지 못함. 기존 한계 2 — 밀도 불균일 취약성: 실제 LiDAR 스캔은 원근 효과·가려짐 등으로 밀도가 위치마다 다름. 균일 밀도로 훈련한 모델은 희소 영역에서 성능이 급락. 이 논문의 접근 방식: PointNet을 재귀적으로 중첩 파티션(nested partition)에 적용하는 계층 구조를 도입. 밀도 적응형 레이어(MSG, MRG)로 다중 스케일 특징을 학습하여 불균일 밀도에도 강인하게 동작. 목차# Section 1: Introduction Section 2: Problem Statement Section 3: Method 3.1 PointNet 복습 3.2 계층적 포인트셋 특징 학습 3.3 비균일 샘플링 밀도에서의 강인한 특징 학습 3.4 세그멘테이션을 위한 포인트 특징 전파 Section 4: Experiments Section 5: Related Work Section 6: Conclusion Section 1: Introduction# 요약
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/paper/docs/pointnet-plus-plus-deep-hierarchical-feature-learning/">
+  <meta property="og:site_name" content="Paper">
+  <meta property="og:title" content="PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space">
+  <meta property="og:description" content="개요# 저자: Charles R. Qi, Li Yi, Hao Su, Leonidas J. Guibas (Stanford University) 발행년도: 2017 arXiv: 1706.02413 주요 내용: PointNet의 핵심 한계인 “로컬 구조 무시&#34;를 계층적 특징 학습으로 해결한 후속 논문. FPS &#43; Ball Query &#43; Mini-PointNet 조합으로 CNN과 유사한 다중 스케일 특징 추출을 비정형 포인트 클라우드에서 실현. 한계 극복# 기존 한계 1 — PointNet의 글로벌 집계: PointNet은 모든 점의 특징을 단일 max pooling으로 합쳐 전역 특징만 추출. 세밀한 로컬 기하 구조를 학습하지 못함. 기존 한계 2 — 밀도 불균일 취약성: 실제 LiDAR 스캔은 원근 효과·가려짐 등으로 밀도가 위치마다 다름. 균일 밀도로 훈련한 모델은 희소 영역에서 성능이 급락. 이 논문의 접근 방식: PointNet을 재귀적으로 중첩 파티션(nested partition)에 적용하는 계층 구조를 도입. 밀도 적응형 레이어(MSG, MRG)로 다중 스케일 특징을 학습하여 불균일 밀도에도 강인하게 동작. 목차# Section 1: Introduction Section 2: Problem Statement Section 3: Method 3.1 PointNet 복습 3.2 계층적 포인트셋 특징 학습 3.3 비균일 샘플링 밀도에서의 강인한 특징 학습 3.4 세그멘테이션을 위한 포인트 특징 전파 Section 4: Experiments Section 5: Related Work Section 6: Conclusion Section 1: Introduction# 요약">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:published_time" content="2026-04-29T00:00:00+09:00">
+    <meta property="article:modified_time" content="2026-04-29T00:00:00+09:00">
+    <meta property="article:tag" content="Point Cloud">
+    <meta property="article:tag" content="3D Classification">
+    <meta property="article:tag" content="3D Segmentation">
+    <meta property="article:tag" content="Deep Learning">
+    <meta property="article:tag" content="LiDAR">
+    <meta property="article:tag" content="Hierarchical Learning">
+
+
+  <meta itemprop="name" content="PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space">
+  <meta itemprop="description" content="개요# 저자: Charles R. Qi, Li Yi, Hao Su, Leonidas J. Guibas (Stanford University) 발행년도: 2017 arXiv: 1706.02413 주요 내용: PointNet의 핵심 한계인 “로컬 구조 무시&#34;를 계층적 특징 학습으로 해결한 후속 논문. FPS &#43; Ball Query &#43; Mini-PointNet 조합으로 CNN과 유사한 다중 스케일 특징 추출을 비정형 포인트 클라우드에서 실현. 한계 극복# 기존 한계 1 — PointNet의 글로벌 집계: PointNet은 모든 점의 특징을 단일 max pooling으로 합쳐 전역 특징만 추출. 세밀한 로컬 기하 구조를 학습하지 못함. 기존 한계 2 — 밀도 불균일 취약성: 실제 LiDAR 스캔은 원근 효과·가려짐 등으로 밀도가 위치마다 다름. 균일 밀도로 훈련한 모델은 희소 영역에서 성능이 급락. 이 논문의 접근 방식: PointNet을 재귀적으로 중첩 파티션(nested partition)에 적용하는 계층 구조를 도입. 밀도 적응형 레이어(MSG, MRG)로 다중 스케일 특징을 학습하여 불균일 밀도에도 강인하게 동작. 목차# Section 1: Introduction Section 2: Problem Statement Section 3: Method 3.1 PointNet 복습 3.2 계층적 포인트셋 특징 학습 3.3 비균일 샘플링 밀도에서의 강인한 특징 학습 3.4 세그멘테이션을 위한 포인트 특징 전파 Section 4: Experiments Section 5: Related Work Section 6: Conclusion Section 1: Introduction# 요약">
+  <meta itemprop="datePublished" content="2026-04-29T00:00:00+09:00">
+  <meta itemprop="dateModified" content="2026-04-29T00:00:00+09:00">
+  <meta itemprop="wordCount" content="1142">
+  <meta itemprop="keywords" content="Point Cloud,3D Classification,3D Segmentation,Deep Learning,LiDAR,Hierarchical Learning,PointNet">
+
+<title>PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space | Paper</title>
+<link rel="icon" href="/paper/favicon.png" >
+<link rel="manifest" href="/paper/manifest.json">
+<link rel="canonical" href="http://localhost:1313/paper/docs/pointnet-plus-plus-deep-hierarchical-feature-learning/">
+<link rel="stylesheet" href="/paper/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/paper/fuse.min.js"></script>
+  <script defer src="/paper/en.search.min.136303f53f731e7f187e59dca354807444ce24732e128843ea97e041d47b7d93.js" integrity="sha256-E2MD9T9zHn8Yflnco1SAdETOJHMuEohD6pfgQdR7fZM=" crossorigin="anonymous"></script>
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '\\[', right: '\\]', display: true},
+      {left: '\\(', right: '\\)', display: false},
+      {left: '$', right: '$', display: false}
+    ]
+  });
+});
+</script>
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/paper/"><span>Paper</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/controlnet-adding-conditional-control-to-text-to-image-diffusion-models/" class="">
+      ControlNet: Adding Conditional Control to Text-to-Image Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/clip-learning-transferable-visual-models-from-natural-language-supervision/" class="">
+      CLIP: Learning Transferable Visual Models From Natural Language Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointnet-plus-plus-deep-hierarchical-feature-learning/" class="active">
+      PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/" class="">
+      GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/lidarsim-realistic-lidar-simulation-by-leveraging-the-real-world/" class="">
+      LiDARsim: Realistic LiDAR Simulation by Leveraging the Real World</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vit-an-image-is-worth-16x16-words/" class="">
+      ViT: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/resnet-deep-residual-learning-for-image-recognition/" class="">
+      ResNet: Deep Residual Learning for Image Recognition</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/" class="">
+      StreamMapNet: Streaming Mapping Network for Vectorized Online HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vectormapnet-end-to-end-vectorized-hd-map-learning/" class="">
+      VectorMapNet: End-to-end Vectorized HD Map Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/detr-end-to-end-object-detection-with-transformers/" class="">
+      DETR: End-to-End Object Detection with Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/attention-is-all-you-need/" class="">
+      Attention Is All You Need</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/maptr-structured-modeling-online-vectorized-hd-map-construction/" class="">
+      MapTR: Structured Modeling and Learning for Online Vectorized HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/high-resolution-image-synthesis-with-latent-diffusion-models/" class="">
+      High-Resolution Image Synthesis with Latent Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/proximal-policy-optimization/" class="">
+      Proximal Policy Optimization Algorithms (PPO)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/denoising-diffusion-probabilistic-models/" class="">
+      Denoising Diffusion Probabilistic Models (DDPM)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/" class="">
+      PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointpillars-fast-encoders-object-detection-point-clouds/" class="">
+      PointPillars: Fast Encoders for Object Detection from Point Clouds</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/centerpoint-center-based-3d-object-detection-and-tracking/" class="">
+      CenterPoint: Center-based 3D Object Detection and Tracking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/monoscene-monocular-3d-semantic-scene-completion/" class="">
+      MonoScene: Monocular 3D Semantic Scene Completion</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/tpvformer-tri-perspective-view-3d-semantic-occupancy/" class="">
+      TPVFormer: Tri-Perspective View for Vision-Based 3D Semantic Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/drivearena/" class="">
+      DriveArena: A Closed-loop Generative Simulation Platform for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/neurad-neural-rendering-for-autonomous-driving/" class="">
+      NeuRAD: Neural Rendering for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/omnire-omni-urban-scene-reconstruction/" class="">
+      OmniRe: Omni Urban Scene Reconstruction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/magicdrive-street-view-generation-3d-geometry-control/" class="">
+      MagicDrive: Street View Generation with Diverse 3D Geometry Control</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/surroundocc/" class="">
+      SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/drivedreamer/" class="">
+      DriveDreamer: Towards Real-world-driven World Models for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/street-gaussians-modeling-dynamic-urban-scenes/" class="">
+      Street Gaussians: Modeling Dynamic Urban Scenes with Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bench2drive-multi-ability-benchmarking-e2e-autonomous-driving/" class="">
+      Bench2Drive: Towards Multi-Ability Benchmarking of Closed-Loop End-To-End Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/emernerf/" class="">
+      EmerNeRF: Emergent Spatial-Temporal Scene Decomposition via Self-Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/detr3d-3d-object-detection-multi-view-images/" class="">
+      DETR3D: 3D Object Detection from Multi-view Images via 3D-to-2D Queries</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/occ3d-large-scale-3d-occupancy-prediction-benchmark/" class="">
+      Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/unisim-neural-closed-loop-sensor-simulator/" class="">
+      UniSim: A Neural Closed-Loop Sensor Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevfusion-multi-task-multi-sensor-fusion/" class="">
+      BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/instant-ngp-multiresolution-hash-encoding/" class="">
+      Instant Neural Graphics Primitives with a Multiresolution Hash Encoding</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/lift-splat-shoot/" class="">
+      Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevdepth/" class="">
+      BEVDepth: Acquisition of Reliable Depth for Multi-view 3D Object Detection</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/4d-gaussian-splatting/" class="">
+      4D Gaussian Splatting for Real-Time Dynamic Scene Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/gaia-1/" class="">
+      GAIA-1: A Generative World Model for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/dqn-playing-atari-with-deep-reinforcement-learning/" class="">
+      Playing Atari with Deep Reinforcement Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevformer/" class="">
+      BEVFormer: Learning Bird&#39;s-Eye-View Representation from Multi-Camera Images via Spatiotemporal Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/navsim/" class="">
+      NAVSIM: Data-Driven Non-Reactive Autonomous Vehicle Simulation and Benchmarking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nuplan/" class="">
+      nuPlan: A closed-loop ML-based planning benchmark for autonomous vehicles</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/transfuser/" class="">
+      TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3d-gaussian-splatting/" class="">
+      3D Gaussian Splatting for Real-Time Radiance Field Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/driving-gaussian-composite-gaussian-splatting/" class="">
+      DrivingGaussian: Composite Gaussian Splatting for Surrounding Dynamic Autonomous Driving Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3d-gaussian-ray-tracing/" class="">
+      3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/" class="">
+      3DGUT: Enabling Distorted Cameras and Secondary Rays in Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/carla-an-open-urban-driving-simulator/" class="">
+      CARLA: An Open Urban Driving Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/difix3d-plus/" class="">
+      DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/hugsim-real-time-photorealistic-closed-loop-simulator/" class="">
+      HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/" class="">
+      NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nuscenes-multimodal-dataset-autonomous-driving/" class="">
+      nuScenes: A Multimodal Dataset for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/waymo-open-dataset/" class="">
+      Scalability in Perception for Autonomous Driving: Waymo Open Dataset</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/uniad-planning-oriented-autonomous-driving/" class="">
+      UniAD: Planning-oriented Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vad/" class="">
+      VAD: Vectorized Scene Representation for Efficient Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/paper/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space</h3>
+
+  <label for="toc-control">
+    
+    <img src="/paper/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#section-1-introduction">Section 1: Introduction</a></li>
+    <li><a href="#section-2-problem-statement">Section 2: Problem Statement</a></li>
+    <li><a href="#section-3-method">Section 3: Method</a>
+      <ul>
+        <li><a href="#31-pointnet-복습">3.1 PointNet 복습</a></li>
+        <li><a href="#32-계층적-포인트셋-특징-학습-set-abstraction">3.2 계층적 포인트셋 특징 학습 (Set Abstraction)</a></li>
+        <li><a href="#33-비균일-샘플링-밀도에서의-강인한-특징-학습">3.3 비균일 샘플링 밀도에서의 강인한 특징 학습</a></li>
+        <li><a href="#34-포인트-특징-전파-feature-propagation-for-segmentation">3.4 포인트 특징 전파 (Feature Propagation for Segmentation)</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-4-experiments">Section 4: Experiments</a></li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h2 id="개요">개요<a class="anchor" href="#%ea%b0%9c%ec%9a%94">#</a></h2>
+<ul>
+<li><strong>저자</strong>: Charles R. Qi, Li Yi, Hao Su, Leonidas J. Guibas (Stanford University)</li>
+<li><strong>발행년도</strong>: 2017</li>
+<li><strong>arXiv</strong>: 1706.02413</li>
+<li><strong>주요 내용</strong>: PointNet의 핵심 한계인 &ldquo;로컬 구조 무시&quot;를 계층적 특징 학습으로 해결한 후속 논문. FPS + Ball Query + Mini-PointNet 조합으로 CNN과 유사한 다중 스케일 특징 추출을 비정형 포인트 클라우드에서 실현.</li>
+</ul>
+<h2 id="한계-극복">한계 극복<a class="anchor" href="#%ed%95%9c%ea%b3%84-%ea%b7%b9%eb%b3%b5">#</a></h2>
+<ul>
+<li><strong>기존 한계 1 — PointNet의 글로벌 집계</strong>: PointNet은 모든 점의 특징을 단일 max pooling으로 합쳐 전역 특징만 추출. 세밀한 로컬 기하 구조를 학습하지 못함.</li>
+<li><strong>기존 한계 2 — 밀도 불균일 취약성</strong>: 실제 LiDAR 스캔은 원근 효과·가려짐 등으로 밀도가 위치마다 다름. 균일 밀도로 훈련한 모델은 희소 영역에서 성능이 급락.</li>
+<li><strong>이 논문의 접근 방식</strong>: PointNet을 재귀적으로 중첩 파티션(nested partition)에 적용하는 계층 구조를 도입. 밀도 적응형 레이어(MSG, MRG)로 다중 스케일 특징을 학습하여 불균일 밀도에도 강인하게 동작.</li>
+</ul>
+<h2 id="목차">목차<a class="anchor" href="#%eb%aa%a9%ec%b0%a8">#</a></h2>
+<ul>
+<li>Section 1: Introduction</li>
+<li>Section 2: Problem Statement</li>
+<li>Section 3: Method
+<ul>
+<li>3.1 PointNet 복습</li>
+<li>3.2 계층적 포인트셋 특징 학습</li>
+<li>3.3 비균일 샘플링 밀도에서의 강인한 특징 학습</li>
+<li>3.4 세그멘테이션을 위한 포인트 특징 전파</li>
+</ul>
+</li>
+<li>Section 4: Experiments</li>
+<li>Section 5: Related Work</li>
+<li>Section 6: Conclusion</li>
+</ul>
+<h2 id="section-1-introduction">Section 1: Introduction<a class="anchor" href="#section-1-introduction">#</a></h2>
+<p><strong>요약</strong></p>
+<p>3D 스캐너로 얻은 포인트 클라우드는 순서 없는(unordered) 점들의 집합으로, 순열 불변성(permutation invariance)을 요구한다. PointNet이 이 문제를 처음으로 직접 해결했지만, 단일 max pooling 집계 방식은 CNN처럼 점진적으로 로컬→글로벌 특징을 쌓아 올리는 구조가 아니었다.</p>
+<p>PointNet++는 CNN의 핵심 성공 요인인 <strong>계층적 수용 영역(hierarchical receptive field)</strong> 개념을 포인트 클라우드에 이식한다. 작은 이웃에서 세밀한 기하 패턴을 잡고, 이를 점점 더 큰 단위로 통합하여 최종 전역 표현을 만든다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>포인트 클라우드</strong>: 3D 공간의 점 $(x, y, z)$ (+ 추가 특징) 집합. 격자가 없어 CNN 직접 적용 불가.</li>
+<li><strong>순열 불변성</strong>: 입력 순서가 바뀌어도 결과가 동일해야 함. max pooling이 이를 보장.</li>
+<li><strong>계층적 특징 학습</strong>: 저수준(엣지·코너) → 중간(부품) → 고수준(전체 물체) 표현을 단계적으로 구성.</li>
+</ul>
+<hr>
+<h2 id="section-2-problem-statement">Section 2: Problem Statement<a class="anchor" href="#section-2-problem-statement">#</a></h2>
+<p><strong>요약</strong></p>
+<p>$\mathcal{X} = (M, d)$를 유클리드 공간 $\mathbb{R}^n$에서 상속된 거리 메트릭 $d$를 가진 이산 메트릭 공간이라 할 때, 목표는 집합 함수 $f: \mathcal{X} \to \mathbb{R}$을 학습하는 것이다. $f$는 분류 함수(전체 레이블)이거나 세그멘테이션 함수(점별 레이블)일 수 있다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>메트릭 공간</strong>: 거리 함수가 정의된 공간. 유클리드 거리 외에 측지선 거리(geodesic distance)도 사용 가능 → 비강체(non-rigid) 형상 분류에 활용.</li>
+<li><strong>밀도 비균일성</strong>: 실제 포인트 클라우드는 위치에 따라 밀도가 다름 (원근 효과, 가려짐, 모션 블러 등).</li>
+</ul>
+<hr>
+<h2 id="section-3-method">Section 3: Method<a class="anchor" href="#section-3-method">#</a></h2>
+<h3 id="31-pointnet-복습">3.1 PointNet 복습<a class="anchor" href="#31-pointnet-%eb%b3%b5%ec%8a%b5">#</a></h3>
+<p><strong>요약</strong></p>
+<p>PointNet은 unordered point set $\{x_1, x_2, ..., x_n\}$에 대해 아래 집합 함수를 학습한다:</p>
+$$f(x_1, x_2, ..., x_n) = \gamma\left(\underset{i=1,...,n}{\text{MAX}}\{h(x_i)\}\right)$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$h$</strong>: 각 점에 독립적으로 적용하는 MLP (점의 공간 인코딩)</li>
+<li><strong>$\text{MAX}$</strong>: 모든 점에서 채널별 최댓값을 취하는 대칭 함수 → 순열 불변성 보장</li>
+<li><strong>$\gamma$</strong>: 집계된 전역 특징에서 최종 출력을 만드는 MLP</li>
+<li><strong>한계</strong>: 단 한 번의 MAX pooling이므로 로컬 구조 정보가 소실됨</li>
+</ul>
+<hr>
+<h3 id="32-계층적-포인트셋-특징-학습-set-abstraction">3.2 계층적 포인트셋 특징 학습 (Set Abstraction)<a class="anchor" href="#32-%ea%b3%84%ec%b8%b5%ec%a0%81-%ed%8f%ac%ec%9d%b8%ed%8a%b8%ec%85%8b-%ed%8a%b9%ec%a7%95-%ed%95%99%ec%8a%b5-set-abstraction">#</a></h3>
+<p><strong>요약</strong></p>
+<p>PointNet++의 핵심 빌딩 블록은 <strong>Set Abstraction (SA) 레이어</strong>이다. 각 SA 레이어는 세 단계로 구성된다:</p>
+<ol>
+<li><strong>Sampling Layer</strong> — 입력 $N$개 점에서 $N'$개 centroid를 선택</li>
+<li><strong>Grouping Layer</strong> — 각 centroid 주변의 이웃 점들을 묶어 로컬 영역 구성</li>
+<li><strong>PointNet Layer</strong> — 각 로컬 영역을 mini-PointNet으로 인코딩</li>
+</ol>
+<p>이 과정이 반복되면서 점의 수는 줄어들고($N \to N' \to ...$), 각 점이 표현하는 공간 범위는 넓어진다 (CNN의 downsampling + receptive field 확장과 동일한 원리).</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li>
+<p><strong>FPS (Farthest Point Sampling)</strong>: centroid 선택 알고리즘. 이미 선택된 점들로부터 가장 먼 점을 반복적으로 고름.</p>
+<ul>
+<li>랜덤 샘플링 대비 전체 공간을 균등하게 커버</li>
+<li>입력 분포에 의존적인 수용 영역 생성</li>
+</ul>
+</li>
+<li>
+<p><strong>Ball Query</strong>: 반경 $r$ 이내의 점을 이웃으로 정의 (최대 $K$개).</p>
+<ul>
+<li>kNN 대비 고정된 실제 공간 스케일 → 특징이 공간적으로 일관됨</li>
+<li>세그멘테이션처럼 로컬 패턴 인식이 필요한 태스크에 유리</li>
+</ul>
+</li>
+<li>
+<p><strong>로컬 좌표계 변환</strong>: 각 이웃 점의 좌표를 centroid 기준 상대 좌표로 변환
+</p>
+$$x_i^{(j)} = x_i^{(j)} - \hat{x}^{(j)}$$<p>
+점 간 공간 관계(point-to-point relations)를 포착하기 위함.</p>
+</li>
+</ul>
+<hr>
+<h3 id="33-비균일-샘플링-밀도에서의-강인한-특징-학습">3.3 비균일 샘플링 밀도에서의 강인한 특징 학습<a class="anchor" href="#33-%eb%b9%84%ea%b7%a0%ec%9d%bc-%ec%83%98%ed%94%8c%eb%a7%81-%eb%b0%80%eb%8f%84%ec%97%90%ec%84%9c%ec%9d%98-%ea%b0%95%ec%9d%b8%ed%95%9c-%ed%8a%b9%ec%a7%95-%ed%95%99%ec%8a%b5">#</a></h3>
+<p><strong>요약</strong></p>
+<p>실제 데이터의 밀도 불균일 문제를 해결하기 위해 두 가지 <strong>밀도 적응형 레이어</strong>를 제안한다.</p>
+<p><strong>Multi-scale Grouping (MSG)</strong></p>
+<p>각 abstraction 레벨에서 여러 반경($r_1 < r_2 < r_3$)으로 동시에 grouping하고, 각 스케일의 PointNet 출력을 concat하여 멀티스케일 특징 벡터를 만든다.</p>
+<p>훈련 시 <strong>Random Input Dropout</strong>: 각 훈련 샘플에 대해 dropout ratio $\theta \sim \text{Uniform}[0, p]$를 샘플링하여 점을 무작위 제거. 모델이 다양한 밀도 환경을 경험하게 함.</p>
+<p><strong>Multi-resolution Grouping (MRG)</strong></p>
+<p>MSG보다 계산 효율적인 대안. 각 레벨 $L_i$의 특징은 두 벡터의 concat:</p>
+<ul>
+<li><strong>벡터 1</strong>: 하위 레벨 $L_{i-1}$의 SA 출력을 요약 (세밀한 정보)</li>
+<li><strong>벡터 2</strong>: 해당 로컬 영역의 raw 점들을 단일 PointNet으로 직접 처리 (큰 스케일 정보)</li>
+</ul>
+<p>밀도가 낮은 영역에서는 벡터 1의 신뢰도가 낮아지고 벡터 2가 더 중요해지는 효과가 자동으로 발생.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>MSG</strong>: 정확도 우선. 여러 스케일을 명시적으로 모두 계산.</li>
+<li><strong>MRG</strong>: 효율 우선. 하위 레벨 결과를 재활용하여 대형 이웃 재계산 회피.</li>
+</ul>
+<hr>
+<h3 id="34-포인트-특징-전파-feature-propagation-for-segmentation">3.4 포인트 특징 전파 (Feature Propagation for Segmentation)<a class="anchor" href="#34-%ed%8f%ac%ec%9d%b8%ed%8a%b8-%ed%8a%b9%ec%a7%95-%ec%a0%84%ed%8c%8c-feature-propagation-for-segmentation">#</a></h3>
+<p><strong>요약</strong></p>
+<p>세그멘테이션은 모든 원본 점에 레이블이 필요하다. 그러나 SA 레이어를 거치면서 점이 $N \to N_1' \to N_2' \to ...$로 줄어든다. 이를 복원하기 위해 <strong>계층적 보간(interpolation) + skip connection</strong> 전략을 사용한다.</p>
+<p>레벨 $l$에서 $l-1$로의 특징 전파:</p>
+$$f^{(j)}(x) = \frac{\sum_{i=1}^{k} w_i(x) f_i^{(j)}}{\sum_{i=1}^{k} w_i(x)}, \quad w_i(x) = \frac{1}{d(x, x_i)^p}$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$f^{(j)}(x)$</strong>: 보간으로 복원된 점 $x$의 $j$번째 채널 특징값</li>
+<li><strong>$k$</strong>: 보간에 사용할 nearest neighbor 수 (기본값 $k=3$)</li>
+<li><strong>$w_i(x)$</strong>: 역거리 가중치 — 가까운 점의 특징을 더 많이 반영</li>
+<li><strong>$d(x, x_i)$</strong>: 점 $x$와 $i$번째 이웃 사이의 거리</li>
+<li><strong>$p$</strong>: 거리 감쇠 지수 (기본값 $p=2$)</li>
+<li>보간 후 skip connection으로 이어진 SA 레벨의 특징과 concat → unit PointNet (1×1 conv 역할)로 정제</li>
+</ul>
+<p>이 과정은 U-Net의 encoder-decoder 구조와 동일한 원리.</p>
+<hr>
+<h2 id="section-4-experiments">Section 4: Experiments<a class="anchor" href="#section-4-experiments">#</a></h2>
+<p><strong>요약</strong></p>
+<p>4개 데이터셋에서 평가: MNIST (2D), ModelNet40 (3D 강체), SHREC15 (3D 비강체), ScanNet (실내 장면 세그멘테이션).</p>
+<p><strong>주요 결과</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>태스크</th>
+          <th>데이터셋</th>
+          <th>PointNet</th>
+          <th>PointNet++</th>
+          <th>개선</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>분류</td>
+          <td>MNIST</td>
+          <td>0.78% error</td>
+          <td><strong>0.51% error</strong></td>
+          <td>34.6% 오류 감소</td>
+      </tr>
+      <tr>
+          <td>분류</td>
+          <td>ModelNet40</td>
+          <td>89.2% acc</td>
+          <td><strong>91.9% acc</strong></td>
+          <td>+2.7%p</td>
+      </tr>
+      <tr>
+          <td>세그멘테이션</td>
+          <td>ScanNet</td>
+          <td>73.0%</td>
+          <td><strong>84.5% (MSG+DP)</strong></td>
+          <td>+11.5%p</td>
+      </tr>
+      <tr>
+          <td>비강체 분류</td>
+          <td>SHREC15</td>
+          <td>-</td>
+          <td><strong>96.09%</strong></td>
+          <td>SOTA</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>밀도 강인성 실험</strong>: 1024개 → 256개로 점을 줄였을 때 MSG+DP의 정확도 하락이 1% 미만. PointNet vanilla는 훨씬 큰 폭으로 하락.</p>
+<p><strong>비유클리드 메트릭 공간 실험</strong>: SHREC15 비강체 형상 분류에서 측지선 거리 기반 메트릭 공간을 사용하면 XYZ 좌표 기반 대비 크게 향상 (60.18% → 96.09%). 포즈 변화에 불변한 내재적 구조를 잡기 때문.</p>
+<hr>
+<h2 id="핵심-개념-정리">핵심 개념 정리<a class="anchor" href="#%ed%95%b5%ec%8b%ac-%ea%b0%9c%eb%85%90-%ec%a0%95%eb%a6%ac">#</a></h2>
+<table>
+  <thead>
+      <tr>
+          <th>개념</th>
+          <th>설명</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>Set Abstraction (SA)</strong></td>
+          <td>FPS + Ball Query + mini-PointNet의 조합으로 로컬 영역 특징 추출</td>
+      </tr>
+      <tr>
+          <td><strong>FPS</strong></td>
+          <td>Farthest Point Sampling — 공간 전체를 균등하게 커버하는 centroid 선택</td>
+      </tr>
+      <tr>
+          <td><strong>Ball Query</strong></td>
+          <td>반경 $r$ 이내 점을 이웃으로 정의. 고정 공간 스케일로 특징 일관성 보장</td>
+      </tr>
+      <tr>
+          <td><strong>MSG</strong></td>
+          <td>Multi-Scale Grouping — 여러 반경 동시 사용, 정확도 우선</td>
+      </tr>
+      <tr>
+          <td><strong>MRG</strong></td>
+          <td>Multi-Resolution Grouping — 하위 레벨 재활용, 효율 우선</td>
+      </tr>
+      <tr>
+          <td><strong>Random Input Dropout</strong></td>
+          <td>훈련 시 점을 무작위 제거해 밀도 불균일에 강인한 모델 학습</td>
+      </tr>
+      <tr>
+          <td><strong>Feature Propagation</strong></td>
+          <td>역거리 가중 보간 + skip connection으로 세그멘테이션용 점 특징 복원</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="결론-및-시사점">결론 및 시사점<a class="anchor" href="#%ea%b2%b0%eb%a1%a0-%eb%b0%8f-%ec%8b%9c%ec%82%ac%ec%a0%90">#</a></h2>
+<p>PointNet++는 &ldquo;포인트 클라우드에서 어떻게 CNN처럼 계층적 특징을 뽑을 것인가&quot;에 대한 명확한 해답을 제시한다.</p>
+<p><strong>자율주행·합성 데이터 관점 시사점</strong></p>
+<ul>
+<li><strong>LiDAR 센서 모델링</strong>: 실제 LiDAR는 거리에 따라 포인트 밀도가 달라짐. PointNet++의 MSG/MRG는 이 불균일성을 명시적으로 처리 → 시뮬레이터에서 생성한 균일 밀도 포인트 클라우드와 실제 데이터 사이의 도메인 갭을 줄이는 아이디어로 활용 가능.</li>
+<li><strong>CenterPoint, PointPillars와의 관계</strong>: 두 논문 모두 LiDAR 포인트를 BEV 격자로 변환하여 CNN 적용. PointNet++는 &ldquo;격자 변환 없이&rdquo; 직접 포인트 처리하는 대안으로, 세밀한 기하 정보 보존에 유리.</li>
+<li><strong>세그멘테이션 응용</strong>: Feature Propagation의 보간 + skip connection 아이디어는 이후 3D 의미론적 세그멘테이션(ScanNet 등) 모델의 표준 구조로 정착.</li>
+<li><strong>한계</strong>: MSG는 계산 비용이 높음. 저자들도 inference 속도 향상을 향후 과제로 명시 → 이후 PointPillars, CenterPoint가 속도 우선 설계로 실용화.</li>
+</ul>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/paper/docs/clip-learning-transferable-visual-models-from-natural-language-supervision/" class="flex align-center">
+        <img src="/paper/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>CLIP: Learning Transferable Visual Models From Natural Language Supervision</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/paper/docs/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/" class="flex align-center">
+        <span>GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction</span>
+        <img src="/paper/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#section-1-introduction">Section 1: Introduction</a></li>
+    <li><a href="#section-2-problem-statement">Section 2: Problem Statement</a></li>
+    <li><a href="#section-3-method">Section 3: Method</a>
+      <ul>
+        <li><a href="#31-pointnet-복습">3.1 PointNet 복습</a></li>
+        <li><a href="#32-계층적-포인트셋-특징-학습-set-abstraction">3.2 계층적 포인트셋 특징 학습 (Set Abstraction)</a></li>
+        <li><a href="#33-비균일-샘플링-밀도에서의-강인한-특징-학습">3.3 비균일 샘플링 밀도에서의 강인한 특징 학습</a></li>
+        <li><a href="#34-포인트-특징-전파-feature-propagation-for-segmentation">3.4 포인트 특징 전파 (Feature Propagation for Segmentation)</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-4-experiments">Section 4: Experiments</a></li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

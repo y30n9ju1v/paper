@@ -5,6 +5,10 @@ draft: false
 categories: ["Papers", "Autonomous Driving"]
 tags: ["Autonomous Driving", "End-to-End Planning", "BEV", "Vectorized Representation"]
 year: 2023
+references:
+  - "uniad-planning-oriented-autonomous-driving"
+  - "BEVFormer"
+  - "nuscenes-multimodal-dataset-autonomous-driving"
 ---
 
 ## 개요

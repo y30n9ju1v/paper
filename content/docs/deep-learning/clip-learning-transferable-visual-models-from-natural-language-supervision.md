@@ -5,6 +5,10 @@ draft: false
 categories: ["Papers"]
 tags: ["CLIP", "Contrastive Learning", "Zero-Shot Transfer", "Multi-Modal", "Vision-Language", "OpenAI", "Image Classification", "Transfer Learning"]
 year: 2021
+references:
+  - "resnet-deep-residual-learning-for-image-recognition"
+  - "attention-is-all-you-need"
+  - "vit-an-image-is-worth-16x16-words"
 ---
 
 ## 개요

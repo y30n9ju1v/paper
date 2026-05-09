@@ -1,0 +1,1584 @@
+<!DOCTYPE html>
+<html lang="ko-KR" dir="ltr">
+<head>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="개요# 저자: Ben Mildenhall, Pratul P. Srinivasan, Matthew Tancik, Jonathan T. Barron, Ravi Ramamoorthi, Ren Ng 소속: UC Berkeley, Google Research, UC San Diego 발행년도: 2020 (arXiv:2003.08934) 주요 내용: 희소한 입력 이미지로부터 새로운 시점의 사진처럼 사실적인 이미지를 합성하기 위해, 장면 전체를 5D 연속 함수(Neural Radiance Field)로 표현하고 체적 렌더링(volume rendering)으로 학습하는 방법론 목차# Chapter 1: Introduction — 문제 정의와 핵심 아이디어 Chapter 2: Related Work — 기존 방법론과의 비교 Chapter 3: Neural Radiance Field Scene Representation — 장면 표현 방식 Chapter 4: Volume Rendering with Radiance Fields — 체적 렌더링 Chapter 5: Optimizing a Neural Radiance Field — 최적화 기법 Chapter 6: Results — 실험 결과 Chapter 7: Conclusion — 결론 Chapter 1: Introduction# 요약
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://y30n9ju1v.github.io/paper/docs/novel-view-synthesis/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/">
+  <meta property="og:site_name" content="Paper">
+  <meta property="og:title" content="NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis">
+  <meta property="og:description" content="개요# 저자: Ben Mildenhall, Pratul P. Srinivasan, Matthew Tancik, Jonathan T. Barron, Ravi Ramamoorthi, Ren Ng 소속: UC Berkeley, Google Research, UC San Diego 발행년도: 2020 (arXiv:2003.08934) 주요 내용: 희소한 입력 이미지로부터 새로운 시점의 사진처럼 사실적인 이미지를 합성하기 위해, 장면 전체를 5D 연속 함수(Neural Radiance Field)로 표현하고 체적 렌더링(volume rendering)으로 학습하는 방법론 목차# Chapter 1: Introduction — 문제 정의와 핵심 아이디어 Chapter 2: Related Work — 기존 방법론과의 비교 Chapter 3: Neural Radiance Field Scene Representation — 장면 표현 방식 Chapter 4: Volume Rendering with Radiance Fields — 체적 렌더링 Chapter 5: Optimizing a Neural Radiance Field — 최적화 기법 Chapter 6: Results — 실험 결과 Chapter 7: Conclusion — 결론 Chapter 1: Introduction# 요약">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:published_time" content="2026-04-10T09:00:00+09:00">
+    <meta property="article:modified_time" content="2026-04-10T09:00:00+09:00">
+    <meta property="article:tag" content="NeRF">
+    <meta property="article:tag" content="Novel View Synthesis">
+    <meta property="article:tag" content="Neural Rendering">
+    <meta property="article:tag" content="3D Reconstruction">
+
+
+  <meta itemprop="name" content="NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis">
+  <meta itemprop="description" content="개요# 저자: Ben Mildenhall, Pratul P. Srinivasan, Matthew Tancik, Jonathan T. Barron, Ravi Ramamoorthi, Ren Ng 소속: UC Berkeley, Google Research, UC San Diego 발행년도: 2020 (arXiv:2003.08934) 주요 내용: 희소한 입력 이미지로부터 새로운 시점의 사진처럼 사실적인 이미지를 합성하기 위해, 장면 전체를 5D 연속 함수(Neural Radiance Field)로 표현하고 체적 렌더링(volume rendering)으로 학습하는 방법론 목차# Chapter 1: Introduction — 문제 정의와 핵심 아이디어 Chapter 2: Related Work — 기존 방법론과의 비교 Chapter 3: Neural Radiance Field Scene Representation — 장면 표현 방식 Chapter 4: Volume Rendering with Radiance Fields — 체적 렌더링 Chapter 5: Optimizing a Neural Radiance Field — 최적화 기법 Chapter 6: Results — 실험 결과 Chapter 7: Conclusion — 결론 Chapter 1: Introduction# 요약">
+  <meta itemprop="datePublished" content="2026-04-10T09:00:00+09:00">
+  <meta itemprop="dateModified" content="2026-04-10T09:00:00+09:00">
+  <meta itemprop="wordCount" content="1455">
+  <meta itemprop="keywords" content="NeRF,Novel View Synthesis,Neural Rendering,3D Reconstruction">
+
+<title>NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis | Paper</title>
+<link rel="icon" href="/paper/favicon.png" >
+<link rel="manifest" href="/paper/manifest.json">
+<link rel="canonical" href="https://y30n9ju1v.github.io/paper/docs/novel-view-synthesis/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/">
+<link rel="stylesheet" href="/paper/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/paper/fuse.min.js"></script>
+  <script defer src="/paper/en.search.min.b1685711fcbce34e51ac4e2f3f34db3464d1f2809b936b8ce7ecb2014e6bf361.js" integrity="sha256-sWhXEfy8405RrE4vPzTbNGTR8oCbk2uM5&#43;yyAU5r82E=" crossorigin="anonymous"></script>
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '\\[', right: '\\]', display: true},
+      {left: '\\(', right: '\\)', display: false},
+      {left: '$', right: '$', display: false}
+    ]
+  });
+});
+</script>
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/paper/"><span>Paper</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-26dad33899f9ff5c8eb940bf3bc5c8c6" class="toggle"  />
+    <label for="section-26dad33899f9ff5c8eb940bf3bc5c8c6" class="flex">
+      <a role="button" class="">
+        Deep Learning</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/clip-learning-transferable-visual-models-from-natural-language-supervision/" class="">
+      CLIP: Learning Transferable Visual Models From Natural Language Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/pointnet-plus-plus-deep-hierarchical-feature-learning/" class="">
+      PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/vit-an-image-is-worth-16x16-words/" class="">
+      ViT: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/resnet-deep-residual-learning-for-image-recognition/" class="">
+      ResNet: Deep Residual Learning for Image Recognition</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/detr-end-to-end-object-detection-with-transformers/" class="">
+      DETR: End-to-End Object Detection with Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/attention-is-all-you-need/" class="">
+      Attention Is All You Need</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/proximal-policy-optimization/" class="">
+      Proximal Policy Optimization Algorithms (PPO)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/" class="">
+      PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/dqn-playing-atari-with-deep-reinforcement-learning/" class="">
+      Playing Atari with Deep Reinforcement Learning</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-55a967b32f0d01d82a62069db60bc9a4" class="toggle" checked />
+    <label for="section-55a967b32f0d01d82a62069db60bc9a4" class="flex">
+      <a role="button" class="">
+        Novel View Synthesis</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/instant-ngp-multiresolution-hash-encoding/" class="">
+      Instant Neural Graphics Primitives with a Multiresolution Hash Encoding</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/4d-gaussian-splatting/" class="">
+      4D Gaussian Splatting for Real-Time Dynamic Scene Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3d-gaussian-splatting/" class="">
+      3D Gaussian Splatting for Real-Time Radiance Field Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3d-gaussian-ray-tracing/" class="">
+      3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/" class="">
+      3DGUT: Enabling Distorted Cameras and Secondary Rays in Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/difix3d-plus/" class="">
+      DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/" class="active">
+      NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-bba278969cd1a39a02e4f40a6eceba0d" class="toggle"  />
+    <label for="section-bba278969cd1a39a02e4f40a6eceba0d" class="flex">
+      <a role="button" class="">
+        Generative Models</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/controlnet-adding-conditional-control-to-text-to-image-diffusion-models/" class="">
+      ControlNet: Adding Conditional Control to Text-to-Image Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/high-resolution-image-synthesis-with-latent-diffusion-models/" class="">
+      High-Resolution Image Synthesis with Latent Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/denoising-diffusion-probabilistic-models/" class="">
+      Denoising Diffusion Probabilistic Models (DDPM)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/drivearena/" class="">
+      DriveArena: A Closed-loop Generative Simulation Platform for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/magicdrive-street-view-generation-3d-geometry-control/" class="">
+      MagicDrive: Street View Generation with Diverse 3D Geometry Control</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/drivedreamer/" class="">
+      DriveDreamer: Towards Real-world-driven World Models for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/gaia-1/" class="">
+      GAIA-1: A Generative World Model for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-ba66afb2e4f86c05dd02e329f85a3a79" class="toggle"  />
+    <label for="section-ba66afb2e4f86c05dd02e329f85a3a79" class="flex">
+      <a role="button" class="">
+        Autonomous Driving</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-d7ba9eb4570c2bfc131b9c6410bbe7ec" class="toggle"  />
+    <label for="section-d7ba9eb4570c2bfc131b9c6410bbe7ec" class="flex">
+      <a role="button" class="">
+        Perception</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/" class="">
+      GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/" class="">
+      StreamMapNet: Streaming Mapping Network for Vectorized Online HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/vectormapnet-end-to-end-vectorized-hd-map-learning/" class="">
+      VectorMapNet: End-to-end Vectorized HD Map Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/maptr-structured-modeling-online-vectorized-hd-map-construction/" class="">
+      MapTR: Structured Modeling and Learning for Online Vectorized HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/pointpillars-fast-encoders-object-detection-point-clouds/" class="">
+      PointPillars: Fast Encoders for Object Detection from Point Clouds</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/centerpoint-center-based-3d-object-detection-and-tracking/" class="">
+      CenterPoint: Center-based 3D Object Detection and Tracking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/monoscene-monocular-3d-semantic-scene-completion/" class="">
+      MonoScene: Monocular 3D Semantic Scene Completion</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/tpvformer-tri-perspective-view-3d-semantic-occupancy/" class="">
+      TPVFormer: Tri-Perspective View for Vision-Based 3D Semantic Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/surroundocc/" class="">
+      SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/detr3d-3d-object-detection-multi-view-images/" class="">
+      DETR3D: 3D Object Detection from Multi-view Images via 3D-to-2D Queries</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/occ3d-large-scale-3d-occupancy-prediction-benchmark/" class="">
+      Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevfusion-multi-task-multi-sensor-fusion/" class="">
+      BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/lift-splat-shoot/" class="">
+      Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevdepth/" class="">
+      BEVDepth: Acquisition of Reliable Depth for Multi-view 3D Object Detection</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevformer/" class="">
+      BEVFormer: Learning Bird&#39;s-Eye-View Representation from Multi-Camera Images via Spatiotemporal Transformers</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-7a9153220f9190837dca18e7bc97c48d" class="toggle"  />
+    <label for="section-7a9153220f9190837dca18e7bc97c48d" class="flex">
+      <a role="button" class="">
+        Simulation</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/lidarsim-realistic-lidar-simulation-by-leveraging-the-real-world/" class="">
+      LiDARsim: Realistic LiDAR Simulation by Leveraging the Real World</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/neurad-neural-rendering-for-autonomous-driving/" class="">
+      NeuRAD: Neural Rendering for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/omnire-omni-urban-scene-reconstruction/" class="">
+      OmniRe: Omni Urban Scene Reconstruction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/street-gaussians-modeling-dynamic-urban-scenes/" class="">
+      Street Gaussians: Modeling Dynamic Urban Scenes with Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/emernerf/" class="">
+      EmerNeRF: Emergent Spatial-Temporal Scene Decomposition via Self-Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/unisim-neural-closed-loop-sensor-simulator/" class="">
+      UniSim: A Neural Closed-Loop Sensor Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/driving-gaussian-composite-gaussian-splatting/" class="">
+      DrivingGaussian: Composite Gaussian Splatting for Surrounding Dynamic Autonomous Driving Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/carla-an-open-urban-driving-simulator/" class="">
+      CARLA: An Open Urban Driving Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/hugsim-real-time-photorealistic-closed-loop-simulator/" class="">
+      HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-e9f19cbf840aaca3029a9a86c6765e7f" class="toggle"  />
+    <label for="section-e9f19cbf840aaca3029a9a86c6765e7f" class="flex">
+      <a role="button" class="">
+        Planning</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/bench2drive-multi-ability-benchmarking-e2e-autonomous-driving/" class="">
+      Bench2Drive: Towards Multi-Ability Benchmarking of Closed-Loop End-To-End Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/navsim/" class="">
+      NAVSIM: Data-Driven Non-Reactive Autonomous Vehicle Simulation and Benchmarking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/transfuser/" class="">
+      TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/uniad-planning-oriented-autonomous-driving/" class="">
+      UniAD: Planning-oriented Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/vad/" class="">
+      VAD: Vectorized Scene Representation for Efficient Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-c1644e2152ae0bb887d703d1c6a373f2" class="toggle"  />
+    <label for="section-c1644e2152ae0bb887d703d1c6a373f2" class="flex">
+      <a role="button" class="">
+        Dataset &amp; Benchmark</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/nuplan/" class="">
+      nuPlan: A closed-loop ML-based planning benchmark for autonomous vehicles</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/nuscenes-multimodal-dataset-autonomous-driving/" class="">
+      nuScenes: A Multimodal Dataset for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/waymo-open-dataset/" class="">
+      Scalability in Perception for Autonomous Driving: Waymo Open Dataset</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/paper/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis</h3>
+
+  <label for="toc-control">
+    
+    <img src="/paper/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#chapter-1-introduction">Chapter 1: Introduction</a></li>
+    <li><a href="#chapter-2-related-work">Chapter 2: Related Work</a></li>
+    <li><a href="#chapter-3-neural-radiance-field-scene-representation">Chapter 3: Neural Radiance Field Scene Representation</a></li>
+    <li><a href="#chapter-4-volume-rendering-with-radiance-fields">Chapter 4: Volume Rendering with Radiance Fields</a></li>
+    <li><a href="#chapter-5-optimizing-a-neural-radiance-field">Chapter 5: Optimizing a Neural Radiance Field</a>
+      <ul>
+        <li><a href="#51-positional-encoding-위치-인코딩">5.1 Positional Encoding (위치 인코딩)</a></li>
+        <li><a href="#52-hierarchical-volume-sampling-계층적-볼륨-샘플링">5.2 Hierarchical Volume Sampling (계층적 볼륨 샘플링)</a></li>
+        <li><a href="#53-구현-세부사항">5.3 구현 세부사항</a></li>
+      </ul>
+    </li>
+    <li><a href="#chapter-6-results">Chapter 6: Results</a>
+      <ul>
+        <li><a href="#61-데이터셋">6.1 데이터셋</a></li>
+        <li><a href="#62-정량적-비교">6.2 정량적 비교</a></li>
+        <li><a href="#63-비교-방법과의-차별점">6.3 비교 방법과의 차별점</a></li>
+        <li><a href="#64-ablation-study">6.4 Ablation Study</a></li>
+      </ul>
+    </li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h2 id="개요">개요<a class="anchor" href="#%ea%b0%9c%ec%9a%94">#</a></h2>
+<ul>
+<li><strong>저자</strong>: Ben Mildenhall, Pratul P. Srinivasan, Matthew Tancik, Jonathan T. Barron, Ravi Ramamoorthi, Ren Ng</li>
+<li><strong>소속</strong>: UC Berkeley, Google Research, UC San Diego</li>
+<li><strong>발행년도</strong>: 2020 (arXiv:2003.08934)</li>
+<li><strong>주요 내용</strong>: 희소한 입력 이미지로부터 새로운 시점의 사진처럼 사실적인 이미지를 합성하기 위해, 장면 전체를 5D 연속 함수(Neural Radiance Field)로 표현하고 체적 렌더링(volume rendering)으로 학습하는 방법론</li>
+</ul>
+<hr>
+<h2 id="목차">목차<a class="anchor" href="#%eb%aa%a9%ec%b0%a8">#</a></h2>
+<ul>
+<li>Chapter 1: Introduction — 문제 정의와 핵심 아이디어</li>
+<li>Chapter 2: Related Work — 기존 방법론과의 비교</li>
+<li>Chapter 3: Neural Radiance Field Scene Representation — 장면 표현 방식</li>
+<li>Chapter 4: Volume Rendering with Radiance Fields — 체적 렌더링</li>
+<li>Chapter 5: Optimizing a Neural Radiance Field — 최적화 기법</li>
+<li>Chapter 6: Results — 실험 결과</li>
+<li>Chapter 7: Conclusion — 결론</li>
+</ul>
+<hr>
+<h2 id="chapter-1-introduction">Chapter 1: Introduction<a class="anchor" href="#chapter-1-introduction">#</a></h2>
+<p><strong>요약</strong></p>
+<p>NeRF는 카메라 포즈가 알려진 여러 장의 이미지만으로 장면을 5D 연속 함수로 표현하고, 이를 활용해 임의의 새로운 시점에서 사실적인 이미지를 합성하는 방법입니다.</p>
+<p>기존의 3D 표현 방식(복셀 그리드, 메쉬 등)은 해상도를 높일수록 메모리와 연산량이 폭발적으로 증가하는 문제가 있습니다. NeRF는 이를 MLP(다층 퍼셉트론) 네트워크의 가중치 자체에 장면 정보를 압축적으로 담음으로써 해결합니다.</p>
+<p>파이프라인은 세 단계로 구성됩니다:</p>
+<ol>
+<li>카메라 레이(ray)를 따라 3D 점들을 샘플링</li>
+<li>각 점의 위치 $(x, y, z)$와 시선 방향 $(\theta, \phi)$를 MLP에 입력해 색상과 밀도를 예측</li>
+<li>체적 렌더링(volume rendering)으로 2D 이미지를 합성</li>
+</ol>
+<p><strong>핵심 기여</strong></p>
+<ul>
+<li><strong>5D Neural Radiance Field</strong>: 장면을 연속적인 5D 함수로 표현</li>
+<li><strong>미분 가능한 렌더링</strong>: 체적 렌더링이 미분 가능하므로 RGB 이미지만으로 end-to-end 학습 가능</li>
+<li><strong>Positional Encoding</strong>: 고주파 세부 표현을 위한 입력 좌표 변환</li>
+<li><strong>계층적 볼륨 샘플링</strong>: 렌더링 효율을 높이는 coarse-to-fine 샘플링 전략</li>
+</ul>
+<hr>
+<h2 id="chapter-2-related-work">Chapter 2: Related Work<a class="anchor" href="#chapter-2-related-work">#</a></h2>
+<p><strong>요약</strong></p>
+<p>기존 접근법들은 크게 두 계열로 나뉩니다.</p>
+<p><strong>Neural 3D Shape Representations</strong>: 암묵적 함수(implicit function)로 3D 형상을 표현하는 방법들 (SDF, Occupancy Field 등)은 3D 정답 데이터가 필요하거나 단순한 형상에만 적용 가능했습니다.</p>
+<p><strong>View Synthesis &amp; Image-based Rendering</strong>: 라이트 필드 보간, 메쉬 기반 미분 렌더러, 복셀 기반 심층 네트워크 등이 있으나 해상도 한계, 복잡한 기하 표현의 어려움, 대용량 저장 공간 필요 등의 문제가 있었습니다.</p>
+<p>NeRF는 연속적인 체적 함수를 MLP로 표현함으로써, 고해상도의 복잡한 장면을 작은 네트워크(~5MB)로 표현하는 새로운 패러다임을 제시합니다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Implicit Neural Representation</strong>: 좌표를 입력으로 받아 해당 위치의 물리량을 출력하는 신경망</li>
+<li><strong>Differentiable Rendering</strong>: 렌더링 과정이 미분 가능하여 이미지 픽셀 값으로 역전파 가능</li>
+<li><strong>Voxel Grid vs. Continuous</strong>: 복셀은 이산적(discrete)이므로 해상도에 한계가 있고, MLP 기반 연속 표현은 이론적으로 무한 해상도를 지원</li>
+</ul>
+<hr>
+<h2 id="chapter-3-neural-radiance-field-scene-representation">Chapter 3: Neural Radiance Field Scene Representation<a class="anchor" href="#chapter-3-neural-radiance-field-scene-representation">#</a></h2>
+<p><strong>요약</strong></p>
+<p>NeRF는 장면을 다음의 5D 연속 함수로 표현합니다:</p>
+$$F_\Theta : (\mathbf{x}, \mathbf{d}) \rightarrow (\mathbf{c}, \sigma)$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$\mathbf{x} = (x, y, z)$</strong>: 3D 공간에서의 위치</li>
+<li><strong>$\mathbf{d} = (\theta, \phi)$</strong>: 시선 방향 (구면 좌표)</li>
+<li><strong>$\mathbf{c} = (r, g, b)$</strong>: 해당 위치에서 방출되는 색상</li>
+<li><strong>$\sigma$</strong>: 체적 밀도 (그 위치에 물질이 있을 확률, 클수록 불투명)</li>
+<li><strong>$F_\Theta$</strong>: 가중치 $\Theta$를 가진 MLP 네트워크</li>
+</ul>
+<p><strong>네트워크 구조</strong></p>
+<p>MLP는 두 부분으로 나뉩니다:</p>
+<ol>
+<li><strong>위치 처리부</strong>: $\mathbf{x}$를 8개의 완전연결층(ReLU, 256채널)에 통과시켜 $\sigma$와 256차원 특징 벡터 출력</li>
+<li><strong>색상 처리부</strong>: 특징 벡터와 시선 방향 $\mathbf{d}$를 합쳐 1개의 완전연결층(ReLU, 128채널)에 통과시켜 RGB 색상 출력</li>
+</ol>
+<p><strong>핵심 설계 원칙</strong></p>
+<ul>
+<li><strong>$\sigma$는 위치만으로 결정</strong>: 물체가 어디에 있는지는 시선 방향과 무관</li>
+<li><strong>색상은 위치+방향으로 결정</strong>: 같은 지점이라도 보는 방향에 따라 색이 다를 수 있음 (정반사, Non-Lambertian 효과)</li>
+<li><strong>멀티뷰 일관성</strong>: 여러 시점에서 같은 기하를 예측하도록 강제</li>
+</ul>
+<hr>
+<h2 id="chapter-4-volume-rendering-with-radiance-fields">Chapter 4: Volume Rendering with Radiance Fields<a class="anchor" href="#chapter-4-volume-rendering-with-radiance-fields">#</a></h2>
+<p><strong>요약</strong></p>
+<p>카메라 레이 $\mathbf{r}(t) = \mathbf{o} + t\mathbf{d}$ (원점 $\mathbf{o}$, 방향 $\mathbf{d}$)에 대한 기대 색상은 다음 연속 적분으로 계산됩니다:</p>
+$$C(\mathbf{r}) = \int_{t_n}^{t_f} T(t)\,\sigma(\mathbf{r}(t))\,\mathbf{c}(\mathbf{r}(t), \mathbf{d})\, dt$$$$\text{where} \quad T(t) = \exp\!\left(-\int_{t_n}^{t} \sigma(\mathbf{r}(s))\,ds\right)$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$t_n, t_f$</strong>: 카메라 레이의 근거리, 원거리 바운드</li>
+<li><strong>$T(t)$</strong>: 누적 투과율 — 레이가 $t_n$에서 $t$까지 아무 입자도 만나지 않고 통과할 확률
+<ul>
+<li>$\sigma$가 크면 $T$가 빠르게 감소 → 뒤의 물체가 가려짐</li>
+</ul>
+</li>
+<li><strong>$\sigma(\mathbf{r}(t))$</strong>: 위치 $t$에서의 밀도 — 빛이 얼마나 많이 흡수/산란되는지</li>
+<li><strong>$\mathbf{c}(\mathbf{r}(t), \mathbf{d})$</strong>: 위치와 방향에 따른 색상</li>
+</ul>
+<p><strong>이산화 (수치 적분)</strong></p>
+<p>연속 적분을 실제로 계산하기 위해 층별 샘플링(stratified sampling)을 사용합니다. 구간 $[t_n, t_f]$를 $N$개의 bin으로 균등 분할하고 각 bin에서 무작위 샘플링:</p>
+$$t_i \sim \mathcal{U}\!\left[t_n + \frac{i-1}{N}(t_f - t_n),\; t_n + \frac{i}{N}(t_f - t_n)\right]$$<p>이산화된 색상 추정값:</p>
+$$\hat{C}(\mathbf{r}) = \sum_{i=1}^{N} T_i \bigl(1 - \exp(-\sigma_i \delta_i)\bigr)\, \mathbf{c}_i, \quad T_i = \exp\!\left(-\sum_{j=1}^{i-1} \sigma_j \delta_j\right)$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$\delta_i = t_{i+1} - t_i$</strong>: 인접 샘플 간 거리</li>
+<li><strong>$1 - \exp(-\sigma_i \delta_i)$</strong>: i번째 구간에서의 불투명도 $\alpha_i$ — 밀도가 높거나 구간이 넓을수록 1에 가까워짐</li>
+<li><strong>$T_i$</strong>: i번째 샘플까지의 누적 투과율 — 앞의 모든 물질을 통과한 비율</li>
+<li>이 수식은 알파 합성(alpha compositing)과 수학적으로 동일</li>
+</ul>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>체적 렌더링의 미분 가능성</strong>: $\hat{C}(\mathbf{r})$은 MLP 파라미터에 대해 미분 가능 → 역전파로 학습 가능</li>
+<li><strong>물리적 직관</strong>: 카메라에서 출발한 레이가 각 지점에서 색을 수집하되, 앞에 있는 불투명한 물체는 뒤를 가림</li>
+</ul>
+<hr>
+<h2 id="chapter-5-optimizing-a-neural-radiance-field">Chapter 5: Optimizing a Neural Radiance Field<a class="anchor" href="#chapter-5-optimizing-a-neural-radiance-field">#</a></h2>
+<p><strong>요약</strong></p>
+<p>기본 MLP만으로는 복잡한 장면의 고주파 세부 정보를 표현하기 어렵습니다. 두 가지 핵심 개선을 도입합니다.</p>
+<h3 id="51-positional-encoding-위치-인코딩">5.1 Positional Encoding (위치 인코딩)<a class="anchor" href="#51-positional-encoding-%ec%9c%84%ec%b9%98-%ec%9d%b8%ec%bd%94%eb%94%a9">#</a></h3>
+<p>MLP는 저주파 함수를 선호하는 경향이 있어(spectral bias), 날카로운 경계나 세밀한 텍스처 표현이 어렵습니다. 이를 해결하기 위해 입력 좌표를 고차원 공간으로 매핑합니다:</p>
+$$\gamma(p) = \bigl(\sin(2^0 \pi p),\, \cos(2^0 \pi p),\, \cdots,\, \sin(2^{L-1} \pi p),\, \cos(2^{L-1} \pi p)\bigr)$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$p$</strong>: 원래 입력 좌표값 ([-1, 1]로 정규화)</li>
+<li><strong>$L$</strong>: 주파수 레벨 수 — 위치 $\mathbf{x}$에 $L=10$, 방향 $\mathbf{d}$에 $L=4$ 사용</li>
+<li><strong>$2^0, 2^1, \ldots, 2^{L-1}$</strong>: 배수로 증가하는 주파수들</li>
+<li>이 인코딩으로 MLP 입력이 3차원에서 $2 \times 3 \times L = 60$차원으로 확장됨</li>
+<li>Transformer의 positional encoding과 유사하지만, 순서 정보가 아닌 <strong>고주파 함수 근사</strong>가 목적</li>
+</ul>
+<p><strong>직관</strong>: 낮은 주파수 함수는 거친 형상(전체 모양)을, 높은 주파수 함수는 세밀한 디테일(텍스처, 날카로운 경계)을 표현</p>
+<h3 id="52-hierarchical-volume-sampling-계층적-볼륨-샘플링">5.2 Hierarchical Volume Sampling (계층적 볼륨 샘플링)<a class="anchor" href="#52-hierarchical-volume-sampling-%ea%b3%84%ec%b8%b5%ec%a0%81-%eb%b3%bc%eb%a5%a8-%ec%83%98%ed%94%8c%eb%a7%81">#</a></h3>
+<p>단순히 레이 위에 균일하게 $N$개 샘플을 두면, 빈 공간이나 가려진 영역(렌더링에 기여하지 않는 위치)에도 많은 샘플을 낭비합니다.</p>
+<p><strong>해결 방법</strong>: Coarse + Fine 두 단계 네트워크</p>
+<ol>
+<li><strong>Coarse 단계</strong>: $N_c = 64$ 샘플로 레이를 대략 샘플링, 각 위치의 가중치 $w_i$를 계산:</li>
+</ol>
+$$\hat{C}_c(\mathbf{r}) = \sum_{i=1}^{N_c} w_i c_i, \qquad w_i = T_i(1 - \exp(-\sigma_i \delta_i))$$<ol start="2">
+<li><strong>Fine 단계</strong>: Coarse의 가중치를 정규화해 확률분포(PDF)로 만들고, 이 분포에서 $N_f = 128$ 샘플을 추가 샘플링 (중요한 곳에 더 집중)</li>
+<li>총 $N_c + N_f = 192$ 샘플로 Fine 네트워크 평가, 최종 색상 $\hat{C}_f(\mathbf{r})$ 계산</li>
+</ol>
+<p><strong>학습 손실 함수</strong></p>
+$$\mathcal{L} = \sum_{\mathbf{r} \in \mathcal{R}} \left[\left\|\hat{C}_c(\mathbf{r}) - C(\mathbf{r})\right\|_2^2 + \left\|\hat{C}_f(\mathbf{r}) - C(\mathbf{r})\right\|_2^2\right]$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$\mathcal{R}$</strong>: 배치 내 카메라 레이 집합 (배치 크기 4096 레이)</li>
+<li><strong>$C(\mathbf{r})$</strong>: 정답 픽셀 색상</li>
+<li><strong>$\hat{C}_c, \hat{C}_f$</strong>: Coarse/Fine 네트워크의 예측 색상</li>
+<li>Coarse 손실도 포함시켜 Coarse 네트워크의 가중치 분포가 의미있게 학습되도록 함</li>
+</ul>
+<h3 id="53-구현-세부사항">5.3 구현 세부사항<a class="anchor" href="#53-%ea%b5%ac%ed%98%84-%ec%84%b8%eb%b6%80%ec%82%ac%ed%95%ad">#</a></h3>
+<ul>
+<li><strong>옵티마이저</strong>: Adam ($\beta_1=0.9$, $\beta_2=0.999$, $\epsilon=10^{-7}$)</li>
+<li><strong>학습률</strong>: $5 \times 10^{-4}$에서 시작, $5 \times 10^{-5}$까지 지수 감소</li>
+<li><strong>수렴</strong>: 단일 NVIDIA V100 GPU에서 100k<del>300k 이터레이션 (약 1</del>2일)</li>
+<li><strong>카메라 포즈</strong>: 합성 데이터는 정답 사용, 실제 이미지는 COLMAP SfM 패키지로 추정</li>
+</ul>
+<hr>
+<h2 id="chapter-6-results">Chapter 6: Results<a class="anchor" href="#chapter-6-results">#</a></h2>
+<p><strong>요약</strong></p>
+<p>NeRF는 세 가지 데이터셋에서 기존 방법들을 정량적·정성적으로 능가합니다.</p>
+<h3 id="61-데이터셋">6.1 데이터셋<a class="anchor" href="#61-%eb%8d%b0%ec%9d%b4%ed%84%b0%ec%85%8b">#</a></h3>
+<ul>
+<li><strong>Diffuse Synthetic 360°</strong> (DeepVoxels): 간단한 기하의 4개 Lambertian 물체, 512×512 픽셀</li>
+<li><strong>Realistic Synthetic 360°</strong>: 복잡한 비-Lambertian 재질의 8개 물체, 800×800 픽셀</li>
+<li><strong>Real Forward-Facing</strong> (LLFF): 핸드헬드 폰으로 촬영한 실제 8개 장면, 1008×756 픽셀</li>
+</ul>
+<h3 id="62-정량적-비교">6.2 정량적 비교<a class="anchor" href="#62-%ec%a0%95%eb%9f%89%ec%a0%81-%eb%b9%84%ea%b5%90">#</a></h3>
+<table>
+  <thead>
+      <tr>
+          <th>방법</th>
+          <th>Diffuse Synthetic PSNR↑</th>
+          <th>Realistic Synthetic PSNR↑</th>
+          <th>Real Forward PSNR↑</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>SRN</td>
+          <td>33.20</td>
+          <td>22.26</td>
+          <td>22.84</td>
+      </tr>
+      <tr>
+          <td>NV</td>
+          <td>29.62</td>
+          <td>26.05</td>
+          <td>-</td>
+      </tr>
+      <tr>
+          <td>LLFF</td>
+          <td>34.38</td>
+          <td>24.88</td>
+          <td>24.13</td>
+      </tr>
+      <tr>
+          <td><strong>NeRF (Ours)</strong></td>
+          <td><strong>40.15</strong></td>
+          <td><strong>31.01</strong></td>
+          <td><strong>26.50</strong></td>
+      </tr>
+  </tbody>
+</table>
+<ul>
+<li>PSNR, SSIM (높을수록 좋음), LPIPS (낮을수록 좋음) 모두에서 최고 성능</li>
+<li>모델 크기: ~5MB (LLFF 대비 3000배 압축)</li>
+</ul>
+<h3 id="63-비교-방법과의-차별점">6.3 비교 방법과의 차별점<a class="anchor" href="#63-%eb%b9%84%ea%b5%90-%eb%b0%a9%eb%b2%95%ea%b3%bc%ec%9d%98-%ec%b0%a8%eb%b3%84%ec%a0%90">#</a></h3>
+<ul>
+<li><strong>SRN</strong>: 레이당 하나의 깊이·색상 예측 → 과도하게 부드러운 결과</li>
+<li><strong>Neural Volumes (NV)</strong>: 128³ 복셀 그리드 → 세밀한 기하 표현 한계</li>
+<li><strong>LLFF</strong>: 빠른 처리(10분)지만 15GB+ 저장 공간, 뷰 간 블렌딩 아티팩트</li>
+</ul>
+<h3 id="64-ablation-study">6.4 Ablation Study<a class="anchor" href="#64-ablation-study">#</a></h3>
+<p>핵심 설계 선택의 기여도 (Realistic Synthetic 데이터셋 기준):</p>
+<table>
+  <thead>
+      <tr>
+          <th>구성</th>
+          <th>PSNR↑</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>기본 MLP (PE/VD/H 없음)</td>
+          <td>26.67</td>
+      </tr>
+      <tr>
+          <td>+ View Dependence</td>
+          <td>28.77</td>
+      </tr>
+      <tr>
+          <td>+ Positional Encoding</td>
+          <td>27.66</td>
+      </tr>
+      <tr>
+          <td>+ Hierarchical Sampling</td>
+          <td>30.06</td>
+      </tr>
+      <tr>
+          <td><strong>완전한 모델 (PE+VD+H)</strong></td>
+          <td><strong>31.01</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p>→ Positional Encoding의 기여가 가장 크고, View Dependence, Hierarchical Sampling 순으로 중요</p>
+<hr>
+<h2 id="핵심-개념-정리">핵심 개념 정리<a class="anchor" href="#%ed%95%b5%ec%8b%ac-%ea%b0%9c%eb%85%90-%ec%a0%95%eb%a6%ac">#</a></h2>
+<table>
+  <thead>
+      <tr>
+          <th>개념</th>
+          <th>설명</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>Neural Radiance Field (NeRF)</strong></td>
+          <td>5D 입력(위치+방향)을 받아 색상과 밀도를 출력하는 MLP로 표현된 연속 장면 표현</td>
+      </tr>
+      <tr>
+          <td><strong>Volume Density $\sigma$</strong></td>
+          <td>공간상의 한 점에서 레이가 종료될 확률 밀도 — 높을수록 불투명</td>
+      </tr>
+      <tr>
+          <td><strong>Transmittance $T(t)$</strong></td>
+          <td>레이가 특정 지점까지 아무것도 만나지 않고 통과할 누적 확률</td>
+      </tr>
+      <tr>
+          <td><strong>Alpha Compositing</strong></td>
+          <td>투명도를 고려해 여러 레이어의 색을 합성하는 방법 — NeRF의 이산화 공식과 동일</td>
+      </tr>
+      <tr>
+          <td><strong>Positional Encoding</strong></td>
+          <td>입력 좌표를 사인/코사인의 다중 주파수로 변환해 고주파 함수 학습을 돕는 기법</td>
+      </tr>
+      <tr>
+          <td><strong>Stratified Sampling</strong></td>
+          <td>구간을 균등 분할 후 각 bin에서 무작위 샘플링 — 연속 표현을 유지하면서 이산 계산 가능</td>
+      </tr>
+      <tr>
+          <td><strong>Hierarchical Sampling</strong></td>
+          <td>Coarse 네트워크로 중요 영역을 파악하고 Fine 네트워크에서 그 영역에 집중 샘플링</td>
+      </tr>
+      <tr>
+          <td><strong>View-Dependent Appearance</strong></td>
+          <td>보는 방향에 따라 색이 달라지는 현상 (정반사, 금속 등) — $\mathbf{d}$를 색상 예측에 추가로 반영</td>
+      </tr>
+      <tr>
+          <td><strong>Non-Lambertian</strong></td>
+          <td>보는 방향에 무관하게 색이 일정한 Lambertian 모델과 달리, 방향에 따라 색이 달라지는 재질 특성</td>
+      </tr>
+      <tr>
+          <td><strong>COLMAP (SfM)</strong></td>
+          <td>여러 이미지에서 카메라 포즈를 자동으로 추정하는 Structure-from-Motion 패키지</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="결론-및-시사점">결론 및 시사점<a class="anchor" href="#%ea%b2%b0%eb%a1%a0-%eb%b0%8f-%ec%8b%9c%ec%82%ac%ec%a0%90">#</a></h2>
+<p><strong>논문의 결론</strong></p>
+<p>NeRF는 장면을 5D Neural Radiance Field로 표현하고 체적 렌더링으로 학습함으로써, 이전의 MLP 기반 암묵적 표현 및 복셀 기반 심층 네트워크를 모두 능가하는 새로운 view synthesis 패러다임을 제시했습니다.</p>
+<p><strong>실용적 시사점</strong></p>
+<ol>
+<li><strong>메모리 효율</strong>: 장면 전체를 단 ~5MB의 네트워크 가중치로 압축 — 기존 방법 대비 수천 배 압축</li>
+<li><strong>표현력</strong>: 고해상도의 복잡한 기하와 비-Lambertian 재질까지 표현 가능</li>
+<li><strong>학습 데이터</strong>: 카메라 포즈가 있는 RGB 이미지만으로 학습 — 3D 스캔이나 depth sensor 불필요</li>
+</ol>
+<p><strong>한계점 및 미래 방향</strong></p>
+<ul>
+<li><strong>학습 속도</strong>: 장면 하나에 1~2일 소요 (이후 연구인 Instant-NGP, 3DGS 등이 이를 크게 개선)</li>
+<li><strong>장면별 학습</strong>: 새로운 장면마다 처음부터 재학습 필요</li>
+<li><strong>동적 장면</strong>: 정적 장면만 처리 가능</li>
+<li><strong>해석 가능성</strong>: MLP 가중치에 인코딩된 표현은 직접 분석이 어려움</li>
+<li><strong>미래 비전</strong>: NeRF 기반 그래픽스 파이프라인 — 실제 촬영된 물체/장면들의 NeRF를 조합해 새로운 콘텐츠 생성</li>
+</ul>
+<hr>
+<p><em>관련 논문: <a href="/posts/papers/instant-ngp-multiresolution-hash-encoding/">Instant-NGP</a>, <a href="/posts/papers/mip-nerf-360/">Mip-NeRF 360</a>, <a href="/posts/papers/3d-gaussian-splatting/">3D Gaussian Splatting</a>, <a href="/posts/papers/EmerNeRF/">EmerNeRF</a>, <a href="/posts/papers/neurad-neural-rendering-for-autonomous-driving/">NeuRAD</a>, <a href="/posts/papers/unisim-neural-closed-loop-sensor-simulator/">UniSim</a></em></p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/paper/docs/novel-view-synthesis/difix3d-plus/" class="flex align-center">
+        <img src="/paper/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/paper/docs/generative-models/controlnet-adding-conditional-control-to-text-to-image-diffusion-models/" class="flex align-center">
+        <span>ControlNet: Adding Conditional Control to Text-to-Image Diffusion Models</span>
+        <img src="/paper/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#chapter-1-introduction">Chapter 1: Introduction</a></li>
+    <li><a href="#chapter-2-related-work">Chapter 2: Related Work</a></li>
+    <li><a href="#chapter-3-neural-radiance-field-scene-representation">Chapter 3: Neural Radiance Field Scene Representation</a></li>
+    <li><a href="#chapter-4-volume-rendering-with-radiance-fields">Chapter 4: Volume Rendering with Radiance Fields</a></li>
+    <li><a href="#chapter-5-optimizing-a-neural-radiance-field">Chapter 5: Optimizing a Neural Radiance Field</a>
+      <ul>
+        <li><a href="#51-positional-encoding-위치-인코딩">5.1 Positional Encoding (위치 인코딩)</a></li>
+        <li><a href="#52-hierarchical-volume-sampling-계층적-볼륨-샘플링">5.2 Hierarchical Volume Sampling (계층적 볼륨 샘플링)</a></li>
+        <li><a href="#53-구현-세부사항">5.3 구현 세부사항</a></li>
+      </ul>
+    </li>
+    <li><a href="#chapter-6-results">Chapter 6: Results</a>
+      <ul>
+        <li><a href="#61-데이터셋">6.1 데이터셋</a></li>
+        <li><a href="#62-정량적-비교">6.2 정량적 비교</a></li>
+        <li><a href="#63-비교-방법과의-차별점">6.3 비교 방법과의 차별점</a></li>
+        <li><a href="#64-ablation-study">6.4 Ablation Study</a></li>
+      </ul>
+    </li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

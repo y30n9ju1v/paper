@@ -5,6 +5,8 @@ draft: false
 categories: ["Papers"]
 tags: ["ControlNet", "Diffusion Model", "Stable Diffusion", "Conditional Generation", "Image Synthesis", "Zero Convolution", "LDM", "CLIP"]
 year: 2023
+references:
+  - "high-resolution-image-synthesis-with-latent-diffusion-models"
 ---
 
 ## 개요

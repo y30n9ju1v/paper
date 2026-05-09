@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="ko-KR" dir="ltr">
+<head><script src="/paper/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=paper/livereload" data-no-instant defer></script>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="개요# 저자: Kashyap Chitta, Aditya Prakash, Bernhard Jaeger, Zehao Yu, Katrin Renz, Andreas Geiger 소속: University of Tübingen, Max Planck Institute for Intelligent Systems 발행년도: 2022 (arXiv:2205.15997, IEEE TPAMI) 주요 내용: 카메라와 LiDAR를 Transformer의 self-attention 메커니즘으로 통합하는 **다중 모달 융합 Transformer(TransFuser)**를 제안. 기존 합성곱(CNN) 기반 융합 방식의 locality 한계를 극복하여 전역적(global) 장면 맥락을 포착. CARLA 자율주행 벤치마크에서 이전 최고 방법 대비 충돌을 48% 감소시키며 공식 리더보드 1위 달성. NAVSIM에서도 강력한 baseline으로 활용됨. 목차# Chapter 1: Introduction — 카메라&#43;LiDAR 융합의 필요성과 Transformer 접근 Chapter 2: Related Work — 다중 모달 인식, E2E 주행, 센서 융합 방법 정리 Chapter 3: TransFuser 구조 — 다중 모달 융합 Transformer, 웨이포인트 예측, 보조 태스크 Chapter 4: Experiments — CARLA 벤치마크, Longestè6 평가, 소거 실험 Chapter 5: Discussion &amp; Conclusions Chapter 1: Introduction# 요약
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/paper/docs/transfuser/">
+  <meta property="og:site_name" content="Paper">
+  <meta property="og:title" content="TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving">
+  <meta property="og:description" content="개요# 저자: Kashyap Chitta, Aditya Prakash, Bernhard Jaeger, Zehao Yu, Katrin Renz, Andreas Geiger 소속: University of Tübingen, Max Planck Institute for Intelligent Systems 발행년도: 2022 (arXiv:2205.15997, IEEE TPAMI) 주요 내용: 카메라와 LiDAR를 Transformer의 self-attention 메커니즘으로 통합하는 **다중 모달 융합 Transformer(TransFuser)**를 제안. 기존 합성곱(CNN) 기반 융합 방식의 locality 한계를 극복하여 전역적(global) 장면 맥락을 포착. CARLA 자율주행 벤치마크에서 이전 최고 방법 대비 충돌을 48% 감소시키며 공식 리더보드 1위 달성. NAVSIM에서도 강력한 baseline으로 활용됨. 목차# Chapter 1: Introduction — 카메라&#43;LiDAR 융합의 필요성과 Transformer 접근 Chapter 2: Related Work — 다중 모달 인식, E2E 주행, 센서 융합 방법 정리 Chapter 3: TransFuser 구조 — 다중 모달 융합 Transformer, 웨이포인트 예측, 보조 태스크 Chapter 4: Experiments — CARLA 벤치마크, Longestè6 평가, 소거 실험 Chapter 5: Discussion &amp; Conclusions Chapter 1: Introduction# 요약">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:published_time" content="2026-04-14T00:00:00+09:00">
+    <meta property="article:modified_time" content="2026-04-14T00:00:00+09:00">
+    <meta property="article:tag" content="Autonomous Driving">
+    <meta property="article:tag" content="Transformer">
+    <meta property="article:tag" content="Sensor Fusion">
+    <meta property="article:tag" content="Imitation Learning">
+    <meta property="article:tag" content="LiDAR">
+
+
+  <meta itemprop="name" content="TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving">
+  <meta itemprop="description" content="개요# 저자: Kashyap Chitta, Aditya Prakash, Bernhard Jaeger, Zehao Yu, Katrin Renz, Andreas Geiger 소속: University of Tübingen, Max Planck Institute for Intelligent Systems 발행년도: 2022 (arXiv:2205.15997, IEEE TPAMI) 주요 내용: 카메라와 LiDAR를 Transformer의 self-attention 메커니즘으로 통합하는 **다중 모달 융합 Transformer(TransFuser)**를 제안. 기존 합성곱(CNN) 기반 융합 방식의 locality 한계를 극복하여 전역적(global) 장면 맥락을 포착. CARLA 자율주행 벤치마크에서 이전 최고 방법 대비 충돌을 48% 감소시키며 공식 리더보드 1위 달성. NAVSIM에서도 강력한 baseline으로 활용됨. 목차# Chapter 1: Introduction — 카메라&#43;LiDAR 융합의 필요성과 Transformer 접근 Chapter 2: Related Work — 다중 모달 인식, E2E 주행, 센서 융합 방법 정리 Chapter 3: TransFuser 구조 — 다중 모달 융합 Transformer, 웨이포인트 예측, 보조 태스크 Chapter 4: Experiments — CARLA 벤치마크, Longestè6 평가, 소거 실험 Chapter 5: Discussion &amp; Conclusions Chapter 1: Introduction# 요약">
+  <meta itemprop="datePublished" content="2026-04-14T00:00:00+09:00">
+  <meta itemprop="dateModified" content="2026-04-14T00:00:00+09:00">
+  <meta itemprop="wordCount" content="1445">
+  <meta itemprop="keywords" content="Autonomous Driving,Transformer,Sensor Fusion,Imitation Learning,LiDAR">
+
+<title>TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving | Paper</title>
+<link rel="icon" href="/paper/favicon.png" >
+<link rel="manifest" href="/paper/manifest.json">
+<link rel="canonical" href="http://localhost:1313/paper/docs/transfuser/">
+<link rel="stylesheet" href="/paper/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/paper/fuse.min.js"></script>
+  <script defer src="/paper/en.search.min.136303f53f731e7f187e59dca354807444ce24732e128843ea97e041d47b7d93.js" integrity="sha256-E2MD9T9zHn8Yflnco1SAdETOJHMuEohD6pfgQdR7fZM=" crossorigin="anonymous"></script>
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '\\[', right: '\\]', display: true},
+      {left: '\\(', right: '\\)', display: false},
+      {left: '$', right: '$', display: false}
+    ]
+  });
+});
+</script>
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/paper/"><span>Paper</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/controlnet-adding-conditional-control-to-text-to-image-diffusion-models/" class="">
+      ControlNet: Adding Conditional Control to Text-to-Image Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/clip-learning-transferable-visual-models-from-natural-language-supervision/" class="">
+      CLIP: Learning Transferable Visual Models From Natural Language Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointnet-plus-plus-deep-hierarchical-feature-learning/" class="">
+      PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/" class="">
+      GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/lidarsim-realistic-lidar-simulation-by-leveraging-the-real-world/" class="">
+      LiDARsim: Realistic LiDAR Simulation by Leveraging the Real World</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vit-an-image-is-worth-16x16-words/" class="">
+      ViT: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/resnet-deep-residual-learning-for-image-recognition/" class="">
+      ResNet: Deep Residual Learning for Image Recognition</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/" class="">
+      StreamMapNet: Streaming Mapping Network for Vectorized Online HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vectormapnet-end-to-end-vectorized-hd-map-learning/" class="">
+      VectorMapNet: End-to-end Vectorized HD Map Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/detr-end-to-end-object-detection-with-transformers/" class="">
+      DETR: End-to-End Object Detection with Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/attention-is-all-you-need/" class="">
+      Attention Is All You Need</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/maptr-structured-modeling-online-vectorized-hd-map-construction/" class="">
+      MapTR: Structured Modeling and Learning for Online Vectorized HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/high-resolution-image-synthesis-with-latent-diffusion-models/" class="">
+      High-Resolution Image Synthesis with Latent Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/proximal-policy-optimization/" class="">
+      Proximal Policy Optimization Algorithms (PPO)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/denoising-diffusion-probabilistic-models/" class="">
+      Denoising Diffusion Probabilistic Models (DDPM)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/" class="">
+      PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointpillars-fast-encoders-object-detection-point-clouds/" class="">
+      PointPillars: Fast Encoders for Object Detection from Point Clouds</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/centerpoint-center-based-3d-object-detection-and-tracking/" class="">
+      CenterPoint: Center-based 3D Object Detection and Tracking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/monoscene-monocular-3d-semantic-scene-completion/" class="">
+      MonoScene: Monocular 3D Semantic Scene Completion</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/tpvformer-tri-perspective-view-3d-semantic-occupancy/" class="">
+      TPVFormer: Tri-Perspective View for Vision-Based 3D Semantic Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/drivearena/" class="">
+      DriveArena: A Closed-loop Generative Simulation Platform for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/neurad-neural-rendering-for-autonomous-driving/" class="">
+      NeuRAD: Neural Rendering for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/omnire-omni-urban-scene-reconstruction/" class="">
+      OmniRe: Omni Urban Scene Reconstruction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/magicdrive-street-view-generation-3d-geometry-control/" class="">
+      MagicDrive: Street View Generation with Diverse 3D Geometry Control</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/surroundocc/" class="">
+      SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/drivedreamer/" class="">
+      DriveDreamer: Towards Real-world-driven World Models for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/street-gaussians-modeling-dynamic-urban-scenes/" class="">
+      Street Gaussians: Modeling Dynamic Urban Scenes with Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bench2drive-multi-ability-benchmarking-e2e-autonomous-driving/" class="">
+      Bench2Drive: Towards Multi-Ability Benchmarking of Closed-Loop End-To-End Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/emernerf/" class="">
+      EmerNeRF: Emergent Spatial-Temporal Scene Decomposition via Self-Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/detr3d-3d-object-detection-multi-view-images/" class="">
+      DETR3D: 3D Object Detection from Multi-view Images via 3D-to-2D Queries</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/occ3d-large-scale-3d-occupancy-prediction-benchmark/" class="">
+      Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/unisim-neural-closed-loop-sensor-simulator/" class="">
+      UniSim: A Neural Closed-Loop Sensor Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevfusion-multi-task-multi-sensor-fusion/" class="">
+      BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/instant-ngp-multiresolution-hash-encoding/" class="">
+      Instant Neural Graphics Primitives with a Multiresolution Hash Encoding</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/lift-splat-shoot/" class="">
+      Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevdepth/" class="">
+      BEVDepth: Acquisition of Reliable Depth for Multi-view 3D Object Detection</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/4d-gaussian-splatting/" class="">
+      4D Gaussian Splatting for Real-Time Dynamic Scene Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/gaia-1/" class="">
+      GAIA-1: A Generative World Model for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/dqn-playing-atari-with-deep-reinforcement-learning/" class="">
+      Playing Atari with Deep Reinforcement Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevformer/" class="">
+      BEVFormer: Learning Bird&#39;s-Eye-View Representation from Multi-Camera Images via Spatiotemporal Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/navsim/" class="">
+      NAVSIM: Data-Driven Non-Reactive Autonomous Vehicle Simulation and Benchmarking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nuplan/" class="">
+      nuPlan: A closed-loop ML-based planning benchmark for autonomous vehicles</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/transfuser/" class="active">
+      TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3d-gaussian-splatting/" class="">
+      3D Gaussian Splatting for Real-Time Radiance Field Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/driving-gaussian-composite-gaussian-splatting/" class="">
+      DrivingGaussian: Composite Gaussian Splatting for Surrounding Dynamic Autonomous Driving Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3d-gaussian-ray-tracing/" class="">
+      3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/" class="">
+      3DGUT: Enabling Distorted Cameras and Secondary Rays in Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/carla-an-open-urban-driving-simulator/" class="">
+      CARLA: An Open Urban Driving Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/difix3d-plus/" class="">
+      DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/hugsim-real-time-photorealistic-closed-loop-simulator/" class="">
+      HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/" class="">
+      NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nuscenes-multimodal-dataset-autonomous-driving/" class="">
+      nuScenes: A Multimodal Dataset for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/waymo-open-dataset/" class="">
+      Scalability in Perception for Autonomous Driving: Waymo Open Dataset</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/uniad-planning-oriented-autonomous-driving/" class="">
+      UniAD: Planning-oriented Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vad/" class="">
+      VAD: Vectorized Scene Representation for Efficient Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/paper/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving</h3>
+
+  <label for="toc-control">
+    
+    <img src="/paper/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#chapter-1-introduction">Chapter 1: Introduction</a></li>
+    <li><a href="#chapter-2-related-work">Chapter 2: Related Work</a></li>
+    <li><a href="#chapter-3-transfuser-구조">Chapter 3: TransFuser 구조</a>
+      <ul>
+        <li><a href="#31-입력-표현">3.1 입력 표현</a></li>
+        <li><a href="#32-다중-모달-융합-transformer">3.2 다중 모달 융합 Transformer</a></li>
+        <li><a href="#33-웨이포인트-예측-네트워크">3.3 웨이포인트 예측 네트워크</a></li>
+        <li><a href="#34-저속-제어기pid-controller">3.4 저속 제어기(PID Controller)</a></li>
+        <li><a href="#35-보조-태스크-auxiliary-tasks">3.5 보조 태스크 (Auxiliary Tasks)</a></li>
+      </ul>
+    </li>
+    <li><a href="#chapter-4-experiments">Chapter 4: Experiments</a>
+      <ul>
+        <li><a href="#41-평가-환경">4.1 평가 환경</a></li>
+        <li><a href="#42-주요-결과">4.2 주요 결과</a></li>
+        <li><a href="#43-소거-실험">4.3 소거 실험</a></li>
+        <li><a href="#44-attention-시각화">4.4 Attention 시각화</a></li>
+      </ul>
+    </li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h2 id="개요">개요<a class="anchor" href="#%ea%b0%9c%ec%9a%94">#</a></h2>
+<ul>
+<li><strong>저자</strong>: Kashyap Chitta, Aditya Prakash, Bernhard Jaeger, Zehao Yu, Katrin Renz, Andreas Geiger</li>
+<li><strong>소속</strong>: University of Tübingen, Max Planck Institute for Intelligent Systems</li>
+<li><strong>발행년도</strong>: 2022 (arXiv:2205.15997, IEEE TPAMI)</li>
+<li><strong>주요 내용</strong>: 카메라와 LiDAR를 Transformer의 self-attention 메커니즘으로 통합하는 **다중 모달 융합 Transformer(TransFuser)**를 제안. 기존 합성곱(CNN) 기반 융합 방식의 locality 한계를 극복하여 전역적(global) 장면 맥락을 포착. CARLA 자율주행 벤치마크에서 이전 최고 방법 대비 충돌을 48% 감소시키며 공식 리더보드 1위 달성. NAVSIM에서도 강력한 baseline으로 활용됨.</li>
+</ul>
+<h2 id="목차">목차<a class="anchor" href="#%eb%aa%a9%ec%b0%a8">#</a></h2>
+<ul>
+<li>Chapter 1: Introduction — 카메라+LiDAR 융합의 필요성과 Transformer 접근</li>
+<li>Chapter 2: Related Work — 다중 모달 인식, E2E 주행, 센서 융합 방법 정리</li>
+<li>Chapter 3: TransFuser 구조 — 다중 모달 융합 Transformer, 웨이포인트 예측, 보조 태스크</li>
+<li>Chapter 4: Experiments — CARLA 벤치마크, Longestè6 평가, 소거 실험</li>
+<li>Chapter 5: Discussion &amp; Conclusions</li>
+</ul>
+<hr>
+<h2 id="chapter-1-introduction">Chapter 1: Introduction<a class="anchor" href="#chapter-1-introduction">#</a></h2>
+<p><strong>요약</strong></p>
+<p>자율주행에서 LiDAR는 정확한 3D 거리 정보를 제공하고, 카메라는 풍부한 시각·의미 정보를 제공한다. 두 센서는 상호 보완적이므로 함께 활용하는 것이 이상적이다.</p>
+<p>기존 연구들은 두 센서의 특징 맵을 단순히 채널 방향으로 합치거나(concatenation), 픽셀 단위로 더하는(summation) 방식으로 융합했다. 그러나 이런 합성곱(CNN) 기반 방식은 <strong>locality 가정</strong> — 즉, 한 위치의 특징이 주변 위치에만 의존한다는 가정 — 으로 인해 전역적 장면 맥락을 포착하기 어렵다.</p>
+<p>예를 들어 Fig. 1처럼 교차로에서 안전하게 주행하려면 교통 신호등(멀리 있는 카메라 정보)과 접근하는 차량(LiDAR 포인트 클라우드)을 <strong>동시에</strong> 고려해야 한다. CNN은 이 두 정보를 공간적으로 멀리 떨어진 위치에서 관계를 맺기 어렵다.</p>
+<p>TransFuser는 Transformer의 <strong>self-attention</strong>을 사용하여 이미지와 LiDAR 특징 맵의 모든 위치 쌍 사이의 상호 관계를 학습한다. 이를 통해 전역적 장면 이해가 가능해지고, 복잡한 교차로와 고밀도 교통 상황에서 주행 성능이 크게 향상된다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>모방 학습(Imitation Learning, IL)</strong>: 전문가(사람 또는 규칙 기반 플래너)의 주행 데이터를 모방하여 정책을 학습. 강화학습보다 샘플 효율이 높음</li>
+<li><strong>Sensor Fusion</strong>: 서로 다른 센서(카메라, LiDAR)의 정보를 하나의 표현으로 통합하는 방법</li>
+<li><strong>Locality 한계</strong>: CNN은 receptive field가 제한되어 공간적으로 멀리 떨어진 정보 간 직접 관계를 학습하기 어려움</li>
+<li><strong>Global context</strong>: 장면 전체를 한 번에 이해하는 능력. 교차로에서 신호등과 차량을 동시에 고려하는 것이 대표적 예</li>
+</ul>
+<hr>
+<h2 id="chapter-2-related-work">Chapter 2: Related Work<a class="anchor" href="#chapter-2-related-work">#</a></h2>
+<p><strong>요약</strong></p>
+<p><strong>다중 모달 자율주행</strong>: NEAT, LAV 등이 카메라와 LiDAR를 결합하여 E2E 주행을 수행. PointPainting은 이미지 시맨틱을 LiDAR 포인트에 투영. 대부분은 CNN 기반 융합이거나 두 모달리티를 독립적으로 처리.</p>
+<p><strong>Transformer in Driving</strong>: Attention 메커니즘이 NLP에서 성공 후 비전으로 확장(ViT). NEAT은 어텐션을 자율주행에 적용했으나 단일 모달리티. TransFuser는 <strong>크로스 모달 어텐션</strong>을 다중 스케일에서 수행하는 최초의 방법 중 하나.</p>
+<p><strong>BEV 기반 접근</strong>: Lift-Splat, BEVFusion 등이 카메라를 BEV로 변환 후 융합. TransFuser는 BEV LiDAR와 원근 이미지를 Transformer로 직접 융합하여 변환 오류를 피함.</p>
+<hr>
+<h2 id="chapter-3-transfuser-구조">Chapter 3: TransFuser 구조<a class="anchor" href="#chapter-3-transfuser-%ea%b5%ac%ec%a1%b0">#</a></h2>
+<p><strong>요약</strong></p>
+<h3 id="31-입력-표현">3.1 입력 표현<a class="anchor" href="#31-%ec%9e%85%eb%a0%a5-%ed%91%9c%ed%98%84">#</a></h3>
+<ul>
+<li><strong>카메라</strong>: 세 방향(전방 60°, 좌 60°, 우 60°)의 RGB 이미지. 각 이미지는 $900 \times 256$ 해상도로 처리</li>
+<li><strong>LiDAR</strong>: 5개 LiDAR 포인트 클라우드를 병합한 BEV 히스토그램. $256 \times 256$ 해상도, 2채널(높이 구간별 점 밀도)</li>
+<li><strong>Ego status</strong>: 현재 속도(스칼라 값), 고속도로/교차로/일반 도로 구분 내비게이션 목표(3차원 one-hot 벡터)</li>
+</ul>
+<h3 id="32-다중-모달-융합-transformer">3.2 다중 모달 융합 Transformer<a class="anchor" href="#32-%eb%8b%a4%ec%a4%91-%eb%aa%a8%eb%8b%ac-%ec%9c%b5%ed%95%a9-transformer">#</a></h3>
+<p>TransFuser의 핵심은 <strong>ResNet 백본의 중간 특징 맵에서 Transformer를 반복 적용</strong>하는 것이다. 이미지와 LiDAR 각각에 ResNet 인코더를 적용하고, 4개 해상도($\frac{1}{2}, \frac{1}{4}, \frac{1}{8}, \frac{1}{16}$)에서 특징 맵을 추출한다.</p>
+<p>각 해상도에서 두 모달리티의 특징 맵을 <strong>토큰(token) 시퀀스</strong>로 변환한 후, Transformer의 self-attention을 적용한다:</p>
+$$\mathbf{Q} = \mathbf{F}^{\text{img}} \mathbf{W}_Q, \quad \mathbf{K} = \mathbf{F}^{\text{lidar}} \mathbf{W}_K, \quad \mathbf{V} = \mathbf{F}^{\text{all}} \mathbf{W}_V$$$$\mathbf{A} = \text{softmax}\left(\frac{\mathbf{Q}\mathbf{K}^T}{\sqrt{D_k}}\right)$$$$\mathbf{F}^{\text{out}} = \text{MLP}(\mathbf{A} \cdot \mathbf{V})$$<p><strong>수식 설명</strong>:</p>
+<ul>
+<li><strong>$\mathbf{F}^{\text{img}}$</strong>: 이미지 특징 맵을 토큰 시퀀스로 펼친 것 (각 토큰 = $32 \times 32$ 패치)</li>
+<li><strong>$\mathbf{F}^{\text{lidar}}$</strong>: LiDAR BEV 특징 맵의 토큰 시퀀스</li>
+<li><strong>$\mathbf{W}_Q, \mathbf{W}_K, \mathbf{W}_V$</strong>: Query, Key, Value 투영 행렬 (학습 파라미터)</li>
+<li><strong>$D_k$</strong>: Key 벡터의 차원수 (스케일링으로 softmax 포화 방지)</li>
+<li><strong>$\mathbf{A}$</strong>: Attention 가중치 행렬. 이미지 토큰과 LiDAR 토큰 사이의 상관도</li>
+<li><strong>$\mathbf{F}^{\text{out}}$</strong>: 크로스 모달 정보가 융합된 출력 특징</li>
+</ul>
+<p>실제로는 이미지와 LiDAR 토큰을 <strong>하나의 시퀀스로 연결</strong>한 뒤 self-attention을 수행하므로, 이미지→LiDAR, LiDAR→이미지 양방향 크로스 어텐션이 동시에 이루어진다. 각 Transformer는 4개 어텐션 헤드, 25개(이미지)~64개(LiDAR) 토큰을 처리한다.</p>
+<p>Transformer 출력은 원래 특징 맵 크기로 복원된 후 element-wise summation으로 백본 특징 맵에 더해진다. 4개 해상도에서 이 과정을 반복하며 점진적으로 전역 정보를 통합한다.</p>
+<p>최종적으로 512차원 글로벌 특징 벡터를 생성하고, GRU를 통해 웨이포인트를 순차적으로 예측한다.</p>
+<h3 id="33-웨이포인트-예측-네트워크">3.3 웨이포인트 예측 네트워크<a class="anchor" href="#33-%ec%9b%a8%ec%9d%b4%ed%8f%ac%ec%9d%b8%ed%8a%b8-%ec%98%88%ec%b8%a1-%eb%84%a4%ed%8a%b8%ec%9b%8c%ed%81%ac">#</a></h3>
+<p>글로벌 특징 벡터를 GRU(Gated Recurrent Unit)에 입력하여 $T = 4$개의 미래 웨이포인트 $\{\hat{w}_t\}_{t=1}^T$를 자기회귀(auto-regressive) 방식으로 예측한다. 학습 목표는:</p>
+$$\mathcal{L}_1 = \sum_{t=1}^{T} \|\hat{w}_t - w_t^*\|_1$$<p><strong>수식 설명</strong>:</p>
+<ul>
+<li><strong>$\hat{w}_t$</strong>: t번째 예측 웨이포인트 (자차 좌표계 기준 2D 위치)</li>
+<li><strong>$w_t^*$</strong>: 전문가의 t번째 실제 웨이포인트 (ground truth)</li>
+<li><strong>$\|\cdot\|_1$</strong>: L1 거리 (절댓값 차이의 합). L2보다 이상치에 덜 민감</li>
+<li>GRU가 이전 예측 결과를 받아 다음 웨이포인트를 예측하는 자기회귀 구조</li>
+</ul>
+<p>웨이포인트는 ego-vehicle 좌표계 기준으로 나타내며, 목표 위치(goal location)도 GPS 좌표로 주어진다.</p>
+<h3 id="34-저속-제어기pid-controller">3.4 저속 제어기(PID Controller)<a class="anchor" href="#34-%ec%a0%80%ec%86%8d-%ec%a0%9c%ec%96%b4%ea%b8%b0pid-controller">#</a></h3>
+<p>예측된 웨이포인트를 실제 steering과 throttle/brake 명령으로 변환하기 위해 두 개의 PID 제어기를 사용한다:</p>
+<ul>
+<li><strong>종방향(Longitudinal) PID</strong>: 목표 속도와 실제 속도 차이로 throttle/brake 결정</li>
+<li><strong>횡방향(Lateral) PID</strong>: 다음 웨이포인트 방향과 현재 방향 차이로 steering 결정</li>
+</ul>
+<p><strong>Creeping 동작</strong>: 차량이 오랫동안(55초 이상) 정지해 있으면 목표 속도를 3.0 m/s로 설정하여 강제로 전진시킨다. 교차로에서 모델이 멈추는 관성(inertia) 문제를 완화하지만 충돌 가능성도 있다.</p>
+<h3 id="35-보조-태스크-auxiliary-tasks">3.5 보조 태스크 (Auxiliary Tasks)<a class="anchor" href="#35-%eb%b3%b4%ec%a1%b0-%ed%83%9c%ec%8a%a4%ed%81%ac-auxiliary-tasks">#</a></h3>
+<p>웨이포인트 예측만으로는 의미 있는 중간 표현 학습이 어려울 수 있어, 4가지 보조 태스크를 추가한다:</p>
+<ol>
+<li><strong>깊이 예측 (Depth Estimation)</strong>: 이미지 브랜치에서 픽셀별 깊이 예측. 카메라 특징이 3D 공간을 이해하도록 유도</li>
+<li><strong>2D 시맨틱 분할 (2D Semantic Segmentation)</strong>: 이미지에서 도로, 차량, 보행자 등 클래스 분류</li>
+<li><strong>HD 맵 예측 (HD Map Prediction)</strong>: BEV에서 주행 가능 영역, 차선 중심선, 도로 경계 예측</li>
+<li><strong>차량 탐지 (Vehicle Detection)</strong>: BEV LiDAR 브랜치에서 차량 위치와 방향 예측. CenterPoint 헤드 사용</li>
+</ol>
+$$\mathcal{L}_{\text{total}} = \mathcal{L}_1 + \lambda_{\text{depth}} \mathcal{L}_{\text{depth}} + \lambda_{\text{seg}} \mathcal{L}_{\text{seg}} + \lambda_{\text{map}} \mathcal{L}_{\text{map}} + \lambda_{\text{det}} \mathcal{L}_{\text{det}}$$<p>보조 태스크를 모두 제거하면 DS가 53.76 → 46.23으로 크게 하락 (Table 7). 특히 HD 맵과 차량 탐지가 중요.</p>
+<hr>
+<h2 id="chapter-4-experiments">Chapter 4: Experiments<a class="anchor" href="#chapter-4-experiments">#</a></h2>
+<p><strong>요약</strong></p>
+<h3 id="41-평가-환경">4.1 평가 환경<a class="anchor" href="#41-%ed%8f%89%ea%b0%80-%ed%99%98%ea%b2%bd">#</a></h3>
+<p><strong>CARLA 시뮬레이터</strong>: 8개 마을(Town01~Town07, Town10)에서 평가. 학습에 사용하지 않은 새로운 마을과 날씨 조건(Night, Rain, Fog 등 6가지)에서 테스트.</p>
+<p><strong>Longestè6 벤치마크</strong>: 76개 사전 정의 경로로 구성된 공식 CARLA 평가. 평균 경로 길이 1.5km. 4가지 주요 지표:</p>
+<table>
+  <thead>
+      <tr>
+          <th>지표</th>
+          <th>설명</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>DS (Driving Score)</strong></td>
+          <td>RC × IS의 곱. 종합 주행 점수 (높을수록 좋음)</td>
+      </tr>
+      <tr>
+          <td><strong>RC (Route Completion)</strong></td>
+          <td>전체 경로 중 완료한 비율 (%)</td>
+      </tr>
+      <tr>
+          <td><strong>IS (Infraction Score)</strong></td>
+          <td>위반 발생 시마다 패널티 곱. 충돌 0.65×, 신호 위반 0.7× 등</td>
+      </tr>
+      <tr>
+          <td><strong>Collisions/km</strong></td>
+          <td>킬로미터당 충돌 횟수</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="42-주요-결과">4.2 주요 결과<a class="anchor" href="#42-%ec%a3%bc%ec%9a%94-%ea%b2%b0%ea%b3%bc">#</a></h3>
+<p><strong>Longestè6 벤치마크</strong> (단일 모델):</p>
+<table>
+  <thead>
+      <tr>
+          <th>Method</th>
+          <th>DS↑</th>
+          <th>RC↑</th>
+          <th>IS↑</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>NEAT</td>
+          <td>44.82</td>
+          <td>31.94</td>
+          <td>0.65</td>
+      </tr>
+      <tr>
+          <td>LAV</td>
+          <td>38.42</td>
+          <td>43.62</td>
+          <td>0.60</td>
+      </tr>
+      <tr>
+          <td>Late Fusion (GF)</td>
+          <td>34.79</td>
+          <td>41.70</td>
+          <td>0.55</td>
+      </tr>
+      <tr>
+          <td>Geometric Fusion (GF)</td>
+          <td>34.22</td>
+          <td>47.91</td>
+          <td>0.47</td>
+      </tr>
+      <tr>
+          <td><strong>TransFuser (Ours)</strong></td>
+          <td><strong>54.97</strong></td>
+          <td><strong>47.25</strong></td>
+          <td><strong>0.77</strong></td>
+      </tr>
+  </tbody>
+</table>
+<ul>
+<li>TransFuser가 DS 기준 약 <strong>10포인트</strong> 차이로 1위</li>
+<li>특히 IS(위반 점수)에서 큰 차이 → 교차로 등 복잡 상황에서 충돌 대폭 감소</li>
+</ul>
+<p><strong>CARLA 공식 리더보드</strong>:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Method</th>
+          <th>DS↑</th>
+          <th>RC↑</th>
+          <th>IS↑</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>NEAT</td>
+          <td>21.83</td>
+          <td>41.71</td>
+          <td>0.65</td>
+      </tr>
+      <tr>
+          <td>WOR</td>
+          <td>31.37</td>
+          <td>57.65</td>
+          <td>0.56</td>
+      </tr>
+      <tr>
+          <td>LAW</td>
+          <td>61.85</td>
+          <td>94.46</td>
+          <td>0.64</td>
+      </tr>
+      <tr>
+          <td><strong>TransFuser (Ours)</strong></td>
+          <td><strong>47.13</strong></td>
+          <td><strong>72.84</strong></td>
+          <td><strong>0.71</strong></td>
+      </tr>
+      <tr>
+          <td><strong>Latent TransFuser (Ours)</strong></td>
+          <td><strong>45.20</strong></td>
+          <td><strong>66.31</strong></td>
+          <td><strong>0.72</strong></td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="43-소거-실험">4.3 소거 실험<a class="anchor" href="#43-%ec%86%8c%ea%b1%b0-%ec%8b%a4%ed%97%98">#</a></h3>
+<p><strong>보조 태스크 영향</strong> (Table 7):</p>
+<table>
+  <thead>
+      <tr>
+          <th>설정</th>
+          <th>DS↑</th>
+          <th>RC↑</th>
+          <th>IS↑</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>No Aux Tasks</td>
+          <td>46.23</td>
+          <td>56.88</td>
+          <td>0.58</td>
+      </tr>
+      <tr>
+          <td>No Semantics</td>
+          <td>53.76</td>
+          <td>56.82</td>
+          <td>0.66</td>
+      </tr>
+      <tr>
+          <td>No HD Map</td>
+          <td>50.96</td>
+          <td>49.52</td>
+          <td>0.58</td>
+      </tr>
+      <tr>
+          <td>No Vehicle Detection</td>
+          <td>53.43</td>
+          <td>54.49</td>
+          <td>0.67</td>
+      </tr>
+      <tr>
+          <td><strong>All Losses (Default)</strong></td>
+          <td><strong>54.97</strong></td>
+          <td><strong>49.06</strong></td>
+          <td><strong>0.77</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>센서 융합 방식 비교</strong> (Table 5):</p>
+<ul>
+<li><strong>Global attention</strong>: 메모리 과다로 $100 \times 100$ 해상도로 축소 필요, 성능↓</li>
+<li><strong>Points attention</strong> (reference point만): DS 0.423</li>
+<li><strong>Local (Deformable)</strong>: DS 최고</li>
+</ul>
+<p>→ TransFuser의 크로스 모달 어텐션이 단순 Late/Early Fusion 대비 일관되게 우수</p>
+<p><strong>입력 설정 소거</strong> (Table 9):</p>
+<table>
+  <thead>
+      <tr>
+          <th>Camera FOV</th>
+          <th>DS↑</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>120° (1 cam)</td>
+          <td>47.90</td>
+      </tr>
+      <tr>
+          <td>180° (3 cam, default)</td>
+          <td>47.35</td>
+      </tr>
+      <tr>
+          <td>240° (5 cam)</td>
+          <td>46.37</td>
+      </tr>
+  </tbody>
+</table>
+<ul>
+<li>LiDAR 범위 확장이 오히려 성능↓ → LiDAR 좌표계 보조 태스크와 불일치</li>
+<li>카메라 FOV 140°가 최적 (Table 9에서 NAVSIM 실험과 일치)</li>
+</ul>
+<h3 id="44-attention-시각화">4.4 Attention 시각화<a class="anchor" href="#44-attention-%ec%8b%9c%ea%b0%81%ed%99%94">#</a></h3>
+<p>Fig. 6에서 LiDAR 쿼리 토큰이 교차로 주변의 이미지 토큰(교통 신호등, 차량)에 강하게 어텐션함을 확인. Table 4에서 초기 Transformer(T1, T2)는 LiDAR→Image 크로스 어텐션이 낮고, 후기(T3, T4)에서 높아짐 → 처음에는 각 모달리티 내 처리 후 점차 크로스 모달 통합.</p>
+<hr>
+<h2 id="핵심-개념-정리">핵심 개념 정리<a class="anchor" href="#%ed%95%b5%ec%8b%ac-%ea%b0%9c%eb%85%90-%ec%a0%95%eb%a6%ac">#</a></h2>
+<table>
+  <thead>
+      <tr>
+          <th>개념</th>
+          <th>설명</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>다중 모달 융합 Transformer</strong></td>
+          <td>이미지와 LiDAR 특징 맵을 토큰 시퀀스로 변환 후 self-attention으로 전역적 크로스 모달 관계 학습</td>
+      </tr>
+      <tr>
+          <td><strong>자기회귀 웨이포인트 예측</strong></td>
+          <td>GRU가 이전 예측 웨이포인트를 입력받아 다음 웨이포인트를 순차적으로 예측</td>
+      </tr>
+      <tr>
+          <td><strong>PID 제어기</strong></td>
+          <td>예측된 웨이포인트를 실제 조향각과 가속/제동 명령으로 변환하는 고전적 제어 알고리즘</td>
+      </tr>
+      <tr>
+          <td><strong>보조 태스크</strong></td>
+          <td>깊이, 시맨틱 분할, HD 맵, 차량 탐지를 동시에 학습하여 의미 있는 중간 표현 유도</td>
+      </tr>
+      <tr>
+          <td><strong>Creeping</strong></td>
+          <td>장시간 정지 시 강제 전진하는 안전 휴리스틱. 교차로 관성 문제를 완화하나 충돌 리스크 존재</td>
+      </tr>
+      <tr>
+          <td><strong>Driving Score (DS)</strong></td>
+          <td>경로 완료율(RC)과 위반 점수(IS)의 곱. 자율주행 종합 성능 지표</td>
+      </tr>
+      <tr>
+          <td><strong>Infraction Score (IS)</strong></td>
+          <td>충돌·신호 위반 등 발생 시마다 일정 비율로 감점되는 패널티 지표. 1에 가까울수록 안전</td>
+      </tr>
+      <tr>
+          <td><strong>모방 학습 (Imitation Learning)</strong></td>
+          <td>전문가 데이터(상태→행동 쌍)를 supervised learning으로 모방. DAgger 등 확장으로 분포 이동 문제 완화</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="결론-및-시사점">결론 및 시사점<a class="anchor" href="#%ea%b2%b0%eb%a1%a0-%eb%b0%8f-%ec%8b%9c%ec%82%ac%ec%a0%90">#</a></h2>
+<p>TransFuser는 카메라와 LiDAR의 전역적 융합을 Transformer self-attention으로 실현하여 자율주행 성능을 크게 향상시켰다:</p>
+<ol>
+<li><strong>전역 맥락 포착</strong>: 교차로에서 신호등(이미지)과 접근 차량(LiDAR)을 동시에 고려하는 능력 확보</li>
+<li><strong>보조 태스크의 중요성</strong>: 웨이포인트 예측 외에 HD 맵, 차량 탐지를 함께 학습하면 표현의 질이 크게 향상</li>
+<li><strong>단순함의 효과</strong>: NAVSIM 결과에서 확인되듯, 간단한 아키텍처와 1 GPU 1일 학습으로도 UniAD, PARA-Drive 등 대형 모델과 대등한 성능</li>
+</ol>
+<p><strong>한계</strong>:</p>
+<ul>
+<li>단일 타임스텝 입력만 처리하여 시간적 정보(차량 속도 추정 등) 활용 불가</li>
+<li>Creeping 휴리스틱이 일부 충돌을 유발</li>
+<li>카메라-LiDAR 좌표 불일치로 LiDAR 범위 조절이 직관적이지 않은 결과를 낳기도 함</li>
+</ul>
+<p><strong>실무적 시사점</strong>: TransFuser는 CARLA 기반 E2E 자율주행의 새로운 baseline으로 자리잡았다. NAVSIM, Longestè6 등 여러 벤치마크에서 꾸준히 강력한 성능을 보이며, 간단하고 재현 가능한 코드베이스를 공개하여 후속 연구의 출발점으로 널리 사용된다.</p>
+<hr>
+<p><em>관련 논문: <a href="/posts/papers/attention-is-all-you-need/">Attention Is All You Need</a>, <a href="/posts/papers/CARLA-An-Open-Urban-Driving-Simulator/">CARLA</a>, <a href="/posts/papers/uniad-planning-oriented-autonomous-driving/">UniAD</a>, <a href="/posts/papers/NAVSIM/">NAVSIM</a>, <a href="/posts/papers/bench2drive-multi-ability-benchmarking-e2e-autonomous-driving/">Bench2Drive</a></em></p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/paper/docs/nuplan/" class="flex align-center">
+        <img src="/paper/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>nuPlan: A closed-loop ML-based planning benchmark for autonomous vehicles</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/paper/docs/3d-gaussian-splatting/" class="flex align-center">
+        <span>3D Gaussian Splatting for Real-Time Radiance Field Rendering</span>
+        <img src="/paper/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#chapter-1-introduction">Chapter 1: Introduction</a></li>
+    <li><a href="#chapter-2-related-work">Chapter 2: Related Work</a></li>
+    <li><a href="#chapter-3-transfuser-구조">Chapter 3: TransFuser 구조</a>
+      <ul>
+        <li><a href="#31-입력-표현">3.1 입력 표현</a></li>
+        <li><a href="#32-다중-모달-융합-transformer">3.2 다중 모달 융합 Transformer</a></li>
+        <li><a href="#33-웨이포인트-예측-네트워크">3.3 웨이포인트 예측 네트워크</a></li>
+        <li><a href="#34-저속-제어기pid-controller">3.4 저속 제어기(PID Controller)</a></li>
+        <li><a href="#35-보조-태스크-auxiliary-tasks">3.5 보조 태스크 (Auxiliary Tasks)</a></li>
+      </ul>
+    </li>
+    <li><a href="#chapter-4-experiments">Chapter 4: Experiments</a>
+      <ul>
+        <li><a href="#41-평가-환경">4.1 평가 환경</a></li>
+        <li><a href="#42-주요-결과">4.2 주요 결과</a></li>
+        <li><a href="#43-소거-실험">4.3 소거 실험</a></li>
+        <li><a href="#44-attention-시각화">4.4 Attention 시각화</a></li>
+      </ul>
+    </li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

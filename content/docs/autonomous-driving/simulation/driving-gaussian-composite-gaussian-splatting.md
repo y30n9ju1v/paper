@@ -5,6 +5,10 @@ draft: false
 categories: ["Papers", "Autonomous Driving", "Novel View Synthesis"]
 tags: ["3D Gaussian Splatting", "Autonomous Driving", "Novel View Synthesis", "LiDAR"]
 year: 2024
+references:
+  - "3d-gaussian-splatting"
+  - "street-gaussians-modeling-dynamic-urban-scenes"
+  - "nuscenes-multimodal-dataset-autonomous-driving"
 ---
 
 ## 개요

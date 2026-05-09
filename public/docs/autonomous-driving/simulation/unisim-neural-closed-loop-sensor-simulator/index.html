@@ -1,0 +1,1649 @@
+<!DOCTYPE html>
+<html lang="ko-KR" dir="ltr">
+<head>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="개요# 저자: Ze Yang, Yun Chen, Jingkang Wang, Sivabalan Manivasagam, Wei-Chiu Ma, Anqi Joyce Yang, Raquel Urtasun 소속: Waabi, University of Toronto, Massachusetts Institute of Technology 발행년도: 2023 (arXiv:2308.01898, 3 Aug 2023) 주요 내용: 단일 주행 로그(recorded log)로부터 현실적인 멀티센서 시뮬레이션을 생성하는 신경망 기반 폐루프(closed-loop) 센서 시뮬레이터. 카메라 이미지와 LiDAR 포인트 클라우드를 동시에 시뮬레이션하며, 새로운 시점·새로운 액터 추가·기존 액터 제거 등 다양한 장면 편집이 가능하다. 한계 극복# 자율주행 시스템을 안전하게 검증하려면 실제 도로에서 좀처럼 발생하지 않는 위험 상황(safety-critical scenario)을 대규모로 생성해야 한다. 기존 방법들은 다음과 같은 한계를 가지고 있었다.
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://y30n9ju1v.github.io/paper/docs/autonomous-driving/simulation/unisim-neural-closed-loop-sensor-simulator/">
+  <meta property="og:site_name" content="Paper">
+  <meta property="og:title" content="UniSim: A Neural Closed-Loop Sensor Simulator">
+  <meta property="og:description" content="개요# 저자: Ze Yang, Yun Chen, Jingkang Wang, Sivabalan Manivasagam, Wei-Chiu Ma, Anqi Joyce Yang, Raquel Urtasun 소속: Waabi, University of Toronto, Massachusetts Institute of Technology 발행년도: 2023 (arXiv:2308.01898, 3 Aug 2023) 주요 내용: 단일 주행 로그(recorded log)로부터 현실적인 멀티센서 시뮬레이션을 생성하는 신경망 기반 폐루프(closed-loop) 센서 시뮬레이터. 카메라 이미지와 LiDAR 포인트 클라우드를 동시에 시뮬레이션하며, 새로운 시점·새로운 액터 추가·기존 액터 제거 등 다양한 장면 편집이 가능하다. 한계 극복# 자율주행 시스템을 안전하게 검증하려면 실제 도로에서 좀처럼 발생하지 않는 위험 상황(safety-critical scenario)을 대규모로 생성해야 한다. 기존 방법들은 다음과 같은 한계를 가지고 있었다.">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:published_time" content="2026-04-17T08:45:00+09:00">
+    <meta property="article:modified_time" content="2026-04-17T08:45:00+09:00">
+    <meta property="article:tag" content="Autonomous Driving">
+    <meta property="article:tag" content="Neural Rendering">
+    <meta property="article:tag" content="Simulation">
+    <meta property="article:tag" content="NeRF">
+    <meta property="article:tag" content="LiDAR">
+    <meta property="article:tag" content="Closed-Loop">
+
+
+  <meta itemprop="name" content="UniSim: A Neural Closed-Loop Sensor Simulator">
+  <meta itemprop="description" content="개요# 저자: Ze Yang, Yun Chen, Jingkang Wang, Sivabalan Manivasagam, Wei-Chiu Ma, Anqi Joyce Yang, Raquel Urtasun 소속: Waabi, University of Toronto, Massachusetts Institute of Technology 발행년도: 2023 (arXiv:2308.01898, 3 Aug 2023) 주요 내용: 단일 주행 로그(recorded log)로부터 현실적인 멀티센서 시뮬레이션을 생성하는 신경망 기반 폐루프(closed-loop) 센서 시뮬레이터. 카메라 이미지와 LiDAR 포인트 클라우드를 동시에 시뮬레이션하며, 새로운 시점·새로운 액터 추가·기존 액터 제거 등 다양한 장면 편집이 가능하다. 한계 극복# 자율주행 시스템을 안전하게 검증하려면 실제 도로에서 좀처럼 발생하지 않는 위험 상황(safety-critical scenario)을 대규모로 생성해야 한다. 기존 방법들은 다음과 같은 한계를 가지고 있었다.">
+  <meta itemprop="datePublished" content="2026-04-17T08:45:00+09:00">
+  <meta itemprop="dateModified" content="2026-04-17T08:45:00+09:00">
+  <meta itemprop="wordCount" content="2229">
+  <meta itemprop="keywords" content="Autonomous Driving,Neural Rendering,Simulation,NeRF,LiDAR,Closed-Loop">
+
+<title>UniSim: A Neural Closed-Loop Sensor Simulator | Paper</title>
+<link rel="icon" href="/paper/favicon.png" >
+<link rel="manifest" href="/paper/manifest.json">
+<link rel="canonical" href="https://y30n9ju1v.github.io/paper/docs/autonomous-driving/simulation/unisim-neural-closed-loop-sensor-simulator/">
+<link rel="stylesheet" href="/paper/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/paper/fuse.min.js"></script>
+  <script defer src="/paper/en.search.min.b1685711fcbce34e51ac4e2f3f34db3464d1f2809b936b8ce7ecb2014e6bf361.js" integrity="sha256-sWhXEfy8405RrE4vPzTbNGTR8oCbk2uM5&#43;yyAU5r82E=" crossorigin="anonymous"></script>
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '\\[', right: '\\]', display: true},
+      {left: '\\(', right: '\\)', display: false},
+      {left: '$', right: '$', display: false}
+    ]
+  });
+});
+</script>
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/paper/"><span>Paper</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-26dad33899f9ff5c8eb940bf3bc5c8c6" class="toggle"  />
+    <label for="section-26dad33899f9ff5c8eb940bf3bc5c8c6" class="flex">
+      <a role="button" class="">
+        Deep Learning</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/clip-learning-transferable-visual-models-from-natural-language-supervision/" class="">
+      CLIP: Learning Transferable Visual Models From Natural Language Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/pointnet-plus-plus-deep-hierarchical-feature-learning/" class="">
+      PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/vit-an-image-is-worth-16x16-words/" class="">
+      ViT: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/resnet-deep-residual-learning-for-image-recognition/" class="">
+      ResNet: Deep Residual Learning for Image Recognition</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/detr-end-to-end-object-detection-with-transformers/" class="">
+      DETR: End-to-End Object Detection with Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/attention-is-all-you-need/" class="">
+      Attention Is All You Need</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/proximal-policy-optimization/" class="">
+      Proximal Policy Optimization Algorithms (PPO)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/" class="">
+      PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/dqn-playing-atari-with-deep-reinforcement-learning/" class="">
+      Playing Atari with Deep Reinforcement Learning</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-55a967b32f0d01d82a62069db60bc9a4" class="toggle"  />
+    <label for="section-55a967b32f0d01d82a62069db60bc9a4" class="flex">
+      <a role="button" class="">
+        Novel View Synthesis</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/instant-ngp-multiresolution-hash-encoding/" class="">
+      Instant Neural Graphics Primitives with a Multiresolution Hash Encoding</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/4d-gaussian-splatting/" class="">
+      4D Gaussian Splatting for Real-Time Dynamic Scene Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3d-gaussian-splatting/" class="">
+      3D Gaussian Splatting for Real-Time Radiance Field Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3d-gaussian-ray-tracing/" class="">
+      3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/" class="">
+      3DGUT: Enabling Distorted Cameras and Secondary Rays in Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/difix3d-plus/" class="">
+      DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/" class="">
+      NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-bba278969cd1a39a02e4f40a6eceba0d" class="toggle"  />
+    <label for="section-bba278969cd1a39a02e4f40a6eceba0d" class="flex">
+      <a role="button" class="">
+        Generative Models</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/controlnet-adding-conditional-control-to-text-to-image-diffusion-models/" class="">
+      ControlNet: Adding Conditional Control to Text-to-Image Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/high-resolution-image-synthesis-with-latent-diffusion-models/" class="">
+      High-Resolution Image Synthesis with Latent Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/denoising-diffusion-probabilistic-models/" class="">
+      Denoising Diffusion Probabilistic Models (DDPM)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/drivearena/" class="">
+      DriveArena: A Closed-loop Generative Simulation Platform for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/magicdrive-street-view-generation-3d-geometry-control/" class="">
+      MagicDrive: Street View Generation with Diverse 3D Geometry Control</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/drivedreamer/" class="">
+      DriveDreamer: Towards Real-world-driven World Models for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/gaia-1/" class="">
+      GAIA-1: A Generative World Model for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-ba66afb2e4f86c05dd02e329f85a3a79" class="toggle" checked />
+    <label for="section-ba66afb2e4f86c05dd02e329f85a3a79" class="flex">
+      <a role="button" class="">
+        Autonomous Driving</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-d7ba9eb4570c2bfc131b9c6410bbe7ec" class="toggle"  />
+    <label for="section-d7ba9eb4570c2bfc131b9c6410bbe7ec" class="flex">
+      <a role="button" class="">
+        Perception</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/" class="">
+      GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/" class="">
+      StreamMapNet: Streaming Mapping Network for Vectorized Online HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/vectormapnet-end-to-end-vectorized-hd-map-learning/" class="">
+      VectorMapNet: End-to-end Vectorized HD Map Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/maptr-structured-modeling-online-vectorized-hd-map-construction/" class="">
+      MapTR: Structured Modeling and Learning for Online Vectorized HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/pointpillars-fast-encoders-object-detection-point-clouds/" class="">
+      PointPillars: Fast Encoders for Object Detection from Point Clouds</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/centerpoint-center-based-3d-object-detection-and-tracking/" class="">
+      CenterPoint: Center-based 3D Object Detection and Tracking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/monoscene-monocular-3d-semantic-scene-completion/" class="">
+      MonoScene: Monocular 3D Semantic Scene Completion</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/tpvformer-tri-perspective-view-3d-semantic-occupancy/" class="">
+      TPVFormer: Tri-Perspective View for Vision-Based 3D Semantic Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/surroundocc/" class="">
+      SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/detr3d-3d-object-detection-multi-view-images/" class="">
+      DETR3D: 3D Object Detection from Multi-view Images via 3D-to-2D Queries</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/occ3d-large-scale-3d-occupancy-prediction-benchmark/" class="">
+      Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevfusion-multi-task-multi-sensor-fusion/" class="">
+      BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/lift-splat-shoot/" class="">
+      Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevdepth/" class="">
+      BEVDepth: Acquisition of Reliable Depth for Multi-view 3D Object Detection</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevformer/" class="">
+      BEVFormer: Learning Bird&#39;s-Eye-View Representation from Multi-Camera Images via Spatiotemporal Transformers</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-7a9153220f9190837dca18e7bc97c48d" class="toggle" checked />
+    <label for="section-7a9153220f9190837dca18e7bc97c48d" class="flex">
+      <a role="button" class="">
+        Simulation</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/lidarsim-realistic-lidar-simulation-by-leveraging-the-real-world/" class="">
+      LiDARsim: Realistic LiDAR Simulation by Leveraging the Real World</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/neurad-neural-rendering-for-autonomous-driving/" class="">
+      NeuRAD: Neural Rendering for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/omnire-omni-urban-scene-reconstruction/" class="">
+      OmniRe: Omni Urban Scene Reconstruction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/street-gaussians-modeling-dynamic-urban-scenes/" class="">
+      Street Gaussians: Modeling Dynamic Urban Scenes with Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/emernerf/" class="">
+      EmerNeRF: Emergent Spatial-Temporal Scene Decomposition via Self-Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/unisim-neural-closed-loop-sensor-simulator/" class="active">
+      UniSim: A Neural Closed-Loop Sensor Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/driving-gaussian-composite-gaussian-splatting/" class="">
+      DrivingGaussian: Composite Gaussian Splatting for Surrounding Dynamic Autonomous Driving Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/carla-an-open-urban-driving-simulator/" class="">
+      CARLA: An Open Urban Driving Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/hugsim-real-time-photorealistic-closed-loop-simulator/" class="">
+      HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-e9f19cbf840aaca3029a9a86c6765e7f" class="toggle"  />
+    <label for="section-e9f19cbf840aaca3029a9a86c6765e7f" class="flex">
+      <a role="button" class="">
+        Planning</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/bench2drive-multi-ability-benchmarking-e2e-autonomous-driving/" class="">
+      Bench2Drive: Towards Multi-Ability Benchmarking of Closed-Loop End-To-End Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/navsim/" class="">
+      NAVSIM: Data-Driven Non-Reactive Autonomous Vehicle Simulation and Benchmarking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/transfuser/" class="">
+      TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/uniad-planning-oriented-autonomous-driving/" class="">
+      UniAD: Planning-oriented Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/vad/" class="">
+      VAD: Vectorized Scene Representation for Efficient Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-c1644e2152ae0bb887d703d1c6a373f2" class="toggle"  />
+    <label for="section-c1644e2152ae0bb887d703d1c6a373f2" class="flex">
+      <a role="button" class="">
+        Dataset &amp; Benchmark</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/nuplan/" class="">
+      nuPlan: A closed-loop ML-based planning benchmark for autonomous vehicles</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/nuscenes-multimodal-dataset-autonomous-driving/" class="">
+      nuScenes: A Multimodal Dataset for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/waymo-open-dataset/" class="">
+      Scalability in Perception for Autonomous Driving: Waymo Open Dataset</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/paper/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>UniSim: A Neural Closed-Loop Sensor Simulator</h3>
+
+  <label for="toc-control">
+    
+    <img src="/paper/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#section-1-introduction">Section 1: Introduction</a></li>
+    <li><a href="#section-2-related-work">Section 2: Related Work</a></li>
+    <li><a href="#section-3-neural-scene-simulation">Section 3: Neural Scene Simulation</a>
+      <ul>
+        <li><a href="#31-preliminaries--신경-특징-필드neural-feature-field">3.1 Preliminaries — 신경 특징 필드(Neural Feature Field)</a></li>
+        <li><a href="#32-compositional-scene-representation--합성적-장면-표현">3.2 Compositional Scene Representation — 합성적 장면 표현</a></li>
+        <li><a href="#33-multi-modal-sensor-simulation--멀티모달-센서-시뮬레이션">3.3 Multi-modal Sensor Simulation — 멀티모달 센서 시뮬레이션</a></li>
+        <li><a href="#34-learning--학습">3.4 Learning — 학습</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-4-experiments">Section 4: Experiments</a>
+      <ul>
+        <li><a href="#41-experimental-details">4.1 Experimental Details</a></li>
+        <li><a href="#42-unisim-controllability">4.2 UniSim Controllability</a></li>
+        <li><a href="#43-realism-evaluation">4.3 Realism Evaluation</a></li>
+        <li><a href="#44-perception-evaluation-and-training">4.4 Perception Evaluation and Training</a></li>
+        <li><a href="#45-full-autonomy-evaluation-with-unisim">4.5 Full Autonomy Evaluation with UniSim</a></li>
+      </ul>
+    </li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h2 id="개요">개요<a class="anchor" href="#%ea%b0%9c%ec%9a%94">#</a></h2>
+<ul>
+<li><strong>저자</strong>: Ze Yang, Yun Chen, Jingkang Wang, Sivabalan Manivasagam, Wei-Chiu Ma, Anqi Joyce Yang, Raquel Urtasun</li>
+<li><strong>소속</strong>: Waabi, University of Toronto, Massachusetts Institute of Technology</li>
+<li><strong>발행년도</strong>: 2023 (arXiv:2308.01898, 3 Aug 2023)</li>
+<li><strong>주요 내용</strong>: 단일 주행 로그(recorded log)로부터 현실적인 멀티센서 시뮬레이션을 생성하는 신경망 기반 폐루프(closed-loop) 센서 시뮬레이터. 카메라 이미지와 LiDAR 포인트 클라우드를 동시에 시뮬레이션하며, 새로운 시점·새로운 액터 추가·기존 액터 제거 등 다양한 장면 편집이 가능하다.</li>
+</ul>
+<hr>
+<h2 id="한계-극복">한계 극복<a class="anchor" href="#%ed%95%9c%ea%b3%84-%ea%b7%b9%eb%b3%b5">#</a></h2>
+<p>자율주행 시스템을 안전하게 검증하려면 실제 도로에서 좀처럼 발생하지 않는 위험 상황(safety-critical scenario)을 대규모로 생성해야 한다. 기존 방법들은 다음과 같은 한계를 가지고 있었다.</p>
+<ul>
+<li><strong>기존 한계 1 — 개방 루프(Open-loop) 평가</strong>: 기존 시뮬레이터는 SDV(자율주행차)가 실제로 행동을 바꿨을 때 주변 센서 데이터가 어떻게 달라지는지 반영하지 못한다. 로그를 그대로 재생할 뿐이므로 자율주행 시스템이 다른 결정을 내렸을 때의 결과를 테스트할 수 없다.</li>
+<li><strong>기존 한계 2 — 편집 불가능한 정적 재생</strong>: 기존 신경 렌더링 방법(NeRF 계열)은 장면을 사실적으로 렌더링하지만, 새로운 뷰포인트에서만 렌더링할 뿐 액터를 추가·제거하거나 SDV의 궤적을 바꾸는 편집은 지원하지 않는다.</li>
+<li><strong>기존 한계 3 — 단일 센서 모달리티</strong>: 대부분의 시뮬레이터는 카메라 또는 LiDAR 중 하나만 지원하는 반면, 실제 SDV는 두 가지 센서를 동시에 사용하므로 단일 모달리티 시뮬레이션은 현실과 괴리가 있다.</li>
+<li><strong>이 논문의 접근 방식</strong>: 장면을 정적 배경과 동적 액터로 분리하여 각각 신경 특징 그리드(neural feature grid)로 표현한 뒤, 볼륨 렌더링으로 카메라 이미지와 LiDAR를 동시에 합성한다. 이를 통해 SDV가 새로운 궤적을 취할 때마다 실시간으로 새로운 센서 데이터를 생성하는 <strong>폐루프 멀티센서 시뮬레이션</strong>을 실현한다.</li>
+</ul>
+<hr>
+<h2 id="목차">목차<a class="anchor" href="#%eb%aa%a9%ec%b0%a8">#</a></h2>
+<ul>
+<li>Section 1: Introduction</li>
+<li>Section 2: Related Work</li>
+<li>Section 3: Neural Scene Simulation
+<ul>
+<li>3.1 Preliminaries</li>
+<li>3.2 Compositional Scene Representation</li>
+<li>3.3 Multi-modal Sensor Simulation</li>
+<li>3.4 Learning</li>
+</ul>
+</li>
+<li>Section 4: Experiments
+<ul>
+<li>4.1 Experimental Details</li>
+<li>4.2 UniSim Controllability</li>
+<li>4.3 Realism Evaluation</li>
+<li>4.4 Perception Evaluation and Training</li>
+<li>4.5 Full Autonomy Evaluation</li>
+</ul>
+</li>
+<li>Section 5: Conclusion</li>
+</ul>
+<hr>
+<h2 id="section-1-introduction">Section 1: Introduction<a class="anchor" href="#section-1-introduction">#</a></h2>
+<p><strong>요약</strong></p>
+<p>고속도로를 주행하다 갑자기 옆 차선에서 차량이 끼어드는 상황을 생각해보자. 만약 이 장면의 디지털 트윈(digital twin)이 있다면, SDV가 다른 결정을 내렸을 때 어떤 일이 일어났을지 시뮬레이션해볼 수 있다. 그러나 현실에서는 이런 위험한 장면을 안전하게 수집하기 어렵고, 기존 로그를 그대로 재생하는 방식으로는 SDV가 능동적으로 반응할 때의 새로운 센서 데이터를 얻을 수 없다.</p>
+<p>UniSim은 이 문제를 해결하기 위해 <strong>단일 주행 로그</strong>에서 조작 가능한 디지털 트윈을 구성한다. 자율주행 시스템이 시뮬레이터와 상호작용하면서 차선을 바꾸거나 다른 경로를 선택하면, UniSim은 그에 맞는 새로운 카메라 이미지와 LiDAR 포인트 클라우드를 실시간으로 생성한다. 이를 통해 데이터로는 커버하기 어려운 위험 상황(vehicle cut-in, new actor insertion 등)을 폐루프로 평가할 수 있다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>폐루프 시뮬레이션(Closed-loop simulation)</strong>: SDV의 행동 → 새로운 센서 데이터 생성 → SDV의 다음 행동 결정이 반복되는 구조. 개방 루프(open-loop)와 달리 SDV의 실제 반응을 테스트할 수 있다.</li>
+<li><strong>디지털 트윈(Digital twin)</strong>: 현실 세계의 물리적 객체나 시스템을 가상 공간에 복제한 것. 여기서는 도로 장면 전체를 신경망으로 표현한 가상 환경을 의미한다.</li>
+<li><strong>Safety-critical scenario</strong>: 긴급 제동, 차선 끼어들기, 보행자 돌출 등 실제 도로에서 발생하기 어렵지만 자율주행 시스템의 안전성 검증에 반드시 필요한 극한 상황.</li>
+</ul>
+<hr>
+<h2 id="section-2-related-work">Section 2: Related Work<a class="anchor" href="#section-2-related-work">#</a></h2>
+<p><strong>요약</strong></p>
+<p>관련 연구는 크게 세 흐름으로 나뉜다.</p>
+<ol>
+<li><strong>자율주행용 시뮬레이션 환경</strong>: CARLA, LGSVL, GeoSim 등은 물리 엔진이나 3D 에셋 기반으로 시뮬레이션 환경을 구축한다. 현실감과 편집 자유도 사이의 균형이 어렵다.</li>
+<li><strong>신규 뷰 합성(Novel View Synthesis)</strong>: NeRF, Instant-NGP, Mip-NeRF 360 등은 실제 이미지로부터 새로운 시점의 이미지를 생성한다. 그러나 대규모 야외 장면과 동적 객체 처리, 그리고 LiDAR 시뮬레이션에는 한계가 있다.</li>
+<li><strong>데이터 기반 자율주행 시뮬레이션</strong>: Neural Scene Graphs, FVS 등은 장면을 분해하여 편집 가능성을 높이지만 폐루프 평가나 멀티센서 지원이 부족하다.</li>
+</ol>
+<p>UniSim은 이 세 흐름을 통합하여 <strong>편집 가능한 멀티센서 폐루프 시뮬레이션</strong>을 최초로 구현한다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Neural Scene Graphs</strong>: 장면을 노드(배경·액터)로 구성된 그래프로 표현하여 각 객체를 독립적으로 편집·조합하는 방법.</li>
+<li><strong>Volume rendering</strong>: 3D 공간의 밀도(density)와 색상을 적분하여 2D 이미지를 생성하는 렌더링 기법. NeRF의 핵심 원리이다.</li>
+</ul>
+<hr>
+<h2 id="section-3-neural-scene-simulation">Section 3: Neural Scene Simulation<a class="anchor" href="#section-3-neural-scene-simulation">#</a></h2>
+<h3 id="31-preliminaries--신경-특징-필드neural-feature-field">3.1 Preliminaries — 신경 특징 필드(Neural Feature Field)<a class="anchor" href="#31-preliminaries--%ec%8b%a0%ea%b2%bd-%ed%8a%b9%ec%a7%95-%ed%95%84%eb%93%9cneural-feature-field">#</a></h3>
+<p><strong>요약</strong></p>
+<p>UniSim의 기본 표현 단위는 **신경 특징 필드(Neural Feature Field, NFF)**이다. 3D 공간의 임의의 점 $\mathbf{x} \in \mathbb{R}^3$에 $N_f$차원의 특징 벡터 $f(\mathbf{x}) \in \mathbb{R}^{N_f}$를 매핑하는 연속 함수로, 실제로는 신경망(MLP)으로 구현된다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>SDF(Signed Distance Function)</strong>: 임의의 3D 점에서 가장 가까운 표면까지의 부호 있는 거리. 양수면 표면 밖, 음수면 내부를 의미한다. 표면 형태를 부드럽게 표현하는 데 유용하다.</li>
+<li><strong>암시적 기하학(Implicit geometry)</strong>: 메쉬(mesh)처럼 명시적으로 꼭짓점을 저장하지 않고 수식으로 표면을 정의하는 방법. SDF가 대표적 예시이다.</li>
+<li><strong>하이퍼네트워크(Hypernetwork)</strong>: 다른 신경망의 가중치를 출력하는 신경망. UniSim에서는 각 액터의 잠재 코드(latent code)를 받아 해당 액터의 특징 그리드 가중치를 생성한다.</li>
+</ul>
+<p><strong>다중 해상도 특징 그리드(Multi-resolution features grid)</strong></p>
+<p>단일 NFF는 대규모 야외 장면에서 세밀한 디테일과 넓은 범위를 동시에 표현하기 어렵다. UniSim은 이를 해결하기 위해 <strong>다중 해상도 특징 그리드</strong>를 도입한다. 구체적으로, 주어진 3D 점 $\mathbf{x}$에 대해 해상도가 다른 여러 그리드 $\{g^l\}_{l=1}^{L}$에서 특징을 삼선형 보간(trilinear interpolation)으로 추출한 뒤 연결(concatenate)하여 최종 특징 벡터를 만든다.</p>
+$$\mathbf{f} = f\left(\left\{\text{interp}(g^l, \mathbf{x})\right\}_{l=1}^{L}, \mathbf{x}\right)$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$\mathbf{f}$</strong>: 최종 특징 벡터 — 이 점의 색상·재질·투명도 등을 인코딩한다.</li>
+<li><strong>$g^l$</strong>: $l$번째 해상도 특징 그리드 (coarse에서 fine까지)</li>
+<li><strong>$\text{interp}(g^l, \mathbf{x})$</strong>: 그리드 $g^l$에서 $\mathbf{x}$ 위치의 값을 삼선형 보간으로 추출</li>
+<li><strong>$f(\cdot)$</strong>: 추출된 다중 해상도 특징을 조합하여 최종 특징을 계산하는 신경망</li>
+</ul>
+<hr>
+<h3 id="32-compositional-scene-representation--합성적-장면-표현">3.2 Compositional Scene Representation — 합성적 장면 표현<a class="anchor" href="#32-compositional-scene-representation--%ed%95%a9%ec%84%b1%ec%a0%81-%ec%9e%a5%eb%a9%b4-%ed%91%9c%ed%98%84">#</a></h3>
+<p><strong>요약</strong></p>
+<p>UniSim은 장면을 두 가지 요소로 분리하여 표현한다.</p>
+<ol>
+<li><strong>정적 배경(Static background)</strong>: 도로, 건물, 나무 등 움직이지 않는 요소. 전체 주행 범위를 아우르는 대규모 희소 특징 그리드(sparse feature grid)로 표현한다.</li>
+<li><strong>동적 액터(Dynamic actors)</strong>: 차량, 보행자 등 움직이는 객체. 각 액터는 바운딩 박스로 정의되며, 하이퍼네트워크가 액터의 잠재 코드를 받아 개별 특징 그리드를 생성한다.</li>
+</ol>
+<p>이 분리 덕분에 특정 액터만 제거하거나, 새 액터를 삽입하거나, SDV의 궤적을 바꿀 때 배경은 그대로 두고 액터 부분만 재합성하면 된다. 이것이 UniSim이 폐루프 편집을 가능하게 하는 핵심 아이디어이다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>희소 복셀 그리드(Sparse voxel grid)</strong>: 3D 공간 전체를 균일한 격자로 나누는 대신, 실제로 데이터가 있는 영역(도로 주변)의 복셀만 저장하여 메모리를 절약한다.</li>
+<li><strong>점유 그리드(Occupancy grid $V_\text{occ}$)</strong>: 각 복셀이 비어있는지(free space) 아니면 물체가 있는지를 나타내는 3D 격자. 렌더링 시 물체가 없는 공간의 불필요한 연산을 건너뛰는 데 사용된다.</li>
+<li><strong>잠재 코드(Latent code $\mathbf{z}_A$)</strong>: 각 액터의 외관(색상·형태)을 압축적으로 표현하는 벡터. 하이퍼네트워크가 이 코드를 입력받아 해당 액터의 특징 그리드를 생성한다.</li>
+</ul>
+<p><strong>일반화 액터 모델(Generalized actor model)</strong></p>
+<p>개별 액터마다 별도의 신경망을 학습하면 파라미터 수가 폭발적으로 늘어난다. UniSim은 이를 해결하기 위해 <strong>하이퍼네트워크</strong> $f_\theta$를 사용한다. 모든 액터의 잠재 코드 $\mathbf{z}_A$와 샘플링된 3D 점 $\mathbf{x}_{A,i}$를 받아 특징 그리드를 생성하고, 다음과 같이 특징을 회귀(regress)한다.</p>
+$$\mathcal{F}_A = f_\theta(\mathbf{z}_A), \quad \hat{f}_{A,i} = f_k(\mathcal{F}_A, \mathbf{x}_{A,i})$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$\mathcal{F}_A$</strong>: 액터 $A$의 특징 그리드 — 하이퍼네트워크가 잠재 코드로부터 생성한다.</li>
+<li><strong>$f_\theta$</strong>: 하이퍼네트워크 — 잠재 코드를 입력받아 특징 그리드의 가중치를 출력한다.</li>
+<li><strong>$\mathbf{z}_A$</strong>: 액터 $A$의 잠재 코드 — 해당 액터의 외관 정보를 담고 있다.</li>
+<li><strong>$\hat{f}_{A,i}$</strong>: $i$번째 샘플 점에서의 특징 벡터 — 이 값이 색상과 투명도로 디코딩된다.</li>
+</ul>
+<hr>
+<h3 id="33-multi-modal-sensor-simulation--멀티모달-센서-시뮬레이션">3.3 Multi-modal Sensor Simulation — 멀티모달 센서 시뮬레이션<a class="anchor" href="#33-multi-modal-sensor-simulation--%eb%a9%80%ed%8b%b0%eb%aa%a8%eb%8b%ac-%ec%84%bc%ec%84%9c-%ec%8b%9c%eb%ae%ac%eb%a0%88%ec%9d%b4%ec%85%98">#</a></h3>
+<p><strong>요약</strong></p>
+<p>배경과 액터의 특징이 합성되면, 이를 카메라 이미지와 LiDAR 포인트 클라우드로 렌더링한다.</p>
+<h4 id="카메라-시뮬레이션">카메라 시뮬레이션<a class="anchor" href="#%ec%b9%b4%eb%a9%94%eb%9d%bc-%ec%8b%9c%eb%ae%ac%eb%a0%88%ec%9d%b4%ec%85%98">#</a></h4>
+<p>볼륨 렌더링 방정식을 사용하여 카메라 중심 $\mathbf{o}$에서 픽셀 방향 $\mathbf{d}$로 레이(ray)를 쏘아 $N_r$개의 샘플 점에서 특징을 집계한다.</p>
+$$\mathbf{f}(\mathbf{r}) = \sum_{i=1}^{N_r} w_i \mathbf{f}_i, \quad w_i = \alpha_i \prod_{j=1}^{i-1}(1 - \alpha_j)$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$\mathbf{f}(\mathbf{r})$</strong>: 레이 $\mathbf{r}$에 대한 최종 특징 벡터 — 이 값이 RGB 이미지로 디코딩된다.</li>
+<li><strong>$w_i$</strong>: $i$번째 샘플의 가중치 — 해당 점이 레이 색상에 기여하는 비율.</li>
+<li><strong>$\alpha_i$</strong>: $i$번째 샘플의 불투명도(opacity) — SDF $s_i$로부터 $\alpha = 1/(1+\exp(\beta \cdot s))$로 계산한다.</li>
+<li><strong>$\prod_{j=1}^{i-1}(1-\alpha_j)$</strong>: 앞의 모든 샘플을 통과해 온 빛의 투과율 — 가려진(occluded) 객체는 자동으로 낮은 가중치를 받는다.</li>
+</ul>
+<p>집계된 특징 벡터는 2D CNN $g_\text{rgb}$를 통해 최종 RGB 이미지 $\mathbf{I}_\text{rgb}$로 변환된다.</p>
+$$g_\text{rgb}: \mathbf{F} \in \mathbb{R}^{H_f \times W_f \times N_f} \rightarrow \mathbf{I}_\text{rgb} \in \mathbb{R}^{H \times W \times 3}$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$\mathbf{F}$</strong>: 모든 픽셀의 특징 벡터를 쌓은 2D 특징 맵 (해상도 $H_f \times W_f$)</li>
+<li><strong>$g_\text{rgb}$</strong>: 특징 맵을 RGB 이미지로 변환하는 CNN 디코더 — upsampling 역할도 겸한다.</li>
+<li><strong>$H_f \times W_f$</strong>: 렌더링 시 사용하는 낮은 해상도 (메모리·속도 효율을 위해 실제 이미지보다 작게 설정)</li>
+</ul>
+<h4 id="lidar-시뮬레이션">LiDAR 시뮬레이션<a class="anchor" href="#lidar-%ec%8b%9c%eb%ae%ac%eb%a0%88%ec%9d%b4%ec%85%98">#</a></h4>
+<p>LiDAR는 레이저 빔을 쏘아 반사 거리(depth)와 세기(intensity)를 측정한다. UniSim은 LiDAR 센서 모델을 카메라와 동일한 볼륨 렌더링 프레임워크 안에서 처리한다.</p>
+$$D(\mathbf{r}) = \sum_{i=1}^{N_r} w_i t_i$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$D(\mathbf{r})$</strong>: 레이 $\mathbf{r}$에 대해 예측된 LiDAR 거리값(depth)</li>
+<li><strong>$t_i$</strong>: 레이 원점으로부터 $i$번째 샘플까지의 거리</li>
+<li><strong>$w_i$</strong>: 카메라 렌더링과 동일한 가중치 — SDF 기반 불투명도로 계산된다.</li>
+</ul>
+<p>반사 세기는 LiDAR 특징을 MLP 디코더 $g_\text{int}$로 디코딩하여 예측한다: $\hat{l}^\text{int}(\mathbf{r}) = g_\text{int}(\mathbf{f}(\mathbf{r}))$.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Time-of-flight 센서</strong>: LiDAR처럼 빛(레이저)을 쏘고 반사되어 돌아오는 시간으로 거리를 측정하는 센서. UniSim은 이 원리를 신경망 볼륨 렌더링으로 모사한다.</li>
+<li><strong>Intensity (반사 세기)</strong>: LiDAR가 측정하는 두 번째 값. 재질(예: 도로 vs. 금속)에 따라 반사율이 다르며, UniSim은 신경망으로 이를 예측한다.</li>
+</ul>
+<hr>
+<h3 id="34-learning--학습">3.4 Learning — 학습<a class="anchor" href="#34-learning--%ed%95%99%ec%8a%b5">#</a></h3>
+<p><strong>요약</strong></p>
+<p>UniSim은 배경 특징 그리드, 액터 잠재 코드, 하이퍼네트워크, MLP 헤드, CNN 디코더를 공동으로 최적화한다. 전체 목적 함수는 다음과 같다.</p>
+$$\mathcal{L} = \mathcal{L}_\text{rgb} + \lambda_\text{lidar}\mathcal{L}_\text{lidar} + \lambda_\text{reg}\mathcal{L}_\text{reg} + \lambda_\text{adv}\mathcal{L}_\text{adv}$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$\mathcal{L}_\text{rgb}$</strong>: 이미지 재현 손실 — 픽셀 수준 $\ell_2$ 손실과 VGG 퍼셉추얼 손실의 합.</li>
+<li><strong>$\mathcal{L}_\text{lidar}$</strong>: LiDAR 재현 손실 — 예측 depth/intensity와 실제 측정값의 $\ell_2$ 차이.</li>
+<li><strong>$\mathcal{L}_\text{reg}$</strong>: 정규화 손실 — SDF가 매끄러운 표면을 형성하도록 강제하는 Eikonal 손실 포함.</li>
+<li><strong>$\mathcal{L}_\text{adv}$</strong>: 적대적 손실 — 미관측 뷰포인트에서 현실감을 높이기 위한 GAN 판별자 손실.</li>
+<li><strong>$\lambda_\text{lidar}, \lambda_\text{reg}, \lambda_\text{adv}$</strong>: 각 손실의 균형을 조절하는 하이퍼파라미터.</li>
+</ul>
+<p><strong>이미지 손실 상세</strong></p>
+$$\mathcal{L}_\text{rgb} = \frac{1}{N_\text{ob}} \sum_{i=1}^{N_\text{ob}} \left(\|\mathbf{I}_i^\text{gb} - \hat{\mathbf{I}}_i^\text{gb}\|_2 + \lambda \sum_{j=1}^{M} \|V^j(\mathbf{I}_i^\text{gb}) - V^j(\hat{\mathbf{I}}_i^\text{gb})\|_1\right)$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$\mathbf{I}_i^\text{gb}$</strong>: 실제 관측 이미지 패치</li>
+<li><strong>$\hat{\mathbf{I}}_i^\text{gb}$</strong>: 시뮬레이션된 이미지 패치</li>
+<li><strong>$V^j(\cdot)$</strong>: 사전 학습된 VGG 네트워크의 $j$번째 레이어 출력 — 픽셀 차이 대신 고수준 특징 차이를 측정하여 더 자연스러운 이미지를 생성한다.</li>
+<li><strong>$N_\text{ob}$</strong>: 관측된 뷰포인트 수</li>
+</ul>
+<p><strong>LiDAR 손실 상세</strong></p>
+$$\mathcal{L}_\text{lidar} = \frac{1}{N} \sum_{i=1}^{N} \left(\|D(\mathbf{r}_i) - D_i^\text{gt}\|_2 + \|\hat{l}^\text{int}(\mathbf{r}_i) - \hat{l}_i^\text{int,gt}\|_2\right)$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$D(\mathbf{r}_i)$</strong>: 레이 $i$에 대한 예측 depth</li>
+<li><strong>$D_i^\text{gt}$</strong>: 실제 LiDAR 측정 depth (ground truth)</li>
+<li><strong>$\hat{l}^\text{int}$</strong>: 예측 반사 세기, <strong>$\hat{l}_i^\text{int,gt}$</strong>: 실제 반사 세기</li>
+<li>LiDAR 노이즈를 고려하여 각 배치에서 depth 오차가 가장 작은 95%의 레이만 사용한다.</li>
+</ul>
+<p><strong>적대적 손실(Adversarial loss)</strong></p>
+<p>관측된 뷰포인트에서만 지도 학습하면 미관측 뷰포인트(예: 차선 변경 후의 새 시점)에서 아티팩트가 발생한다. GAN 판별자 $D_\text{adv}$를 사용하여 미관측 뷰포인트에서도 현실적인 이미지를 생성하도록 강제한다.</p>
+$$\mathcal{L}_\text{adv} = \frac{1}{N_\text{adv}} \sum_{i=1}^{N_\text{adv}} \log(1 - D_\text{adv}(\mathbf{I}_i^\text{gb,R}))$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$N_\text{adv}$</strong>: 미관측(무작위 이동) 뷰포인트 수</li>
+<li><strong>$D_\text{adv}$</strong>: 실제 이미지와 시뮬레이션 이미지를 구별하는 CNN 판별자</li>
+<li>관측 뷰포인트에서는 픽셀 단위 지도 손실로, 미관측 뷰포인트에서는 GAN 손실로 현실감을 높인다.</li>
+</ul>
+<hr>
+<h2 id="section-4-experiments">Section 4: Experiments<a class="anchor" href="#section-4-experiments">#</a></h2>
+<h3 id="41-experimental-details">4.1 Experimental Details<a class="anchor" href="#41-experimental-details">#</a></h3>
+<p><strong>요약</strong></p>
+<p>실험은 샌프란시스코 도심 지역의 공개 데이터셋 <strong>PandaSet</strong>에서 수행되었다. 총 103개의 주행 장면, 각 장면은 8초(80프레임, 10Hz), 전방 와이드 앵글 카메라(1920×1080)와 360° 스피닝 LiDAR를 사용한다.</p>
+<hr>
+<h3 id="42-unisim-controllability">4.2 UniSim Controllability<a class="anchor" href="#42-unisim-controllability">#</a></h3>
+<p><strong>요약</strong></p>
+<p>UniSim은 다음과 같은 장면 편집을 지원한다.</p>
+<ul>
+<li><strong>액터 제거(Actor Removal)</strong>: 특정 차량이나 보행자를 장면에서 삭제하고 배경으로 채운다.</li>
+<li><strong>액터 수정(Actor Modification)</strong>: 기존 액터를 다른 차종으로 교체하거나 위치를 변경한다.</li>
+<li><strong>SDV 센서 위치 변경(SDV Sensor Lift)</strong>: 카메라/LiDAR 높이를 바꾸어 다른 센서 설정에서의 뷰를 시뮬레이션한다.</li>
+<li><strong>SDV 차선 변경(SDV Lane Change)</strong>: SDV의 궤적을 옆 차선으로 이동시켜 완전히 새로운 시점의 센서 데이터를 생성한다.</li>
+<li><strong>새 액터 삽입(New Actor Insertion)</strong>: 기존에 없던 차량이나 트럭을 원하는 위치에 추가한다.</li>
+</ul>
+<hr>
+<h3 id="43-realism-evaluation">4.3 Realism Evaluation<a class="anchor" href="#43-realism-evaluation">#</a></h3>
+<p><strong>요약</strong></p>
+<p>UniSim의 센서 시뮬레이션 현실감을 기존 방법과 비교한다.</p>
+<p><strong>카메라 시뮬레이션 비교 (Table 1)</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>방법</th>
+          <th>PSNR↑</th>
+          <th>SSIM↑</th>
+          <th>LPIPS↓</th>
+          <th>FID@2m↓</th>
+          <th>FID@3m↓</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>FVS</td>
+          <td>21.09</td>
+          <td>0.700</td>
+          <td>0.299</td>
+          <td>112.6</td>
+          <td>135.8</td>
+      </tr>
+      <tr>
+          <td>NSG</td>
+          <td>20.74</td>
+          <td>0.600</td>
+          <td>0.556</td>
+          <td>319.2</td>
+          <td>343.0</td>
+      </tr>
+      <tr>
+          <td>Instant-NGP</td>
+          <td>24.03</td>
+          <td>0.708</td>
+          <td>0.451</td>
+          <td>192.8</td>
+          <td>220.1</td>
+      </tr>
+      <tr>
+          <td><strong>UniSim (Ours)</strong></td>
+          <td><strong>25.63</strong></td>
+          <td><strong>0.745</strong></td>
+          <td><strong>0.288</strong></td>
+          <td><strong>74.7</strong></td>
+          <td><strong>97.5</strong></td>
+      </tr>
+  </tbody>
+</table>
+<ul>
+<li><strong>보간(Interpolation)</strong>: 실제 관측 뷰포인트 사이의 중간 시점 렌더링</li>
+<li><strong>차선 이동(Lane shift)</strong>: SDV를 2~3m 측면으로 이동한 새로운 시점 — 이 설정에서 UniSim의 우위가 더욱 두드러진다.</li>
+</ul>
+<p><strong>LiDAR 시뮬레이션 비교 (Table 3)</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>방법</th>
+          <th>Median $r_z$ Error↓</th>
+          <th>Hit Rate↑</th>
+          <th>Intensity RMSE↓</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>LiDARsim</td>
+          <td>0.11</td>
+          <td>92.2%</td>
+          <td>0.091</td>
+      </tr>
+      <tr>
+          <td><strong>UniSim (Ours)</strong></td>
+          <td><strong>0.10</strong></td>
+          <td><strong>99.6%</strong></td>
+          <td><strong>0.065</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p>UniSim은 Hit Rate를 92.2% → 99.6%로 크게 향상시키며, Intensity RMSE도 28% 감소시킨다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>PSNR (Peak Signal-to-Noise Ratio)</strong>: 이미지 품질 지표. 높을수록 실제 이미지에 더 가깝다.</li>
+<li><strong>SSIM (Structural Similarity Index)</strong>: 밝기·대비·구조 세 가지 측면에서 이미지 유사도를 측정. 1에 가까울수록 좋다.</li>
+<li><strong>LPIPS (Learned Perceptual Image Patch Similarity)</strong>: 신경망이 인식하는 지각적 유사도. 낮을수록 좋다.</li>
+<li><strong>FID (Fréchet Inception Distance)</strong>: 생성된 이미지와 실제 이미지의 분포 차이를 측정. 낮을수록 실제에 가깝다.</li>
+<li><strong>Hit Rate</strong>: LiDAR 레이가 실제 포인트 클라우드와 일치하는 비율. UniSim은 99.6%로 거의 모든 레이가 정확히 맞는다.</li>
+</ul>
+<hr>
+<h3 id="44-perception-evaluation-and-training">4.4 Perception Evaluation and Training<a class="anchor" href="#44-perception-evaluation-and-training">#</a></h3>
+<p><strong>요약</strong></p>
+<p>단순히 예쁜 이미지를 생성하는 것 이상으로, 시뮬레이션 데이터가 <strong>다운스트림 인식 모델 학습</strong>에도 유용한지 검증한다.</p>
+<ul>
+<li><strong>Domain gap 측정</strong>: 실제 데이터로 학습하고 UniSim 시뮬레이션 데이터로 테스트했을 때 (또는 그 반대), 성능 저하(domain gap)를 측정한다.</li>
+<li><strong>데이터 증강(Data Augmentation)</strong>: 실제 데이터에 UniSim으로 생성한 데이터를 추가하면 3D 객체 탐지 모델의 mAP가 향상된다 (Table 5).</li>
+<li>UniSim 시뮬레이션 데이터만으로 학습해도 실제 데이터 대비 경쟁력 있는 탐지 성능을 달성한다.</li>
+</ul>
+<hr>
+<h3 id="45-full-autonomy-evaluation-with-unisim">4.5 Full Autonomy Evaluation with UniSim<a class="anchor" href="#45-full-autonomy-evaluation-with-unisim">#</a></h3>
+<p><strong>요약</strong></p>
+<p>UniSim의 핵심 응용: 자율주행 시스템 전체를 폐루프로 평가한다. BEVFormer 기반 자율주행 시스템을 UniSim 시뮬레이터에 연결하여 평가한다.</p>
+<ul>
+<li><strong>평가 지표</strong>: IoU 0.3 기준 예측 일치율(detection agreement), 평균 변위 오차(ADE), 충돌률(collision rate), 경로 계획 일관성 등.</li>
+<li><strong>폐루프 시뮬레이션</strong>: 자율주행 시스템이 차선 변경 결정을 내리면 UniSim이 즉시 새로운 센서 데이터를 생성하고, 시스템은 업데이트된 데이터로 다음 행동을 결정한다.</li>
+<li>UniSim이 기존 방법(Instant-NGP, FVS)보다 실제 주행 상황에 더 가까운 시뮬레이션 환경을 제공하여 도메인 갭이 가장 작다.</li>
+<li>시뮬레이션에서 학습한 데이터로 추가 파인튜닝 시 실제 도로 성능도 향상된다.</li>
+</ul>
+<hr>
+<h2 id="핵심-개념-정리">핵심 개념 정리<a class="anchor" href="#%ed%95%b5%ec%8b%ac-%ea%b0%9c%eb%85%90-%ec%a0%95%eb%a6%ac">#</a></h2>
+<table>
+  <thead>
+      <tr>
+          <th>개념</th>
+          <th>설명</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>Neural Feature Field (NFF)</strong></td>
+          <td>3D 공간의 임의 점에 특징 벡터를 매핑하는 신경망 기반 표현. SDF로 기하학을 암시적으로 표현한다.</td>
+      </tr>
+      <tr>
+          <td><strong>다중 해상도 특징 그리드</strong></td>
+          <td>해상도가 다른 여러 3D 격자에서 특징을 추출·연결하여 세밀한 디테일과 넓은 범위를 동시에 표현한다.</td>
+      </tr>
+      <tr>
+          <td><strong>합성적 장면 표현</strong></td>
+          <td>배경(정적)과 액터(동적)를 독립적으로 표현하여 개별 편집이 가능하게 한다.</td>
+      </tr>
+      <tr>
+          <td><strong>하이퍼네트워크</strong></td>
+          <td>액터의 잠재 코드를 받아 그 액터의 특징 그리드 가중치를 생성하는 신경망. 모든 액터를 단일 모델로 처리한다.</td>
+      </tr>
+      <tr>
+          <td><strong>볼륨 렌더링</strong></td>
+          <td>SDF 기반 불투명도 가중치로 3D 특징을 레이 방향으로 적분하여 2D 이미지 또는 LiDAR depth를 생성한다.</td>
+      </tr>
+      <tr>
+          <td><strong>폐루프 시뮬레이션</strong></td>
+          <td>SDV의 행동 → 새로운 센서 데이터 생성 → SDV의 다음 행동이 반복되는 구조. 실제 반응을 테스트할 수 있다.</td>
+      </tr>
+      <tr>
+          <td><strong>GAN 기반 적대적 학습</strong></td>
+          <td>미관측 뷰포인트에서도 현실적인 이미지를 생성하도록 판별자 손실을 추가한다.</td>
+      </tr>
+      <tr>
+          <td><strong>Eikonal 정규화</strong></td>
+          <td>SDF의 그래디언트 크기가 1이 되도록 강제하여 매끄러운 표면 표현을 유도하는 정규화 손실.</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="결론-및-시사점">결론 및 시사점<a class="anchor" href="#%ea%b2%b0%eb%a1%a0-%eb%b0%8f-%ec%8b%9c%ec%82%ac%ec%a0%90">#</a></h2>
+<p>UniSim은 단일 주행 로그에서 카메라와 LiDAR를 동시에 사실적으로 시뮬레이션하는 신경망 기반 폐루프 센서 시뮬레이터이다. 장면을 정적 배경과 동적 액터로 분리하고, 하이퍼네트워크와 다중 해상도 특징 그리드를 결합하여 자유로운 장면 편집과 새로운 시점 합성을 실현한다.</p>
+<p><strong>주요 기여</strong></p>
+<ol>
+<li><strong>최초의 신경망 기반 멀티센서 폐루프 시뮬레이터</strong>: 카메라와 LiDAR를 단일 프레임워크에서 동시 시뮬레이션한다.</li>
+<li><strong>자유로운 장면 편집</strong>: 액터 추가·제거·수정, SDV 궤적 변경, 센서 설정 변경이 가능하다.</li>
+<li><strong>인식 모델 학습 지원</strong>: 시뮬레이션 데이터로 데이터 증강 시 탐지 성능이 향상된다.</li>
+<li><strong>폐루프 자율주행 평가</strong>: 실제 도로와 가장 유사한 시뮬레이션 환경에서 자율주행 시스템 전체를 검증한다.</li>
+</ol>
+<p><strong>실무적 시사점</strong></p>
+<ul>
+<li>데이터 수집 비용이 높은 안전 임계 시나리오(급제동, 끼어들기 등)를 저비용으로 대규모 생성할 수 있다.</li>
+<li>신규 센서 설정(카메라 위치 변경, LiDAR 업그레이드)에 대한 영향 분석을 실제 차량 없이 수행할 수 있다.</li>
+<li>향후 연구로 더 긴 시간 범위의 시뮬레이션, 날씨·조명 변화 등 외부 조건 변화 지원이 기대된다.</li>
+</ul>
+<hr>
+<p><em>관련 논문: <a href="/posts/papers/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/">NeRF</a>, <a href="/posts/papers/EmerNeRF/">EmerNeRF</a>, <a href="/posts/papers/neurad-neural-rendering-for-autonomous-driving/">NeuRAD</a>, <a href="/posts/papers/lidarsim-realistic-lidar-simulation-by-leveraging-the-real-world/">LiDARsim</a>, <a href="/posts/papers/hugsim-real-time-photorealistic-closed-loop-simulator/">HUGSIM</a>, <a href="/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/">nuScenes</a></em></p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/paper/docs/autonomous-driving/simulation/emernerf/" class="flex align-center">
+        <img src="/paper/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>EmerNeRF: Emergent Spatial-Temporal Scene Decomposition via Self-Supervision</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/paper/docs/autonomous-driving/simulation/driving-gaussian-composite-gaussian-splatting/" class="flex align-center">
+        <span>DrivingGaussian: Composite Gaussian Splatting for Surrounding Dynamic Autonomous Driving Scenes</span>
+        <img src="/paper/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#section-1-introduction">Section 1: Introduction</a></li>
+    <li><a href="#section-2-related-work">Section 2: Related Work</a></li>
+    <li><a href="#section-3-neural-scene-simulation">Section 3: Neural Scene Simulation</a>
+      <ul>
+        <li><a href="#31-preliminaries--신경-특징-필드neural-feature-field">3.1 Preliminaries — 신경 특징 필드(Neural Feature Field)</a></li>
+        <li><a href="#32-compositional-scene-representation--합성적-장면-표현">3.2 Compositional Scene Representation — 합성적 장면 표현</a></li>
+        <li><a href="#33-multi-modal-sensor-simulation--멀티모달-센서-시뮬레이션">3.3 Multi-modal Sensor Simulation — 멀티모달 센서 시뮬레이션</a></li>
+        <li><a href="#34-learning--학습">3.4 Learning — 학습</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-4-experiments">Section 4: Experiments</a>
+      <ul>
+        <li><a href="#41-experimental-details">4.1 Experimental Details</a></li>
+        <li><a href="#42-unisim-controllability">4.2 UniSim Controllability</a></li>
+        <li><a href="#43-realism-evaluation">4.3 Realism Evaluation</a></li>
+        <li><a href="#44-perception-evaluation-and-training">4.4 Perception Evaluation and Training</a></li>
+        <li><a href="#45-full-autonomy-evaluation-with-unisim">4.5 Full Autonomy Evaluation with UniSim</a></li>
+      </ul>
+    </li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

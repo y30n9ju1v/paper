@@ -5,6 +5,9 @@ draft: false
 categories: ["Papers", "Computer Vision", "Deep Learning"]
 tags: ["Object Detection", "Transformer", "Bipartite Matching", "DETR", "Facebook AI"]
 year: 2020
+references:
+  - "resnet-deep-residual-learning-for-image-recognition"
+  - "attention-is-all-you-need"
 ---
 
 ## 개요

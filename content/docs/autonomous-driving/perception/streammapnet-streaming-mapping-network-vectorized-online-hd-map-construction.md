@@ -5,6 +5,9 @@ draft: false
 categories: ["Papers", "Autonomous Driving", "HD Map"]
 tags: ["Autonomous Driving", "HD Map", "BEV", "Temporal Fusion", "Transformer", "Streaming"]
 year: 2024
+references:
+  - "maptr-structured-modeling-online-vectorized-hd-map-construction"
+  - "BEVFormer"
 ---
 
 ## 개요

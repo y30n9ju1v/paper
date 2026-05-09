@@ -5,6 +5,10 @@ draft: false
 tags: ["World Model", "Autonomous Driving", "Diffusion Model", "Video Generation", "nuScenes"]
 categories: ["Papers", "Autonomous Driving", "Generative Models"]
 year: 2023
+references:
+  - "high-resolution-image-synthesis-with-latent-diffusion-models"
+  - "controlnet-adding-conditional-control-to-text-to-image-diffusion-models"
+  - "nuscenes-multimodal-dataset-autonomous-driving"
 ---
 
 ## 개요

@@ -5,6 +5,9 @@ draft: false
 categories: ["Papers", "Autonomous Driving", "Benchmark & Dataset"]
 tags: ["Autonomous Driving", "Benchmark", "Simulation", "End-to-End Planning", "BEV"]
 year: 2024
+references:
+  - "nuscenes-multimodal-dataset-autonomous-driving"
+  - "nuPlan"
 ---
 
 ## 개요

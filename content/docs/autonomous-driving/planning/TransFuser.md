@@ -5,6 +5,10 @@ draft: false
 categories: ["Papers", "Autonomous Driving"]
 tags: ["Autonomous Driving", "Transformer", "Sensor Fusion", "Imitation Learning", "LiDAR"]
 year: 2022
+references:
+  - "resnet-deep-residual-learning-for-image-recognition"
+  - "attention-is-all-you-need"
+  - "CARLA-An-Open-Urban-Driving-Simulator"
 ---
 
 ## 개요

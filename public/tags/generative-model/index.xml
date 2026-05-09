@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Generative Model on Paper</title>
+    <link>https://y30n9ju1v.github.io/paper/tags/generative-model/</link>
+    <description>Recent content in Generative Model on Paper</description>
+    <generator>Hugo</generator>
+    <language>ko-KR</language>
+    <lastBuildDate>Sun, 19 Apr 2026 13:00:00 +0900</lastBuildDate>
+    <atom:link href="https://y30n9ju1v.github.io/paper/tags/generative-model/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>DriveArena: A Closed-loop Generative Simulation Platform for Autonomous Driving</title>
+      <link>https://y30n9ju1v.github.io/paper/docs/generative-models/drivearena/</link>
+      <pubDate>Sun, 19 Apr 2026 13:00:00 +0900</pubDate>
+      <guid>https://y30n9ju1v.github.io/paper/docs/generative-models/drivearena/</guid>
+      <description>&lt;h2 id=&#34;개요&#34;&gt;개요&lt;a class=&#34;anchor&#34; href=&#34;#%ea%b0%9c%ec%9a%94&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;strong&gt;저자&lt;/strong&gt;: Xuemeng Yang, Licheng Wen, Yukai Ma, Jianbiao Mei, Xin Li, Tiantian Wei, Wenjie Lei, Daocheng Fu, Pinlong Cai, Min Dou, Botian Shi, Liang He, Yong Liu, Yu Qiao&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;소속&lt;/strong&gt;: Shanghai Artificial Intelligence Laboratory, Zhejiang University, Shanghai Jiao Tong University, Technical University of Munich, East China Normal University&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;발행년도&lt;/strong&gt;: 2024 (arXiv:2408.00415)&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;주요 내용&lt;/strong&gt;: 자율주행 에이전트를 위한 최초의 고충실도 폐루프(closed-loop) 생성 시뮬레이션 플랫폼인 DriveArena를 제안. Traffic Manager와 World Dreamer 두 핵심 컴포넌트를 통해 실제 도로 이미지 기반의 반복적 시뮬레이션 루프를 구현한다.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;한계-극복&#34;&gt;한계 극복&lt;a class=&#34;anchor&#34; href=&#34;#%ed%95%9c%ea%b3%84-%ea%b7%b9%eb%b3%b5&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;p&gt;이 논문은 기존 자율주행 평가 방식과 시뮬레이터의 핵심 한계를 극복하기 위해 작성되었습니다.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>GAIA-1: A Generative World Model for Autonomous Driving</title>
+      <link>https://y30n9ju1v.github.io/paper/docs/generative-models/gaia-1/</link>
+      <pubDate>Tue, 14 Apr 2026 14:00:00 +0900</pubDate>
+      <guid>https://y30n9ju1v.github.io/paper/docs/generative-models/gaia-1/</guid>
+      <description>&lt;h2 id=&#34;개요&#34;&gt;개요&lt;a class=&#34;anchor&#34; href=&#34;#%ea%b0%9c%ec%9a%94&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;strong&gt;저자&lt;/strong&gt;: Anthony Hu, Lloyd Russell, Hudson Yeo, Zak Murez, George Fedoseev, Alex Kendall, Jamie Shotton, Giancarlo Corrado&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;소속&lt;/strong&gt;: Wayve (&lt;a href=&#34;mailto:research@wayve.ai&#34;&gt;research@wayve.ai&lt;/a&gt;)&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;발행년도&lt;/strong&gt;: 2023 (arXiv:2309.17080, 29 Sep 2023)&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;주요 내용&lt;/strong&gt;: 비디오, 텍스트, 행동(action)을 입력으로 받아 사실적인 자율주행 시나리오 영상을 생성하는 &lt;strong&gt;생성형 World Model GAIA-1&lt;/strong&gt;을 제안. 모든 입력을 이산 토큰 시퀀스로 변환하고, 다음 토큰 예측(next-token prediction) 방식으로 월드 모델을 학습한 뒤, Video Diffusion Decoder로 고품질 영상을 복원함. LLM의 스케일링 법칙(scaling law)이 자율주행 세계 모델에도 적용됨을 최초로 검증.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;목차&#34;&gt;목차&lt;a class=&#34;anchor&#34; href=&#34;#%eb%aa%a9%ec%b0%a8&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Section 1: Introduction — 미래 예측의 중요성과 기존 World Model의 한계&lt;/li&gt;&#xA;&lt;li&gt;Section 2: Model — 이미지/텍스트/액션 인코딩, Image Tokenizer, World Model, Video Decoder&lt;/li&gt;&#xA;&lt;li&gt;Section 3: Data — 4700시간 런던 주행 데이터 및 균형 샘플링 전략&lt;/li&gt;&#xA;&lt;li&gt;Section 4: Training Procedure — 각 컴포넌트별 학습 설정 및 하이퍼파라미터&lt;/li&gt;&#xA;&lt;li&gt;Section 5: Inference — World Model 샘플링 전략, Classifier-free Guidance&lt;/li&gt;&#xA;&lt;li&gt;Section 6: Scaling — LLM 스케일링 법칙의 자율주행 적용&lt;/li&gt;&#xA;&lt;li&gt;Section 7: Capabilities and Emerging Properties — 장거리 시나리오 생성, 다중 미래 예측, 세밀한 제어&lt;/li&gt;&#xA;&lt;li&gt;Section 8: Related Work — 비디오 생성 모델, World Model, 스케일링 연구&lt;/li&gt;&#xA;&lt;li&gt;Section 9: Conclusions — 결론 및 향후 연구 방향&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;hr&gt;&#xA;&lt;h2 id=&#34;section-1-introduction&#34;&gt;Section 1: Introduction&lt;a class=&#34;anchor&#34; href=&#34;#section-1-introduction&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;p&gt;&lt;strong&gt;요약&lt;/strong&gt;&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

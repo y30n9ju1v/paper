@@ -5,6 +5,9 @@ draft: false
 categories: ["Papers", "Novel View Synthesis"]
 tags: ["3D Gaussian Splatting", "Novel View Synthesis", "Ray Tracing", "Autonomous Driving"]
 year: 2025
+references:
+  - "3d-gaussian-splatting"
+  - "3d-gaussian-ray-tracing"
 ---
 
 ## 개요

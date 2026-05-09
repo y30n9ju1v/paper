@@ -5,6 +5,10 @@ draft: false
 categories: ["Papers", "Autonomous Driving", "HD Map"]
 tags: ["HD Map", "Autonomous Driving", "Transformer", "BEV", "Vectorized Map"]
 year: 2022
+references:
+  - "detr-end-to-end-object-detection-with-transformers"
+  - "vectormapnet-end-to-end-vectorized-hd-map-learning"
+  - "nuscenes-multimodal-dataset-autonomous-driving"
 ---
 
 ## 개요

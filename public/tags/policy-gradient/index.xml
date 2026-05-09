@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Policy Gradient on Paper</title>
+    <link>https://y30n9ju1v.github.io/paper/tags/policy-gradient/</link>
+    <description>Recent content in Policy Gradient on Paper</description>
+    <generator>Hugo</generator>
+    <language>ko-KR</language>
+    <lastBuildDate>Sun, 19 Apr 2026 23:30:00 +0900</lastBuildDate>
+    <atom:link href="https://y30n9ju1v.github.io/paper/tags/policy-gradient/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Proximal Policy Optimization Algorithms (PPO)</title>
+      <link>https://y30n9ju1v.github.io/paper/docs/deep-learning/proximal-policy-optimization/</link>
+      <pubDate>Sun, 19 Apr 2026 23:30:00 +0900</pubDate>
+      <guid>https://y30n9ju1v.github.io/paper/docs/deep-learning/proximal-policy-optimization/</guid>
+      <description>&lt;h2 id=&#34;개요&#34;&gt;개요&lt;a class=&#34;anchor&#34; href=&#34;#%ea%b0%9c%ec%9a%94&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;strong&gt;저자&lt;/strong&gt;: John Schulman, Filip Wolski, Prafulla Dhariwal, Alec Radford, Oleg Klimov (OpenAI)&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;발행년도&lt;/strong&gt;: 2017&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;arXiv&lt;/strong&gt;: 1707.06347v2&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;주요 내용&lt;/strong&gt;: 신뢰 영역(Trust Region) 방법의 안정성을 유지하면서도 1차 최적화만으로 구현 가능한 강화학습 정책 최적화 알고리즘 PPO 제안. MuJoCo 연속 제어 및 Atari 게임에서 SOTA 달성&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;한계-극복&#34;&gt;한계 극복&lt;a class=&#34;anchor&#34; href=&#34;#%ed%95%9c%ea%b3%84-%ea%b7%b9%eb%b3%b5&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;p&gt;이 논문은 기존 정책 경사(Policy Gradient) 방법들의 한계를 극복하기 위해 작성되었습니다.&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;strong&gt;기존 Vanilla Policy Gradient의 한계&lt;/strong&gt;: 데이터 샘플 1개당 1번의 그래디언트 업데이트만 가능. 동일 데이터로 여러 번 업데이트하면 정책이 불안정하게 크게 변함&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;기존 TRPO의 한계&lt;/strong&gt;: 2차 최적화(켤레 기울기법)가 필요해 구현이 복잡하고, dropout이나 파라미터 공유가 있는 아키텍처에 적용 불가&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;기존 DQN의 한계&lt;/strong&gt;: 이산(discrete) 행동 공간에만 적합, 연속 제어 문제에 부적합&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;이 논문의 접근 방식&lt;/strong&gt;: 확률 비율(probability ratio)을 **클리핑(clipping)**하여 정책 변화를 암묵적으로 제한하는 단순한 1차 최적화 목적함수 $L^{CLIP}$ 제안. 같은 데이터로 여러 에포크 학습 가능&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;목차&#34;&gt;목차&lt;a class=&#34;anchor&#34; href=&#34;#%eb%aa%a9%ec%b0%a8&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Section 1: Introduction&lt;/li&gt;&#xA;&lt;li&gt;Section 2: Background — Policy Gradient &amp;amp; TRPO&lt;/li&gt;&#xA;&lt;li&gt;Section 3: Clipped Surrogate Objective — PPO의 핵심&lt;/li&gt;&#xA;&lt;li&gt;Section 4: Adaptive KL Penalty Coefficient&lt;/li&gt;&#xA;&lt;li&gt;Section 5: Algorithm — Actor-Critic Style PPO&lt;/li&gt;&#xA;&lt;li&gt;Section 6: Experiments — MuJoCo, Atari 벤치마크&lt;/li&gt;&#xA;&lt;li&gt;Section 7: Conclusion&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;hr&gt;&#xA;&lt;h2 id=&#34;section-1-introduction&#34;&gt;Section 1: Introduction&lt;a class=&#34;anchor&#34; href=&#34;#section-1-introduction&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;p&gt;&lt;strong&gt;요약&lt;/strong&gt;&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

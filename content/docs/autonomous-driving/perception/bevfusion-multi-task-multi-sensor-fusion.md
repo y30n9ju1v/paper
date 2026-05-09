@@ -5,6 +5,10 @@ draft: false
 categories: ["Papers", "Autonomous Driving"]
 tags: ["Autonomous Driving", "Sensor Fusion", "BEV", "LiDAR", "3D Object Detection"]
 year: 2024
+references:
+  - "BEVFormer"
+  - "centerpoint-center-based-3d-object-detection-and-tracking"
+  - "nuscenes-multimodal-dataset-autonomous-driving"
 ---
 
 ## 개요

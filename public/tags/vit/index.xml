@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>ViT on Paper</title>
+    <link>https://y30n9ju1v.github.io/paper/tags/vit/</link>
+    <description>Recent content in ViT on Paper</description>
+    <generator>Hugo</generator>
+    <language>ko-KR</language>
+    <lastBuildDate>Fri, 24 Apr 2026 12:00:00 +0900</lastBuildDate>
+    <atom:link href="https://y30n9ju1v.github.io/paper/tags/vit/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>ViT: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</title>
+      <link>https://y30n9ju1v.github.io/paper/docs/deep-learning/vit-an-image-is-worth-16x16-words/</link>
+      <pubDate>Fri, 24 Apr 2026 12:00:00 +0900</pubDate>
+      <guid>https://y30n9ju1v.github.io/paper/docs/deep-learning/vit-an-image-is-worth-16x16-words/</guid>
+      <description>&lt;h2 id=&#34;개요&#34;&gt;개요&lt;a class=&#34;anchor&#34; href=&#34;#%ea%b0%9c%ec%9a%94&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;strong&gt;저자&lt;/strong&gt;: Alexey Dosovitskiy, Lucas Beyer, Alexander Kolesnikov, Dirk Weissenborn, Xiaohua Zhai, Thomas Unterthiner, Mostafa Dehghani, Matthias Minderer, Georg Heigold, Sylvain Gelly, Jakob Uszkoreit, Neil Houlsby (Google Brain)&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;발행년도&lt;/strong&gt;: 2021 (ICLR 2021)&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;주요 내용&lt;/strong&gt;: CNN 없이 순수 Transformer만으로 이미지를 16×16 패치 시퀀스로 처리하여 대규모 사전학습 후 이미지 분류 SOTA 달성&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;한계-극복&#34;&gt;한계 극복&lt;a class=&#34;anchor&#34; href=&#34;#%ed%95%9c%ea%b3%84-%ea%b7%b9%eb%b3%b5&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;strong&gt;기존 한계 1 — CNN의 귀납적 편향 의존&lt;/strong&gt;: 기존 비전 모델은 지역성(locality), 이동 등변성(translation equivariance) 같은 CNN 고유의 귀납적 편향에 의존. 이는 데이터가 적을 때 유리하지만 대규모 데이터에서는 오히려 표현력을 제한.&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;기존 한계 2 — Transformer의 비전 적용 시 CNN 병용&lt;/strong&gt;: 기존 Self-Attention 기반 비전 모델들은 CNN과 결합하거나 특수한 Attention 패턴을 사용해 하드웨어 가속기에서 효율적으로 동작하지 못했음.&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;이 논문의 접근 방식&lt;/strong&gt;: 이미지를 고정 크기 패치로 분할하고 각 패치를 NLP의 토큰처럼 취급. CNN 구조 없이 표준 Transformer Encoder를 그대로 적용. 대규모 데이터(JFT-300M)로 사전학습 시 귀납적 편향 없이도 CNN을 능가.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;목차&#34;&gt;목차&lt;a class=&#34;anchor&#34; href=&#34;#%eb%aa%a9%ec%b0%a8&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Section 1: Introduction&lt;/li&gt;&#xA;&lt;li&gt;Section 2: Related Work&lt;/li&gt;&#xA;&lt;li&gt;Section 3: Method — Vision Transformer (ViT)&lt;/li&gt;&#xA;&lt;li&gt;Section 4: Experiments&lt;/li&gt;&#xA;&lt;li&gt;Section 5: Conclusion&lt;/li&gt;&#xA;&lt;li&gt;Appendix A: Multihead Self-Attention&lt;/li&gt;&#xA;&lt;li&gt;Appendix B: Experiment Details&lt;/li&gt;&#xA;&lt;li&gt;Appendix D: Additional Analyses&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;hr&gt;&#xA;&lt;h2 id=&#34;section-1-2-introduction--related-work&#34;&gt;Section 1-2: Introduction &amp;amp; Related Work&lt;a class=&#34;anchor&#34; href=&#34;#section-1-2-introduction--related-work&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;p&gt;&lt;strong&gt;요약&lt;/strong&gt;&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

@@ -5,6 +5,8 @@ draft: false
 categories: ["Papers", "Generative Models", "Diffusion"]
 tags: ["LDM", "Stable Diffusion", "Diffusion Models", "Image Synthesis", "Latent Space", "Cross-Attention"]
 year: 2022
+references:
+  - "denoising-diffusion-probabilistic-models"
 ---
 
 ## 개요

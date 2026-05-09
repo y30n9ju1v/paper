@@ -5,6 +5,9 @@ draft: false
 categories: ["Papers", "Novel View Synthesis"]
 tags: ["3D Gaussian Splatting", "Dynamic Scene", "Novel View Synthesis", "Real-Time Rendering"]
 year: 2023
+references:
+  - "3d-gaussian-splatting"
+  - "nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis"
 ---
 
 ## 개요

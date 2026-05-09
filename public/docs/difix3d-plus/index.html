@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="ko-KR" dir="ltr">
+<head><script src="/paper/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=paper/livereload" data-no-instant defer></script>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="개요# 저자: Jay Zhangjie Wu, Yuxuan Zhang, Haithem Turki, Xuanchi Ren, Jun Gao, Mike Zheng Shou, Sanja Fidler, Zan Gojcic, Huan Ling 소속: NVIDIA, National University of Singapore, University of Toronto, Vector Institute 발행년도: 2025 (arXiv:2503.01774v1, 3 Mar 2025) 주요 내용: 단일 단계(single-step) 확산 모델(DIFIX)을 활용하여 NeRF 및 3DGS 기반 3D 재구성의 아티팩트를 제거하고 품질을 향상시키는 파이프라인 DIFIX3D&#43;를 제안 목차# Chapter 1: Introduction Chapter 2: Related Work Chapter 3: Background (NeRF &amp; 3DGS) Chapter 4: DIFIX - 단일 단계 확산 모델로 3D 재구성 향상 4.1 DIFIX: 사전학습 확산 모델을 3D Artifact Fixer로 4.2 DIFIX3&#43;: 확산 사전(Priors)으로 NVS 향상 Chapter 5: 실험 Chapter 6: 결론 Chapter 1: Introduction# 요약
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/paper/docs/difix3d-plus/">
+  <meta property="og:site_name" content="Paper">
+  <meta property="og:title" content="DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models">
+  <meta property="og:description" content="개요# 저자: Jay Zhangjie Wu, Yuxuan Zhang, Haithem Turki, Xuanchi Ren, Jun Gao, Mike Zheng Shou, Sanja Fidler, Zan Gojcic, Huan Ling 소속: NVIDIA, National University of Singapore, University of Toronto, Vector Institute 발행년도: 2025 (arXiv:2503.01774v1, 3 Mar 2025) 주요 내용: 단일 단계(single-step) 확산 모델(DIFIX)을 활용하여 NeRF 및 3DGS 기반 3D 재구성의 아티팩트를 제거하고 품질을 향상시키는 파이프라인 DIFIX3D&#43;를 제안 목차# Chapter 1: Introduction Chapter 2: Related Work Chapter 3: Background (NeRF &amp; 3DGS) Chapter 4: DIFIX - 단일 단계 확산 모델로 3D 재구성 향상 4.1 DIFIX: 사전학습 확산 모델을 3D Artifact Fixer로 4.2 DIFIX3&#43;: 확산 사전(Priors)으로 NVS 향상 Chapter 5: 실험 Chapter 6: 결론 Chapter 1: Introduction# 요약">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:published_time" content="2026-04-10T09:00:00+09:00">
+    <meta property="article:modified_time" content="2026-04-10T09:00:00+09:00">
+    <meta property="article:tag" content="3D Gaussian Splatting">
+    <meta property="article:tag" content="NeRF">
+    <meta property="article:tag" content="Novel View Synthesis">
+    <meta property="article:tag" content="Diffusion">
+    <meta property="article:tag" content="3D Reconstruction">
+
+
+  <meta itemprop="name" content="DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models">
+  <meta itemprop="description" content="개요# 저자: Jay Zhangjie Wu, Yuxuan Zhang, Haithem Turki, Xuanchi Ren, Jun Gao, Mike Zheng Shou, Sanja Fidler, Zan Gojcic, Huan Ling 소속: NVIDIA, National University of Singapore, University of Toronto, Vector Institute 발행년도: 2025 (arXiv:2503.01774v1, 3 Mar 2025) 주요 내용: 단일 단계(single-step) 확산 모델(DIFIX)을 활용하여 NeRF 및 3DGS 기반 3D 재구성의 아티팩트를 제거하고 품질을 향상시키는 파이프라인 DIFIX3D&#43;를 제안 목차# Chapter 1: Introduction Chapter 2: Related Work Chapter 3: Background (NeRF &amp; 3DGS) Chapter 4: DIFIX - 단일 단계 확산 모델로 3D 재구성 향상 4.1 DIFIX: 사전학습 확산 모델을 3D Artifact Fixer로 4.2 DIFIX3&#43;: 확산 사전(Priors)으로 NVS 향상 Chapter 5: 실험 Chapter 6: 결론 Chapter 1: Introduction# 요약">
+  <meta itemprop="datePublished" content="2026-04-10T09:00:00+09:00">
+  <meta itemprop="dateModified" content="2026-04-10T09:00:00+09:00">
+  <meta itemprop="wordCount" content="1451">
+  <meta itemprop="keywords" content="3D Gaussian Splatting,NeRF,Novel View Synthesis,Diffusion,3D Reconstruction">
+
+<title>DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models | Paper</title>
+<link rel="icon" href="/paper/favicon.png" >
+<link rel="manifest" href="/paper/manifest.json">
+<link rel="canonical" href="http://localhost:1313/paper/docs/difix3d-plus/">
+<link rel="stylesheet" href="/paper/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/paper/fuse.min.js"></script>
+  <script defer src="/paper/en.search.min.136303f53f731e7f187e59dca354807444ce24732e128843ea97e041d47b7d93.js" integrity="sha256-E2MD9T9zHn8Yflnco1SAdETOJHMuEohD6pfgQdR7fZM=" crossorigin="anonymous"></script>
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '\\[', right: '\\]', display: true},
+      {left: '\\(', right: '\\)', display: false},
+      {left: '$', right: '$', display: false}
+    ]
+  });
+});
+</script>
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/paper/"><span>Paper</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/controlnet-adding-conditional-control-to-text-to-image-diffusion-models/" class="">
+      ControlNet: Adding Conditional Control to Text-to-Image Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/clip-learning-transferable-visual-models-from-natural-language-supervision/" class="">
+      CLIP: Learning Transferable Visual Models From Natural Language Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointnet-plus-plus-deep-hierarchical-feature-learning/" class="">
+      PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/" class="">
+      GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/lidarsim-realistic-lidar-simulation-by-leveraging-the-real-world/" class="">
+      LiDARsim: Realistic LiDAR Simulation by Leveraging the Real World</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vit-an-image-is-worth-16x16-words/" class="">
+      ViT: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/resnet-deep-residual-learning-for-image-recognition/" class="">
+      ResNet: Deep Residual Learning for Image Recognition</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/" class="">
+      StreamMapNet: Streaming Mapping Network for Vectorized Online HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vectormapnet-end-to-end-vectorized-hd-map-learning/" class="">
+      VectorMapNet: End-to-end Vectorized HD Map Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/detr-end-to-end-object-detection-with-transformers/" class="">
+      DETR: End-to-End Object Detection with Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/attention-is-all-you-need/" class="">
+      Attention Is All You Need</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/maptr-structured-modeling-online-vectorized-hd-map-construction/" class="">
+      MapTR: Structured Modeling and Learning for Online Vectorized HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/high-resolution-image-synthesis-with-latent-diffusion-models/" class="">
+      High-Resolution Image Synthesis with Latent Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/proximal-policy-optimization/" class="">
+      Proximal Policy Optimization Algorithms (PPO)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/denoising-diffusion-probabilistic-models/" class="">
+      Denoising Diffusion Probabilistic Models (DDPM)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/" class="">
+      PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointpillars-fast-encoders-object-detection-point-clouds/" class="">
+      PointPillars: Fast Encoders for Object Detection from Point Clouds</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/centerpoint-center-based-3d-object-detection-and-tracking/" class="">
+      CenterPoint: Center-based 3D Object Detection and Tracking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/monoscene-monocular-3d-semantic-scene-completion/" class="">
+      MonoScene: Monocular 3D Semantic Scene Completion</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/tpvformer-tri-perspective-view-3d-semantic-occupancy/" class="">
+      TPVFormer: Tri-Perspective View for Vision-Based 3D Semantic Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/drivearena/" class="">
+      DriveArena: A Closed-loop Generative Simulation Platform for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/neurad-neural-rendering-for-autonomous-driving/" class="">
+      NeuRAD: Neural Rendering for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/omnire-omni-urban-scene-reconstruction/" class="">
+      OmniRe: Omni Urban Scene Reconstruction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/magicdrive-street-view-generation-3d-geometry-control/" class="">
+      MagicDrive: Street View Generation with Diverse 3D Geometry Control</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/surroundocc/" class="">
+      SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/drivedreamer/" class="">
+      DriveDreamer: Towards Real-world-driven World Models for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/street-gaussians-modeling-dynamic-urban-scenes/" class="">
+      Street Gaussians: Modeling Dynamic Urban Scenes with Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bench2drive-multi-ability-benchmarking-e2e-autonomous-driving/" class="">
+      Bench2Drive: Towards Multi-Ability Benchmarking of Closed-Loop End-To-End Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/emernerf/" class="">
+      EmerNeRF: Emergent Spatial-Temporal Scene Decomposition via Self-Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/detr3d-3d-object-detection-multi-view-images/" class="">
+      DETR3D: 3D Object Detection from Multi-view Images via 3D-to-2D Queries</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/occ3d-large-scale-3d-occupancy-prediction-benchmark/" class="">
+      Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/unisim-neural-closed-loop-sensor-simulator/" class="">
+      UniSim: A Neural Closed-Loop Sensor Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevfusion-multi-task-multi-sensor-fusion/" class="">
+      BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/instant-ngp-multiresolution-hash-encoding/" class="">
+      Instant Neural Graphics Primitives with a Multiresolution Hash Encoding</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/lift-splat-shoot/" class="">
+      Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevdepth/" class="">
+      BEVDepth: Acquisition of Reliable Depth for Multi-view 3D Object Detection</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/4d-gaussian-splatting/" class="">
+      4D Gaussian Splatting for Real-Time Dynamic Scene Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/gaia-1/" class="">
+      GAIA-1: A Generative World Model for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/dqn-playing-atari-with-deep-reinforcement-learning/" class="">
+      Playing Atari with Deep Reinforcement Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevformer/" class="">
+      BEVFormer: Learning Bird&#39;s-Eye-View Representation from Multi-Camera Images via Spatiotemporal Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/navsim/" class="">
+      NAVSIM: Data-Driven Non-Reactive Autonomous Vehicle Simulation and Benchmarking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nuplan/" class="">
+      nuPlan: A closed-loop ML-based planning benchmark for autonomous vehicles</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/transfuser/" class="">
+      TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3d-gaussian-splatting/" class="">
+      3D Gaussian Splatting for Real-Time Radiance Field Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/driving-gaussian-composite-gaussian-splatting/" class="">
+      DrivingGaussian: Composite Gaussian Splatting for Surrounding Dynamic Autonomous Driving Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3d-gaussian-ray-tracing/" class="">
+      3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/" class="">
+      3DGUT: Enabling Distorted Cameras and Secondary Rays in Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/carla-an-open-urban-driving-simulator/" class="">
+      CARLA: An Open Urban Driving Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/difix3d-plus/" class="active">
+      DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/hugsim-real-time-photorealistic-closed-loop-simulator/" class="">
+      HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/" class="">
+      NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nuscenes-multimodal-dataset-autonomous-driving/" class="">
+      nuScenes: A Multimodal Dataset for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/waymo-open-dataset/" class="">
+      Scalability in Perception for Autonomous Driving: Waymo Open Dataset</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/uniad-planning-oriented-autonomous-driving/" class="">
+      UniAD: Planning-oriented Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vad/" class="">
+      VAD: Vectorized Scene Representation for Efficient Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/paper/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models</h3>
+
+  <label for="toc-control">
+    
+    <img src="/paper/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#chapter-1-introduction">Chapter 1: Introduction</a></li>
+    <li><a href="#chapter-2-related-work">Chapter 2: Related Work</a></li>
+    <li><a href="#chapter-3-background">Chapter 3: Background</a></li>
+    <li><a href="#chapter-4-difix---단일-단계-확산-모델로-3d-재구성-향상">Chapter 4: DIFIX - 단일 단계 확산 모델로 3D 재구성 향상</a>
+      <ul>
+        <li><a href="#41-difix-사전학습-확산-모델을-3d-artifact-fixer로">4.1 DIFIX: 사전학습 확산 모델을 3D Artifact Fixer로</a></li>
+        <li><a href="#42-difix3d-확산-사전으로-nvs-향상">4.2 DIFIX3D+: 확산 사전으로 NVS 향상</a></li>
+      </ul>
+    </li>
+    <li><a href="#chapter-5-실험">Chapter 5: 실험</a>
+      <ul>
+        <li><a href="#51-in-the-wild-아티팩트-제거-nerfbusters--dl3dv-데이터셋">5.1 In-the-Wild 아티팩트 제거 (Nerfbusters &amp; DL3DV 데이터셋)</a></li>
+        <li><a href="#52-자동차-장면-향상-rds-데이터셋">5.2 자동차 장면 향상 (RDS 데이터셋)</a></li>
+        <li><a href="#53-어블레이션-연구-ablation-study">5.3 어블레이션 연구 (Ablation Study)</a></li>
+      </ul>
+    </li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h2 id="개요">개요<a class="anchor" href="#%ea%b0%9c%ec%9a%94">#</a></h2>
+<ul>
+<li><strong>저자</strong>: Jay Zhangjie Wu, Yuxuan Zhang, Haithem Turki, Xuanchi Ren, Jun Gao, Mike Zheng Shou, Sanja Fidler, Zan Gojcic, Huan Ling</li>
+<li><strong>소속</strong>: NVIDIA, National University of Singapore, University of Toronto, Vector Institute</li>
+<li><strong>발행년도</strong>: 2025 (arXiv:2503.01774v1, 3 Mar 2025)</li>
+<li><strong>주요 내용</strong>: 단일 단계(single-step) 확산 모델(DIFIX)을 활용하여 NeRF 및 3DGS 기반 3D 재구성의 아티팩트를 제거하고 품질을 향상시키는 파이프라인 DIFIX3D+를 제안</li>
+</ul>
+<h2 id="목차">목차<a class="anchor" href="#%eb%aa%a9%ec%b0%a8">#</a></h2>
+<ul>
+<li>Chapter 1: Introduction</li>
+<li>Chapter 2: Related Work</li>
+<li>Chapter 3: Background (NeRF &amp; 3DGS)</li>
+<li>Chapter 4: DIFIX - 단일 단계 확산 모델로 3D 재구성 향상
+<ul>
+<li>4.1 DIFIX: 사전학습 확산 모델을 3D Artifact Fixer로</li>
+<li>4.2 DIFIX3+: 확산 사전(Priors)으로 NVS 향상</li>
+</ul>
+</li>
+<li>Chapter 5: 실험</li>
+<li>Chapter 6: 결론</li>
+</ul>
+<hr>
+<h2 id="chapter-1-introduction">Chapter 1: Introduction<a class="anchor" href="#chapter-1-introduction">#</a></h2>
+<p><strong>요약</strong></p>
+<p>Neural Radiance Fields(NeRF)와 3D Gaussian Splatting(3DGS)은 새로운 시점 합성(Novel View Synthesis, NVS) 분야를 혁신했지만, 극단적인 시점에서의 사진처럼 사실적인 렌더링은 여전히 어렵습니다. 특히 입력 카메라 포즈와 멀리 떨어진 시점을 렌더링할 때 아티팩트(artifact)가 발생합니다.</p>
+<p>이 논문은 **DIFIX3D+**를 제안합니다. 핵심 아이디어는 다음과 같습니다:</p>
+<ul>
+<li>인터넷 규모 데이터로 학습된 2D 생성 모델의 강력한 사전(prior) 지식을 활용</li>
+<li>3D 재구성 중 <strong>학습 데이터 정제</strong>에 DIFIX를 사용하여 의사 학습 뷰(pseudo-training views)를 개선</li>
+<li>추론 시 <strong>실시간 후처리</strong>로 아티팩트 제거</li>
+</ul>
+<p>기존 방법들과의 차별점은 매 학습 스텝마다 확산 모델을 쿼리하지 않아 <strong>&gt;10× 빠른</strong> 추론이 가능하며, NeRF와 3DGS 모두에 적용 가능한 <strong>단일 범용 모델</strong>입니다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>아티팩트(Artifact)</strong>: 3D 재구성 시 관측이 부족한 영역에서 발생하는 시각적 오류 (흐릿함, 잘못된 구조, 부자연스러운 텍스처 등)</li>
+<li><strong>Novel View Synthesis (NVS)</strong>: 기존 카메라로 촬영한 이미지로부터 새로운 시점의 이미지를 생성하는 기술</li>
+<li><strong>단일 단계 확산 모델</strong>: 일반 확산 모델은 수백~수천 스텝이 필요하지만, 단일 단계(single-step)로 추론하여 실시간에 가까운 속도를 달성</li>
+</ul>
+<hr>
+<h2 id="chapter-2-related-work">Chapter 2: Related Work<a class="anchor" href="#chapter-2-related-work">#</a></h2>
+<p><strong>요약</strong></p>
+<p>관련 연구는 크게 세 갈래로 나뉩니다:</p>
+<p><strong>3D 재구성 불일치 개선</strong>: 노이즈 카메라 포즈 최적화, 조명 변화 처리, 일시적 오클루전 처리 등의 방법들이 있지만, 이는 아티팩트를 완전히 제거하지 못합니다.</p>
+<p><strong>NVS를 위한 기하학적 사전(Geometric Priors)</strong>: 깊이 맵, 법선 맵 등을 활용하여 희소 입력 설정에서 렌더링 품질을 높이는 방법들이 있으나, 밀도 높은 캡처에서는 개선이 미미합니다.</p>
+<p><strong>NVS를 위한 생성 사전(Generative Priors)</strong>: GAN, 확산 모델 등 대규모 데이터로 학습된 생성 모델을 활용하는 방법들입니다. 특히 확산 모델은 인터넷 규모 데이터셋에서 강력한 사전 지식을 학습하며, 최소 파인튜닝으로 새 뷰를 생성하거나 3D 표현 최적화를 가이드할 수 있습니다. 그러나 매 학습 스텝마다 확산 모델을 호출하면 학습 속도가 크게 저하됩니다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Deceptive-NeRF</strong>: 확산 모델로 생성한 의사 관측(pseudo-observations)으로 NeRF 재구성을 향상시키는 기법. DIFIX3D+와 유사하지만 두 가지 차이점: (i) 점진적인 3D 업데이트 파이프라인, (ii) 렌더 타임 신경 향상기 역할</li>
+</ul>
+<hr>
+<h2 id="chapter-3-background">Chapter 3: Background<a class="anchor" href="#chapter-3-background">#</a></h2>
+<p><strong>요약</strong></p>
+<p><strong>NeRF (Neural Radiance Fields)</strong>: 좌표 기반 MLP를 활용하여 3D 장면을 implicit하게 표현합니다. 임의의 3D 위치에서 색상과 밀도를 쿼리할 수 있으며, 볼륨 렌더링을 통해 이미지를 생성합니다.</p>
+<p><strong>볼륨 렌더링 공식:</strong></p>
+$$\mathcal{C}(\mathbf{p}) = \sum_{i=1}^{N} \alpha_i c_i \prod_{j=1}^{i-1}(1 - \alpha_j) \tag{1}$$<p><strong>수식 설명</strong>
+이 수식은 카메라 광선을 따라 여러 포인트의 색상을 누적하여 최종 픽셀 색상을 계산합니다:</p>
+<ul>
+<li><strong>$\mathcal{C}(\mathbf{p})$</strong>: 광선 $\mathbf{p}$의 최종 렌더링 색상 (픽셀에 보이는 색)</li>
+<li><strong>$c_i$</strong>: $i$번째 샘플 포인트의 색상</li>
+<li><strong>$\alpha_i = 1 - \exp(-\sigma_i \delta_i)$</strong>: $i$번째 포인트의 불투명도
+<ul>
+<li>$\sigma_i$: 밀도(density), $\delta_i$: 샘플 간격</li>
+</ul>
+</li>
+<li><strong>$\prod_{j=1}^{i-1}(1 - \alpha_j)$</strong>: $i$번째 포인트까지 도달하는 빛의 투과율 (앞의 모든 포인트를 통과한 비율)</li>
+<li>직관: &ldquo;각 포인트의 색상 × 그 포인트의 불투명도 × 앞에서 얼마나 빛이 살아남았는지&quot;를 모두 더한 값</li>
+</ul>
+<p><strong>3DGS (3D Gaussian Splatting)</strong>: 장면을 수백만 개의 3D Gaussian 입자로 표현합니다. 각 Gaussian은 위치 $\boldsymbol{\mu}$, 회전 $\mathbf{r}$, 스케일 $\mathbf{s}$, 불투명도 $\eta$, 색상 $\mathbf{c}$를 가집니다.</p>
+<p><strong>3DGS 불투명도 계산:</strong></p>
+$$\alpha_i = \eta_i \exp\left[-\frac{1}{2}(\mathbf{p} - \boldsymbol{\mu}_i)^\top \boldsymbol{\Sigma}_i^{-1}(\mathbf{p} - \boldsymbol{\mu}_i)\right] \tag{2}$$<p><strong>수식 설명</strong>
+이 수식은 특정 픽셀 위치 $\mathbf{p}$에서 $i$번째 Gaussian이 기여하는 불투명도입니다:</p>
+<ul>
+<li><strong>$\alpha_i$</strong>: $i$번째 Gaussian의 해당 픽셀에서의 불투명도</li>
+<li><strong>$\eta_i$</strong>: 전체 불투명도 (학습 가능한 파라미터)</li>
+<li><strong>$\boldsymbol{\Sigma}_i = \mathbf{R}\mathbf{S}\mathbf{S}^T\mathbf{R}^T$</strong>: 공분산 행렬 (Gaussian의 모양과 방향을 결정)
+<ul>
+<li>$\mathbf{R}$: 회전 행렬 ($\mathbf{R} \in SO(3)$), $\mathbf{S}$: 스케일 행렬 ($\mathbf{S} \in \mathbb{R}^{3\times3}$)</li>
+</ul>
+</li>
+<li><strong>$\exp[-\frac{1}{2}(\mathbf{p} - \boldsymbol{\mu}_i)^\top \boldsymbol{\Sigma}_i^{-1}(\mathbf{p} - \boldsymbol{\mu}_i)]$</strong>: 픽셀이 Gaussian 중심에서 얼마나 떨어져 있는지에 따른 감쇠
+<ul>
+<li>중심에 가까울수록 1에 가깝고, 멀어질수록 0에 가까움</li>
+</ul>
+</li>
+</ul>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>타일 기반 래스터화(tile-based rasterization)</strong>: 3DGS는 미분 가능한 래스터화로 픽셀당 기여하는 Gaussian 수 $N$을 결정</li>
+<li>NeRF와 3DGS 모두 동일한 볼륨 렌더링 공식(Eq. 1)을 공유</li>
+</ul>
+<hr>
+<h2 id="chapter-4-difix---단일-단계-확산-모델로-3d-재구성-향상">Chapter 4: DIFIX - 단일 단계 확산 모델로 3D 재구성 향상<a class="anchor" href="#chapter-4-difix---%eb%8b%a8%ec%9d%bc-%eb%8b%a8%ea%b3%84-%ed%99%95%ec%82%b0-%eb%aa%a8%eb%8d%b8%eb%a1%9c-3d-%ec%9e%ac%ea%b5%ac%ec%84%b1-%ed%96%a5%ec%83%81">#</a></h2>
+<h3 id="41-difix-사전학습-확산-모델을-3d-artifact-fixer로">4.1 DIFIX: 사전학습 확산 모델을 3D Artifact Fixer로<a class="anchor" href="#41-difix-%ec%82%ac%ec%a0%84%ed%95%99%ec%8a%b5-%ed%99%95%ec%82%b0-%eb%aa%a8%eb%8d%b8%ec%9d%84-3d-artifact-fixer%eb%a1%9c">#</a></h3>
+<p><strong>요약</strong></p>
+<p>DIFIX는 SD-Turbo 기반의 U-Net 구조로, 노이즈가 있는 렌더링 이미지를 입력받아 아티팩트가 제거된 깨끗한 이미지를 출력합니다. 핵심은 **크로스-뷰 참조 혼합 레이어(cross-view reference mixing layer)**로, 여러 참조 뷰의 정보를 활용하여 3D 일관성을 유지합니다.</p>
+<p><strong>DIFIX 아키텍처:</strong></p>
+<ul>
+<li><strong>입력</strong>: 노이즈가 있는 렌더링 이미지 + 참조 뷰 이미지</li>
+<li><strong>출력</strong>: 아티팩트가 제거된 향상된 이미지</li>
+<li><strong>구조</strong>: 동결된 VAE 인코더 + LoRA로 파인튜닝된 디코더</li>
+<li><strong>참조 혼합 레이어</strong>: U-Net의 attention 연산 후 시점 차원(view dimension)을 따라 rearrange하여 크로스-뷰 의존성을 포착</li>
+</ul>
+<p><strong>손실 함수:</strong></p>
+$$\mathcal{L} = \mathcal{L}_{\text{Recon}} + \mathcal{L}_{\text{LPIPS}} + 0.5\mathcal{L}_{\text{Gram}} \tag{3}$$$$G_l(I) = \phi_l(I)^\top \phi_l(I) \tag{5}$$<p><strong>손실 함수 설명</strong>
+총 손실은 세 가지 항으로 구성됩니다:</p>
+<ul>
+<li><strong>$\mathcal{L}_{\text{Recon}}$</strong>: 재구성 손실 - L2 차이(픽셀 단위 정확도)</li>
+<li><strong>$\mathcal{L}_{\text{LPIPS}}$</strong>: 지각적 손실(perceptual loss) - 인간의 시각적 인식 기준으로 품질 측정</li>
+<li><strong>$\mathcal{L}_{\text{Gram}}$</strong>: Gram 행렬 손실 - 이미지의 텍스처/스타일 일관성 유지
+<ul>
+<li>$\phi_l(I)$: $l$번째 레이어의 특징 맵, $G_l(I)$: 해당 레이어의 Gram 행렬</li>
+<li>Gram 행렬은 특징 맵의 채널 간 상관관계를 측정하여 전체적인 스타일을 포착</li>
+</ul>
+</li>
+</ul>
+<p><strong>학습 데이터 큐레이션</strong>: 네 가지 전략으로 쌍(pair) 데이터를 생성합니다:</p>
+<ol>
+<li><strong>희소 재구성(Sparse Reconstruction)</strong>: 카메라를 일부만 사용하여 의도적으로 불완전한 재구성 생성</li>
+<li><strong>사이클 재구성(Cycle Reconstruction)</strong>: 직선 궤적에서 옆 1-6미터 이동한 카메라로 두 번째 NeRF를 학습하여 저하된 뷰 생성</li>
+<li><strong>크로스 참조(Cross Reference)</strong>: 단일 카메라로 재구성 후 나머지 카메라의 뷰를 렌더링</li>
+<li><strong>모델 언더피팅(Model Underfitting)</strong>: 전체 학습 에폭의 25-75%만 사용하여 의도적 언더피팅</li>
+</ol>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>SD-Turbo</strong>: Stable Diffusion의 단일 단계 증류 버전으로, 단 하나의 forward pass로 이미지 생성/편집 가능</li>
+<li><strong>LoRA (Low-Rank Adaptation)</strong>: 사전학습 모델의 소수 파라미터만 파인튜닝하는 효율적인 방법</li>
+<li><strong>노이즈 레벨 $\tau$</strong>: DIFIX는 $\tau = 200$을 사용 (범위: 0~1000). 너무 높으면 환각(hallucination), 너무 낮으면 변화 없음. $\tau = 200$이 최적의 아티팩트 제거와 원본 유지 균형을 달성</li>
+</ul>
+<h3 id="42-difix3d-확산-사전으로-nvs-향상">4.2 DIFIX3D+: 확산 사전으로 NVS 향상<a class="anchor" href="#42-difix3d-%ed%99%95%ec%82%b0-%ec%82%ac%ec%a0%84%ec%9c%bc%eb%a1%9c-nvs-%ed%96%a5%ec%83%81">#</a></h3>
+<p><strong>요약</strong></p>
+<p>DIFIX3D+는 두 가지 방식으로 작동합니다:</p>
+<p><strong>방식 1 - 3D 재구성 중 점진적 업데이트:</strong>
+직접 DIFIX를 렌더링 뷰에 적용하면 뷰마다 불일치가 발생합니다. 이를 해결하기 위해 향상된 노블 뷰를 3D 표현에 다시 증류(distill)하고 점진적으로 학습합니다:</p>
+<ol>
+<li>초기 3D 표현(NeRF/3DGS) 생성</li>
+<li>타겟 뷰 렌더링 후 DIFIX로 향상</li>
+<li>향상된 이미지를 타겟 뷰로 사용, 그라운드 트루스 카메라를 약간 섭동(perturb)</li>
+<li>1.5 이터레이션마다 반복 → 점점 아티팩트 없는 고품질 3D 표현 구축</li>
+</ol>
+<p><strong>방식 2 - 실시간 후처리(DIFIX3D+):</strong>
+추론 시 렌더링된 뷰에 DIFIX를 직접 적용하는 신경 향상기(neural enhancer)로 사용. 약 <strong>76ms</strong> (NVIDIA A100 기준, 표준 확산 모델 대비 &gt;10× 빠름)</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>점진적 3D 업데이트(Progressive 3D Update)</strong>: 한 번에 모든 뷰를 추가하지 않고 반복적으로 향상된 뷰를 추가하여 3D 일관성 강화</li>
+<li><strong>신경 향상기(Neural Enhancer)</strong>: 3D 표현이 완성된 후 렌더링 시점에서 추가적인 품질 향상을 제공하는 모듈</li>
+<li><strong>카메라 섭동(Camera Perturbation)</strong>: 타겟 카메라를 약간 이동시켜 다양한 훈련 시점을 생성, 3D 일관성 강화</li>
+</ul>
+<hr>
+<h2 id="chapter-5-실험">Chapter 5: 실험<a class="anchor" href="#chapter-5-%ec%8b%a4%ed%97%98">#</a></h2>
+<p><strong>요약</strong></p>
+<h3 id="51-in-the-wild-아티팩트-제거-nerfbusters--dl3dv-데이터셋">5.1 In-the-Wild 아티팩트 제거 (Nerfbusters &amp; DL3DV 데이터셋)<a class="anchor" href="#51-in-the-wild-%ec%95%84%ed%8b%b0%ed%8c%a9%ed%8a%b8-%ec%a0%9c%ea%b1%b0-nerfbusters--dl3dv-%eb%8d%b0%ec%9d%b4%ed%84%b0%ec%85%8b">#</a></h3>
+<p><strong>학습</strong>: DL3DV 데이터셋 140개 장면 중 112개(80%)에서 80,000개 노이즈-클린 이미지 쌍 생성</p>
+<p><strong>정량적 결과</strong> (Nerfbusters 데이터셋):</p>
+<table>
+  <thead>
+      <tr>
+          <th>방법</th>
+          <th>PSNR↑</th>
+          <th>SSIM↑</th>
+          <th>LPIPS↓</th>
+          <th>FID↓</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Nerfacto</td>
+          <td>17.29</td>
+          <td>0.6214</td>
+          <td>0.4021</td>
+          <td>134.65</td>
+      </tr>
+      <tr>
+          <td>GANeRF</td>
+          <td>17.42</td>
+          <td>0.6113</td>
+          <td>0.3539</td>
+          <td>115.60</td>
+      </tr>
+      <tr>
+          <td>NeRFLiX</td>
+          <td>17.91</td>
+          <td>0.6560</td>
+          <td>0.3458</td>
+          <td>113.59</td>
+      </tr>
+      <tr>
+          <td><strong>DIFIX3D+ (Nerfacto)</strong></td>
+          <td><strong>18.32</strong></td>
+          <td><strong>0.6623</strong></td>
+          <td><strong>0.2789</strong></td>
+          <td><strong>49.44</strong></td>
+      </tr>
+      <tr>
+          <td>3DGS</td>
+          <td>17.66</td>
+          <td>0.6780</td>
+          <td>0.3265</td>
+          <td>113.84</td>
+      </tr>
+      <tr>
+          <td><strong>DIFIX3D+ (3DGS)</strong></td>
+          <td><strong>18.51</strong></td>
+          <td><strong>0.6858</strong></td>
+          <td><strong>0.2637</strong></td>
+          <td><strong>41.77</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p>DIFIX3D+는 모든 지표에서 최고 성능을 달성하며, 특히 FID가 기준 대비 <strong>2× 이상</strong> 개선됩니다.</p>
+<h3 id="52-자동차-장면-향상-rds-데이터셋">5.2 자동차 장면 향상 (RDS 데이터셋)<a class="anchor" href="#52-%ec%9e%90%eb%8f%99%ec%b0%a8-%ec%9e%a5%eb%a9%b4-%ed%96%a5%ec%83%81-rds-%eb%8d%b0%ec%9d%b4%ed%84%b0%ec%85%8b">#</a></h3>
+<p>인하우스 실제 주행 장면 데이터셋에서 평가:</p>
+<table>
+  <thead>
+      <tr>
+          <th>방법</th>
+          <th>PSNR↑</th>
+          <th>SSIM↑</th>
+          <th>LPIPS↓</th>
+          <th>FID↓</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Nerfacto</td>
+          <td>19.95</td>
+          <td>0.4930</td>
+          <td>0.5300</td>
+          <td>91.38</td>
+      </tr>
+      <tr>
+          <td>Nerfacto + NeRFLiX</td>
+          <td>20.44</td>
+          <td>0.5672</td>
+          <td>0.4686</td>
+          <td>116.28</td>
+      </tr>
+      <tr>
+          <td>Nerfacto + DIFIX3D</td>
+          <td>21.52</td>
+          <td>0.5700</td>
+          <td>0.4266</td>
+          <td>77.83</td>
+      </tr>
+      <tr>
+          <td><strong>Nerfacto + DIFIX3D+</strong></td>
+          <td><strong>21.75</strong></td>
+          <td><strong>0.5829</strong></td>
+          <td><strong>0.4016</strong></td>
+          <td><strong>73.08</strong></td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="53-어블레이션-연구-ablation-study">5.3 어블레이션 연구 (Ablation Study)<a class="anchor" href="#53-%ec%96%b4%eb%b8%94%eb%a0%88%ec%9d%b4%ec%85%98-%ec%97%b0%ea%b5%ac-ablation-study">#</a></h3>
+<p>점진적 컴포넌트를 추가할수록 성능이 향상됩니다:</p>
+<table>
+  <thead>
+      <tr>
+          <th>방법</th>
+          <th>PSNR↑</th>
+          <th>SSIM↑</th>
+          <th>LPIPS↓</th>
+          <th>FID↓</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Nerfacto</td>
+          <td>17.29</td>
+          <td>0.6214</td>
+          <td>0.4021</td>
+          <td>134.65</td>
+      </tr>
+      <tr>
+          <td>+ (a) DIFIX</td>
+          <td>17.40</td>
+          <td>0.6333</td>
+          <td>0.3277</td>
+          <td>63.77</td>
+      </tr>
+      <tr>
+          <td>+ (b) DIFIX + single-step 3D update</td>
+          <td>17.97</td>
+          <td>0.6563</td>
+          <td>0.3424</td>
+          <td>75.94</td>
+      </tr>
+      <tr>
+          <td>+ (a)+(b)+(c) DIFIX3D</td>
+          <td>18.08</td>
+          <td>0.6533</td>
+          <td>0.3277</td>
+          <td>63.77</td>
+      </tr>
+      <tr>
+          <td><strong>+ (a)+(b)+(c)+(d) DIFIX3D+</strong></td>
+          <td><strong>18.32</strong></td>
+          <td><strong>0.6623</strong></td>
+          <td><strong>0.2789</strong></td>
+          <td><strong>49.44</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>PSNR (Peak Signal-to-Noise Ratio)</strong>: 픽셀 단위 재구성 정확도 측정 (dB 단위, 높을수록 좋음)</li>
+<li><strong>SSIM (Structural Similarity Index)</strong>: 구조적 유사도 측정 (0~1, 높을수록 좋음)</li>
+<li><strong>LPIPS (Learned Perceptual Image Patch Similarity)</strong>: 딥러닝 기반 지각적 유사도 (낮을수록 좋음)</li>
+<li><strong>FID (Fréchet Inception Distance)</strong>: 실제 이미지 분포와 생성 이미지 분포의 유사도 (낮을수록 좋음)</li>
+</ul>
+<hr>
+<h2 id="핵심-개념-정리">핵심 개념 정리<a class="anchor" href="#%ed%95%b5%ec%8b%ac-%ea%b0%9c%eb%85%90-%ec%a0%95%eb%a6%ac">#</a></h2>
+<table>
+  <thead>
+      <tr>
+          <th>개념</th>
+          <th>설명</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>DIFIX</strong></td>
+          <td>SD-Turbo 기반 단일 단계 확산 모델. 노이즈 있는 NeRF/3DGS 렌더링을 입력으로 받아 아티팩트 제거</td>
+      </tr>
+      <tr>
+          <td><strong>DIFIX3D</strong></td>
+          <td>DIFIX를 3D 재구성 중 점진적 업데이트에 사용하는 파이프라인</td>
+      </tr>
+      <tr>
+          <td><strong>DIFIX3D+</strong></td>
+          <td>DIFIX3D + 실시간 후처리(신경 향상기)를 결합한 완전한 파이프라인</td>
+      </tr>
+      <tr>
+          <td><strong>단일 단계 확산</strong></td>
+          <td>일반 확산 모델(수백 스텝) 대비 1 스텝으로 추론. &gt;10× 속도 향상</td>
+      </tr>
+      <tr>
+          <td><strong>크로스-뷰 참조 혼합</strong></td>
+          <td>여러 참조 뷰를 attention으로 융합하여 3D 일관성 있는 향상 이미지 생성</td>
+      </tr>
+      <tr>
+          <td><strong>점진적 3D 업데이트</strong></td>
+          <td>향상된 뷰를 반복적으로 3D에 다시 증류하여 3D 일관성 유지</td>
+      </tr>
+      <tr>
+          <td><strong>노이즈 레벨 τ=200</strong></td>
+          <td>아티팩트 제거와 원본 충실도의 최적 균형점 (τ=1000은 환각 발생, τ=10은 변화 미미)</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="결론-및-시사점">결론 및 시사점<a class="anchor" href="#%ea%b2%b0%eb%a1%a0-%eb%b0%8f-%ec%8b%9c%ec%82%ac%ec%a0%90">#</a></h2>
+<p>DIFIX3D+는 단일 단계 확산 모델(DIFIX)을 핵심으로 한 새로운 3D 재구성 향상 파이프라인입니다.</p>
+<p><strong>주요 기여</strong>:</p>
+<ol>
+<li><strong>속도</strong>: 기존 확산 모델 기반 방법 대비 &gt;10× 빠른 추론 (76ms @ A100)</li>
+<li><strong>범용성</strong>: NeRF와 3DGS 모두에 적용 가능한 단일 모델</li>
+<li><strong>품질</strong>: FID 기준 2× 향상, 3D 일관성 유지</li>
+<li><strong>이중 역할</strong>: 3D 최적화 중 데이터 정제 + 추론 시 실시간 아티팩트 제거</li>
+</ol>
+<p><strong>실무적 시사점</strong>:</p>
+<ul>
+<li>자율주행, AR/VR 등 실시간 3D 렌더링이 필요한 응용에서 활용 가능</li>
+<li>기존 NeRF/3DGS 파이프라인에 플러그인 형태로 손쉽게 통합 가능</li>
+<li>인터넷 규모 데이터로 학습된 생성 모델의 사전 지식이 3D 재구성에 효과적으로 전이됨을 입증</li>
+</ul>
+<hr>
+<p><em>관련 논문: <a href="/posts/papers/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/">NeRF</a>, <a href="/posts/papers/3d-gaussian-splatting/">3D Gaussian Splatting</a>, <a href="/posts/papers/high-resolution-image-synthesis-with-latent-diffusion-models/">LDM</a></em></p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/paper/docs/carla-an-open-urban-driving-simulator/" class="flex align-center">
+        <img src="/paper/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>CARLA: An Open Urban Driving Simulator</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/paper/docs/hugsim-real-time-photorealistic-closed-loop-simulator/" class="flex align-center">
+        <span>HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving</span>
+        <img src="/paper/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#chapter-1-introduction">Chapter 1: Introduction</a></li>
+    <li><a href="#chapter-2-related-work">Chapter 2: Related Work</a></li>
+    <li><a href="#chapter-3-background">Chapter 3: Background</a></li>
+    <li><a href="#chapter-4-difix---단일-단계-확산-모델로-3d-재구성-향상">Chapter 4: DIFIX - 단일 단계 확산 모델로 3D 재구성 향상</a>
+      <ul>
+        <li><a href="#41-difix-사전학습-확산-모델을-3d-artifact-fixer로">4.1 DIFIX: 사전학습 확산 모델을 3D Artifact Fixer로</a></li>
+        <li><a href="#42-difix3d-확산-사전으로-nvs-향상">4.2 DIFIX3D+: 확산 사전으로 NVS 향상</a></li>
+      </ul>
+    </li>
+    <li><a href="#chapter-5-실험">Chapter 5: 실험</a>
+      <ul>
+        <li><a href="#51-in-the-wild-아티팩트-제거-nerfbusters--dl3dv-데이터셋">5.1 In-the-Wild 아티팩트 제거 (Nerfbusters &amp; DL3DV 데이터셋)</a></li>
+        <li><a href="#52-자동차-장면-향상-rds-데이터셋">5.2 자동차 장면 향상 (RDS 데이터셋)</a></li>
+        <li><a href="#53-어블레이션-연구-ablation-study">5.3 어블레이션 연구 (Ablation Study)</a></li>
+      </ul>
+    </li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

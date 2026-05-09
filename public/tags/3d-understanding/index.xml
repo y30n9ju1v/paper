@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>3D Understanding on Paper</title>
+    <link>https://y30n9ju1v.github.io/paper/tags/3d-understanding/</link>
+    <description>Recent content in 3D Understanding on Paper</description>
+    <generator>Hugo</generator>
+    <language>ko-KR</language>
+    <lastBuildDate>Sun, 19 Apr 2026 21:00:00 +0900</lastBuildDate>
+    <atom:link href="https://y30n9ju1v.github.io/paper/tags/3d-understanding/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>MonoScene: Monocular 3D Semantic Scene Completion</title>
+      <link>https://y30n9ju1v.github.io/paper/docs/autonomous-driving/perception/monoscene-monocular-3d-semantic-scene-completion/</link>
+      <pubDate>Sun, 19 Apr 2026 21:00:00 +0900</pubDate>
+      <guid>https://y30n9ju1v.github.io/paper/docs/autonomous-driving/perception/monoscene-monocular-3d-semantic-scene-completion/</guid>
+      <description>&lt;h2 id=&#34;개요&#34;&gt;개요&lt;a class=&#34;anchor&#34; href=&#34;#%ea%b0%9c%ec%9a%94&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;strong&gt;저자&lt;/strong&gt;: Anh-Quan Cao, Raoul de Charette (Inria)&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;발행년도&lt;/strong&gt;: 2022 (arXiv 2021, CVPR 2022)&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;논문&lt;/strong&gt;: &lt;a href=&#34;https://arxiv.org/abs/2112.00726&#34;&gt;arXiv:2112.00726&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;코드&lt;/strong&gt;: &lt;a href=&#34;https://github.com/cv-rits/MonoScene&#34;&gt;github.com/cv-rits/MonoScene&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;주요 내용&lt;/strong&gt;: 단일 RGB 이미지만으로 3D 공간의 기하(geometry)와 의미(semantics)를 동시에 추론하는 최초의 실내·실외 통합 3D Semantic Scene Completion(SSC) 프레임워크&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;hr&gt;&#xA;&lt;h2 id=&#34;한계-극복&#34;&gt;한계 극복&lt;a class=&#34;anchor&#34; href=&#34;#%ed%95%9c%ea%b3%84-%ea%b7%b9%eb%b3%b5&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;strong&gt;기존 한계 1 — 깊이/LiDAR 의존성&lt;/strong&gt;: 기존 SSC 방법은 모두 depth map, point cloud, occupancy grid 등 2.5D/3D 입력을 필요로 했음. 비싼 센서이거나 별도의 깊이 추정 단계가 필요했음&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;기존 한계 2 — 실내/실외 분리 설계&lt;/strong&gt;: 실내용(NYUv2) 또는 실외용(SemanticKITTI) 전용 모델로 설계되어 범용 적용이 불가능했음&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;기존 한계 3 — 문맥 인식 부족&lt;/strong&gt;: 기존 SSC 학습은 cross-entropy loss로 각 복셀을 독립적으로 최적화하여 그룹 수준의 맥락 정보를 활용하지 못했음&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;이 논문의 접근 방식&lt;/strong&gt;: 단일 RGB 이미지 → FLoSP(2D-3D 피처 투영) + 3D CRP(맥락 관계 사전) + 새로운 SSC 손실 함수로 2D 정보만으로 밀집한 3D 시맨틱 장면 완성&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;hr&gt;&#xA;&lt;h2 id=&#34;목차&#34;&gt;목차&lt;a class=&#34;anchor&#34; href=&#34;#%eb%aa%a9%ec%b0%a8&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ol&gt;&#xA;&lt;li&gt;Introduction&lt;/li&gt;&#xA;&lt;li&gt;Related Works&lt;/li&gt;&#xA;&lt;li&gt;Method&#xA;&lt;ul&gt;&#xA;&lt;li&gt;3.1 Features Line of Sight Projection (FLoSP)&lt;/li&gt;&#xA;&lt;li&gt;3.2 3D Context Relation Prior (3D CRP)&lt;/li&gt;&#xA;&lt;li&gt;3.3 Losses (Scene-Class Affinity Loss + Frustum Proportion Loss)&lt;/li&gt;&#xA;&lt;li&gt;3.4 Training Strategy&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;/li&gt;&#xA;&lt;li&gt;Experiments&lt;/li&gt;&#xA;&lt;li&gt;Discussion (Limitations &amp;amp; Broader Impact)&lt;/li&gt;&#xA;&lt;li&gt;Appendix&lt;/li&gt;&#xA;&lt;/ol&gt;&#xA;&lt;hr&gt;&#xA;&lt;h2 id=&#34;1-introduction&#34;&gt;1. Introduction&lt;a class=&#34;anchor&#34; href=&#34;#1-introduction&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;p&gt;인간은 단일 시점의 이미지에서도 3D 장면의 구조와 의미를 자연스럽게 이해합니다. 이를 컴퓨터가 수행하는 것이 &lt;strong&gt;3D Semantic Scene Completion(SSC)&lt;/strong&gt; — 이미지로부터 전체 3D 복셀 공간의 점유 여부와 의미 클래스를 동시에 예측하는 태스크입니다.&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

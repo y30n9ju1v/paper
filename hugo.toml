@@ -3,6 +3,14 @@ languageCode = "ko-KR"
 title = "Paper"
 theme = "hugo-book"
 
+[outputs]
+home = ["HTML", "JSON"]
+
+[outputFormats.JSON]
+mediaType = "application/json"
+baseName = "graph-data"
+isPlainText = true
+
 [markup.goldmark.extensions.passthrough]
 enable = true
 [markup.goldmark.extensions.passthrough.delimiters]

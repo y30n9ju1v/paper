@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="ko-KR" dir="ltr">
+<head><script src="/paper/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=paper/livereload" data-no-instant defer></script>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="개요# 저자: Alec Radford, Jong Wook Kim, Chris Hallacy, Aditya Ramesh, Gabriel Goh, Sandhini Agarwal, Girish Sastry, Amanda Askell, Pamela Mishkin, Jack Clark, Gretchen Krueger, Ilya Sutskever (OpenAI) 발행년도: 2021 arXiv: 2103.00020 주요 내용: 인터넷에서 수집한 4억 개의 (이미지, 텍스트) 쌍으로 이미지 인코더와 텍스트 인코더를 대조 학습(contrastive learning)으로 동시 훈련. 클래스 이름을 자연어로 표현하여 추가 훈련 없이 30개 이상의 다양한 시각 태스크에 zero-shot으로 전이. ImageNet에서 ResNet-50 수준의 zero-shot 성능 달성. 한계 극복# 기존 한계 1 — 고정된 클래스 집합: 기존 컴퓨터 비전 모델은 사전 정의된 클래스만 예측 가능. 새로운 개념을 인식하려면 레이블된 데이터를 추가로 수집하고 재학습해야 함. 기존 한계 2 — 크라우드소싱 레이블의 비용과 병목: ImageNet 같은 고품질 데이터셋 구축에는 막대한 인력과 시간이 필요. 인터넷에 존재하는 방대한 이미지-텍스트 쌍을 활용하지 못함. 기존 한계 3 — 낮은 zero-shot 전이 성능: 기존 자연어 감독 방식(Visual N-Grams 등)은 ImageNet에서 11.5% 정확도에 불과. 규모와 학습 방식 모두 한계. 이 논문의 접근 방식: “어떤 텍스트가 어떤 이미지와 쌍을 이루는가&#34;를 예측하는 대조적 사전 훈련(contrastive pre-training) &#43; 클래스 이름을 텍스트 템플릿으로 변환하는 zero-shot 분류기 합성. 목차# Section 1: Introduction and Motivating Work Section 2: Approach 2.1 Natural Language Supervision 2.2 Creating a Sufficiently Large Dataset 2.3 Selecting an Efficient Pre-Training Method 2.4 Choosing and Scaling a Model 2.5 Training Section 3: Experiments 3.1 Zero-Shot Transfer 3.2 Representation Learning 3.3 Robustness to Natural Distribution Shift Section 4: Comparison to Human Performance Section 5: Data Overlap Analysis Section 6: Limitations Section 7: Broader Impacts Section 1: Introduction and Motivating Work# 요약
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/paper/docs/clip-learning-transferable-visual-models-from-natural-language-supervision/">
+  <meta property="og:site_name" content="Paper">
+  <meta property="og:title" content="CLIP: Learning Transferable Visual Models From Natural Language Supervision">
+  <meta property="og:description" content="개요# 저자: Alec Radford, Jong Wook Kim, Chris Hallacy, Aditya Ramesh, Gabriel Goh, Sandhini Agarwal, Girish Sastry, Amanda Askell, Pamela Mishkin, Jack Clark, Gretchen Krueger, Ilya Sutskever (OpenAI) 발행년도: 2021 arXiv: 2103.00020 주요 내용: 인터넷에서 수집한 4억 개의 (이미지, 텍스트) 쌍으로 이미지 인코더와 텍스트 인코더를 대조 학습(contrastive learning)으로 동시 훈련. 클래스 이름을 자연어로 표현하여 추가 훈련 없이 30개 이상의 다양한 시각 태스크에 zero-shot으로 전이. ImageNet에서 ResNet-50 수준의 zero-shot 성능 달성. 한계 극복# 기존 한계 1 — 고정된 클래스 집합: 기존 컴퓨터 비전 모델은 사전 정의된 클래스만 예측 가능. 새로운 개념을 인식하려면 레이블된 데이터를 추가로 수집하고 재학습해야 함. 기존 한계 2 — 크라우드소싱 레이블의 비용과 병목: ImageNet 같은 고품질 데이터셋 구축에는 막대한 인력과 시간이 필요. 인터넷에 존재하는 방대한 이미지-텍스트 쌍을 활용하지 못함. 기존 한계 3 — 낮은 zero-shot 전이 성능: 기존 자연어 감독 방식(Visual N-Grams 등)은 ImageNet에서 11.5% 정확도에 불과. 규모와 학습 방식 모두 한계. 이 논문의 접근 방식: “어떤 텍스트가 어떤 이미지와 쌍을 이루는가&#34;를 예측하는 대조적 사전 훈련(contrastive pre-training) &#43; 클래스 이름을 텍스트 템플릿으로 변환하는 zero-shot 분류기 합성. 목차# Section 1: Introduction and Motivating Work Section 2: Approach 2.1 Natural Language Supervision 2.2 Creating a Sufficiently Large Dataset 2.3 Selecting an Efficient Pre-Training Method 2.4 Choosing and Scaling a Model 2.5 Training Section 3: Experiments 3.1 Zero-Shot Transfer 3.2 Representation Learning 3.3 Robustness to Natural Distribution Shift Section 4: Comparison to Human Performance Section 5: Data Overlap Analysis Section 6: Limitations Section 7: Broader Impacts Section 1: Introduction and Motivating Work# 요약">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:published_time" content="2026-04-29T00:00:00+09:00">
+    <meta property="article:modified_time" content="2026-04-29T00:00:00+09:00">
+    <meta property="article:tag" content="CLIP">
+    <meta property="article:tag" content="Contrastive Learning">
+    <meta property="article:tag" content="Zero-Shot Transfer">
+    <meta property="article:tag" content="Multi-Modal">
+    <meta property="article:tag" content="Vision-Language">
+    <meta property="article:tag" content="OpenAI">
+
+
+  <meta itemprop="name" content="CLIP: Learning Transferable Visual Models From Natural Language Supervision">
+  <meta itemprop="description" content="개요# 저자: Alec Radford, Jong Wook Kim, Chris Hallacy, Aditya Ramesh, Gabriel Goh, Sandhini Agarwal, Girish Sastry, Amanda Askell, Pamela Mishkin, Jack Clark, Gretchen Krueger, Ilya Sutskever (OpenAI) 발행년도: 2021 arXiv: 2103.00020 주요 내용: 인터넷에서 수집한 4억 개의 (이미지, 텍스트) 쌍으로 이미지 인코더와 텍스트 인코더를 대조 학습(contrastive learning)으로 동시 훈련. 클래스 이름을 자연어로 표현하여 추가 훈련 없이 30개 이상의 다양한 시각 태스크에 zero-shot으로 전이. ImageNet에서 ResNet-50 수준의 zero-shot 성능 달성. 한계 극복# 기존 한계 1 — 고정된 클래스 집합: 기존 컴퓨터 비전 모델은 사전 정의된 클래스만 예측 가능. 새로운 개념을 인식하려면 레이블된 데이터를 추가로 수집하고 재학습해야 함. 기존 한계 2 — 크라우드소싱 레이블의 비용과 병목: ImageNet 같은 고품질 데이터셋 구축에는 막대한 인력과 시간이 필요. 인터넷에 존재하는 방대한 이미지-텍스트 쌍을 활용하지 못함. 기존 한계 3 — 낮은 zero-shot 전이 성능: 기존 자연어 감독 방식(Visual N-Grams 등)은 ImageNet에서 11.5% 정확도에 불과. 규모와 학습 방식 모두 한계. 이 논문의 접근 방식: “어떤 텍스트가 어떤 이미지와 쌍을 이루는가&#34;를 예측하는 대조적 사전 훈련(contrastive pre-training) &#43; 클래스 이름을 텍스트 템플릿으로 변환하는 zero-shot 분류기 합성. 목차# Section 1: Introduction and Motivating Work Section 2: Approach 2.1 Natural Language Supervision 2.2 Creating a Sufficiently Large Dataset 2.3 Selecting an Efficient Pre-Training Method 2.4 Choosing and Scaling a Model 2.5 Training Section 3: Experiments 3.1 Zero-Shot Transfer 3.2 Representation Learning 3.3 Robustness to Natural Distribution Shift Section 4: Comparison to Human Performance Section 5: Data Overlap Analysis Section 6: Limitations Section 7: Broader Impacts Section 1: Introduction and Motivating Work# 요약">
+  <meta itemprop="datePublished" content="2026-04-29T00:00:00+09:00">
+  <meta itemprop="dateModified" content="2026-04-29T00:00:00+09:00">
+  <meta itemprop="wordCount" content="1527">
+  <meta itemprop="keywords" content="CLIP,Contrastive Learning,Zero-Shot Transfer,Multi-Modal,Vision-Language,OpenAI,Image Classification,Transfer Learning">
+
+<title>CLIP: Learning Transferable Visual Models From Natural Language Supervision | Paper</title>
+<link rel="icon" href="/paper/favicon.png" >
+<link rel="manifest" href="/paper/manifest.json">
+<link rel="canonical" href="http://localhost:1313/paper/docs/clip-learning-transferable-visual-models-from-natural-language-supervision/">
+<link rel="stylesheet" href="/paper/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/paper/fuse.min.js"></script>
+  <script defer src="/paper/en.search.min.136303f53f731e7f187e59dca354807444ce24732e128843ea97e041d47b7d93.js" integrity="sha256-E2MD9T9zHn8Yflnco1SAdETOJHMuEohD6pfgQdR7fZM=" crossorigin="anonymous"></script>
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '\\[', right: '\\]', display: true},
+      {left: '\\(', right: '\\)', display: false},
+      {left: '$', right: '$', display: false}
+    ]
+  });
+});
+</script>
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/paper/"><span>Paper</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/controlnet-adding-conditional-control-to-text-to-image-diffusion-models/" class="">
+      ControlNet: Adding Conditional Control to Text-to-Image Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/clip-learning-transferable-visual-models-from-natural-language-supervision/" class="active">
+      CLIP: Learning Transferable Visual Models From Natural Language Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointnet-plus-plus-deep-hierarchical-feature-learning/" class="">
+      PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/" class="">
+      GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/lidarsim-realistic-lidar-simulation-by-leveraging-the-real-world/" class="">
+      LiDARsim: Realistic LiDAR Simulation by Leveraging the Real World</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vit-an-image-is-worth-16x16-words/" class="">
+      ViT: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/resnet-deep-residual-learning-for-image-recognition/" class="">
+      ResNet: Deep Residual Learning for Image Recognition</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/" class="">
+      StreamMapNet: Streaming Mapping Network for Vectorized Online HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vectormapnet-end-to-end-vectorized-hd-map-learning/" class="">
+      VectorMapNet: End-to-end Vectorized HD Map Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/detr-end-to-end-object-detection-with-transformers/" class="">
+      DETR: End-to-End Object Detection with Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/attention-is-all-you-need/" class="">
+      Attention Is All You Need</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/maptr-structured-modeling-online-vectorized-hd-map-construction/" class="">
+      MapTR: Structured Modeling and Learning for Online Vectorized HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/high-resolution-image-synthesis-with-latent-diffusion-models/" class="">
+      High-Resolution Image Synthesis with Latent Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/proximal-policy-optimization/" class="">
+      Proximal Policy Optimization Algorithms (PPO)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/denoising-diffusion-probabilistic-models/" class="">
+      Denoising Diffusion Probabilistic Models (DDPM)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/" class="">
+      PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointpillars-fast-encoders-object-detection-point-clouds/" class="">
+      PointPillars: Fast Encoders for Object Detection from Point Clouds</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/centerpoint-center-based-3d-object-detection-and-tracking/" class="">
+      CenterPoint: Center-based 3D Object Detection and Tracking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/monoscene-monocular-3d-semantic-scene-completion/" class="">
+      MonoScene: Monocular 3D Semantic Scene Completion</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/tpvformer-tri-perspective-view-3d-semantic-occupancy/" class="">
+      TPVFormer: Tri-Perspective View for Vision-Based 3D Semantic Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/drivearena/" class="">
+      DriveArena: A Closed-loop Generative Simulation Platform for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/neurad-neural-rendering-for-autonomous-driving/" class="">
+      NeuRAD: Neural Rendering for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/omnire-omni-urban-scene-reconstruction/" class="">
+      OmniRe: Omni Urban Scene Reconstruction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/magicdrive-street-view-generation-3d-geometry-control/" class="">
+      MagicDrive: Street View Generation with Diverse 3D Geometry Control</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/surroundocc/" class="">
+      SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/drivedreamer/" class="">
+      DriveDreamer: Towards Real-world-driven World Models for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/street-gaussians-modeling-dynamic-urban-scenes/" class="">
+      Street Gaussians: Modeling Dynamic Urban Scenes with Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bench2drive-multi-ability-benchmarking-e2e-autonomous-driving/" class="">
+      Bench2Drive: Towards Multi-Ability Benchmarking of Closed-Loop End-To-End Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/emernerf/" class="">
+      EmerNeRF: Emergent Spatial-Temporal Scene Decomposition via Self-Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/detr3d-3d-object-detection-multi-view-images/" class="">
+      DETR3D: 3D Object Detection from Multi-view Images via 3D-to-2D Queries</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/occ3d-large-scale-3d-occupancy-prediction-benchmark/" class="">
+      Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/unisim-neural-closed-loop-sensor-simulator/" class="">
+      UniSim: A Neural Closed-Loop Sensor Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevfusion-multi-task-multi-sensor-fusion/" class="">
+      BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/instant-ngp-multiresolution-hash-encoding/" class="">
+      Instant Neural Graphics Primitives with a Multiresolution Hash Encoding</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/lift-splat-shoot/" class="">
+      Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevdepth/" class="">
+      BEVDepth: Acquisition of Reliable Depth for Multi-view 3D Object Detection</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/4d-gaussian-splatting/" class="">
+      4D Gaussian Splatting for Real-Time Dynamic Scene Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/gaia-1/" class="">
+      GAIA-1: A Generative World Model for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/dqn-playing-atari-with-deep-reinforcement-learning/" class="">
+      Playing Atari with Deep Reinforcement Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevformer/" class="">
+      BEVFormer: Learning Bird&#39;s-Eye-View Representation from Multi-Camera Images via Spatiotemporal Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/navsim/" class="">
+      NAVSIM: Data-Driven Non-Reactive Autonomous Vehicle Simulation and Benchmarking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nuplan/" class="">
+      nuPlan: A closed-loop ML-based planning benchmark for autonomous vehicles</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/transfuser/" class="">
+      TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3d-gaussian-splatting/" class="">
+      3D Gaussian Splatting for Real-Time Radiance Field Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/driving-gaussian-composite-gaussian-splatting/" class="">
+      DrivingGaussian: Composite Gaussian Splatting for Surrounding Dynamic Autonomous Driving Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3d-gaussian-ray-tracing/" class="">
+      3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/" class="">
+      3DGUT: Enabling Distorted Cameras and Secondary Rays in Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/carla-an-open-urban-driving-simulator/" class="">
+      CARLA: An Open Urban Driving Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/difix3d-plus/" class="">
+      DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/hugsim-real-time-photorealistic-closed-loop-simulator/" class="">
+      HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/" class="">
+      NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nuscenes-multimodal-dataset-autonomous-driving/" class="">
+      nuScenes: A Multimodal Dataset for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/waymo-open-dataset/" class="">
+      Scalability in Perception for Autonomous Driving: Waymo Open Dataset</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/uniad-planning-oriented-autonomous-driving/" class="">
+      UniAD: Planning-oriented Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vad/" class="">
+      VAD: Vectorized Scene Representation for Efficient Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/paper/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>CLIP: Learning Transferable Visual Models From Natural Language Supervision</h3>
+
+  <label for="toc-control">
+    
+    <img src="/paper/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#section-1-introduction-and-motivating-work">Section 1: Introduction and Motivating Work</a></li>
+    <li><a href="#section-2-approach">Section 2: Approach</a>
+      <ul>
+        <li><a href="#21-natural-language-supervision">2.1 Natural Language Supervision</a></li>
+        <li><a href="#22-creating-a-sufficiently-large-dataset-wit">2.2 Creating a Sufficiently Large Dataset (WIT)</a></li>
+        <li><a href="#23-selecting-an-efficient-pre-training-method">2.3 Selecting an Efficient Pre-Training Method</a></li>
+        <li><a href="#24-choosing-and-scaling-a-model">2.4 Choosing and Scaling a Model</a></li>
+        <li><a href="#25-training">2.5 Training</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-3-experiments">Section 3: Experiments</a>
+      <ul>
+        <li><a href="#31-zero-shot-transfer">3.1 Zero-Shot Transfer</a></li>
+        <li><a href="#32-representation-learning">3.2 Representation Learning</a></li>
+        <li><a href="#33-robustness-to-natural-distribution-shift">3.3 Robustness to Natural Distribution Shift</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-4-comparison-to-human-performance">Section 4: Comparison to Human Performance</a></li>
+    <li><a href="#section-5-data-overlap-analysis">Section 5: Data Overlap Analysis</a></li>
+    <li><a href="#section-6-limitations">Section 6: Limitations</a></li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h2 id="개요">개요<a class="anchor" href="#%ea%b0%9c%ec%9a%94">#</a></h2>
+<ul>
+<li><strong>저자</strong>: Alec Radford, Jong Wook Kim, Chris Hallacy, Aditya Ramesh, Gabriel Goh, Sandhini Agarwal, Girish Sastry, Amanda Askell, Pamela Mishkin, Jack Clark, Gretchen Krueger, Ilya Sutskever (OpenAI)</li>
+<li><strong>발행년도</strong>: 2021</li>
+<li><strong>arXiv</strong>: 2103.00020</li>
+<li><strong>주요 내용</strong>: 인터넷에서 수집한 4억 개의 (이미지, 텍스트) 쌍으로 이미지 인코더와 텍스트 인코더를 대조 학습(contrastive learning)으로 동시 훈련. 클래스 이름을 자연어로 표현하여 추가 훈련 없이 30개 이상의 다양한 시각 태스크에 zero-shot으로 전이. ImageNet에서 ResNet-50 수준의 zero-shot 성능 달성.</li>
+</ul>
+<h2 id="한계-극복">한계 극복<a class="anchor" href="#%ed%95%9c%ea%b3%84-%ea%b7%b9%eb%b3%b5">#</a></h2>
+<ul>
+<li><strong>기존 한계 1 — 고정된 클래스 집합</strong>: 기존 컴퓨터 비전 모델은 사전 정의된 클래스만 예측 가능. 새로운 개념을 인식하려면 레이블된 데이터를 추가로 수집하고 재학습해야 함.</li>
+<li><strong>기존 한계 2 — 크라우드소싱 레이블의 비용과 병목</strong>: ImageNet 같은 고품질 데이터셋 구축에는 막대한 인력과 시간이 필요. 인터넷에 존재하는 방대한 이미지-텍스트 쌍을 활용하지 못함.</li>
+<li><strong>기존 한계 3 — 낮은 zero-shot 전이 성능</strong>: 기존 자연어 감독 방식(Visual N-Grams 등)은 ImageNet에서 11.5% 정확도에 불과. 규모와 학습 방식 모두 한계.</li>
+<li><strong>이 논문의 접근 방식</strong>: &ldquo;어떤 텍스트가 어떤 이미지와 쌍을 이루는가&quot;를 예측하는 대조적 사전 훈련(contrastive pre-training) + 클래스 이름을 텍스트 템플릿으로 변환하는 zero-shot 분류기 합성.</li>
+</ul>
+<h2 id="목차">목차<a class="anchor" href="#%eb%aa%a9%ec%b0%a8">#</a></h2>
+<ul>
+<li>Section 1: Introduction and Motivating Work</li>
+<li>Section 2: Approach
+<ul>
+<li>2.1 Natural Language Supervision</li>
+<li>2.2 Creating a Sufficiently Large Dataset</li>
+<li>2.3 Selecting an Efficient Pre-Training Method</li>
+<li>2.4 Choosing and Scaling a Model</li>
+<li>2.5 Training</li>
+</ul>
+</li>
+<li>Section 3: Experiments
+<ul>
+<li>3.1 Zero-Shot Transfer</li>
+<li>3.2 Representation Learning</li>
+<li>3.3 Robustness to Natural Distribution Shift</li>
+</ul>
+</li>
+<li>Section 4: Comparison to Human Performance</li>
+<li>Section 5: Data Overlap Analysis</li>
+<li>Section 6: Limitations</li>
+<li>Section 7: Broader Impacts</li>
+</ul>
+<hr>
+<h2 id="section-1-introduction-and-motivating-work">Section 1: Introduction and Motivating Work<a class="anchor" href="#section-1-introduction-and-motivating-work">#</a></h2>
+<p><strong>요약</strong></p>
+<p>NLP에서는 GPT, BERT처럼 원시 텍스트로 사전 훈련한 모델이 다양한 태스크에 zero-shot 또는 few-shot으로 전이되어 큰 성공을 거뒀다. 컴퓨터 비전에서도 같은 패러다임이 가능할까?</p>
+<p>이미지에 붙은 텍스트(캡션, 해시태그, 설명)는 인터넷에 무한히 존재한다. 이를 감독 신호로 사용하면 1000개 클래스에 고정된 ImageNet 방식의 한계를 넘어 개방형 어휘(open vocabulary)로 시각 개념을 학습할 수 있다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Natural Language Supervision</strong>: 레이블 대신 자유로운 텍스트를 감독 신호로 사용. 어노테이션 병목 없이 인터넷 규모의 데이터를 활용.</li>
+<li><strong>Zero-shot transfer</strong>: 특정 태스크의 학습 데이터 없이, 클래스 이름을 텍스트로 표현하는 것만으로 분류 수행.</li>
+<li><strong>Task-agnostic pre-training</strong>: 하나의 모델이 OCR, 행동 인식, 지리 위치 추정 등 이질적인 태스크를 모두 수행.</li>
+</ul>
+<hr>
+<h2 id="section-2-approach">Section 2: Approach<a class="anchor" href="#section-2-approach">#</a></h2>
+<h3 id="21-natural-language-supervision">2.1 Natural Language Supervision<a class="anchor" href="#21-natural-language-supervision">#</a></h3>
+<p><strong>요약</strong></p>
+<p>핵심 아이디어는 이미지와 텍스트를 <strong>함께</strong> 학습하는 것이 아니라, 이미지-텍스트 쌍의 <strong>매칭</strong>을 학습하는 것이다. 자연어는 단순 레이블보다 훨씬 풍부한 감독 신호를 제공하며, 새로운 시각 개념을 표현하는 데 유연하다.</p>
+<hr>
+<h3 id="22-creating-a-sufficiently-large-dataset-wit">2.2 Creating a Sufficiently Large Dataset (WIT)<a class="anchor" href="#22-creating-a-sufficiently-large-dataset-wit">#</a></h3>
+<p><strong>요약</strong></p>
+<p>기존 데이터셋(MS-COCO ~10만, YFCC100M ~1억)은 현대 기준으로 작다. OpenAI는 인터넷의 다양한 공개 출처에서 <strong>4억 개의 (이미지, 텍스트) 쌍</strong>을 수집하여 <strong>WIT(WebImageText)</strong> 데이터셋을 구축했다.</p>
+<ul>
+<li>500,000개의 쿼리(영어 Wikipedia의 단어 + bi-gram + WordNet synset)로 검색</li>
+<li>각 쿼리당 최대 20,000쌍 수집</li>
+<li>전체 단어 수가 GPT-2 학습 데이터(WebText)와 유사한 수준</li>
+</ul>
+<hr>
+<h3 id="23-selecting-an-efficient-pre-training-method">2.3 Selecting an Efficient Pre-Training Method<a class="anchor" href="#23-selecting-an-efficient-pre-training-method">#</a></h3>
+<p><strong>요약</strong></p>
+<p>초기에는 VirTex처럼 이미지 CNN과 텍스트 Transformer를 함께 훈련해 캡션을 예측하는 방식을 시도했다. 그러나 정확한 단어를 예측하는 것은 지나치게 어려운 과제였고, 그림 2에서 보듯 bag-of-words 예측보다 3배 느리게 학습되었다.</p>
+<p>CLIP은 <strong>정확한 단어 예측 대신 어떤 텍스트가 어떤 이미지와 쌍인지만 예측</strong>하는 대조적 목표(contrastive objective)로 전환했다. 이것이 zero-shot ImageNet 전이 속도를 추가로 4배 향상시켰다.</p>
+<p><strong>핵심 개념: 대조 학습 (Contrastive Learning)</strong></p>
+<p>배치 크기 $N$의 (이미지, 텍스트) 쌍이 주어졌을 때, CLIP은 $N \times N$개의 가능한 쌍 중 실제로 매칭된 $N$개를 찾도록 학습한다.</p>
+$$\text{logits} = \frac{I_e \cdot T_e^\top}{\tau}$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$I_e$</strong>: 이미지 임베딩 행렬 ($N \times d_e$). 이미지 인코더 출력을 L2 정규화한 것.</li>
+<li><strong>$T_e$</strong>: 텍스트 임베딩 행렬 ($N \times d_e$). 텍스트 인코더 출력을 L2 정규화한 것.</li>
+<li><strong>$I_e \cdot T_e^\top$</strong>: $N \times N$ 코사인 유사도 행렬. $(i,j)$ 원소는 $i$번째 이미지와 $j$번째 텍스트의 유사도.</li>
+<li><strong>$\tau$</strong>: 학습 가능한 온도 파라미터 (temperature). 유사도 분포의 날카로움을 제어.
+<ul>
+<li>작은 $\tau$: 정답 쌍과 오답 쌍의 차이를 강하게 강조</li>
+<li>로그 스케일로 파라미터화하여 학습 중 자동 최적화</li>
+</ul>
+</li>
+</ul>
+<p>손실 함수는 행 방향(이미지→텍스트)과 열 방향(텍스트→이미지) 각각의 cross-entropy를 평균한 <strong>symmetric cross-entropy loss</strong>:</p>
+$$\mathcal{L} = \frac{1}{2}\left(\mathcal{L}_\text{img} + \mathcal{L}_\text{txt}\right)$$<ul>
+<li><strong>$\mathcal{L}_\text{img}$</strong>: 각 이미지에 대해 $N$개 텍스트 중 올바른 텍스트를 찾는 cross-entropy</li>
+<li><strong>$\mathcal{L}_\text{txt}$</strong>: 각 텍스트에 대해 $N$개 이미지 중 올바른 이미지를 찾는 cross-entropy</li>
+<li><strong>대각 원소가 정답</strong>: logits 행렬의 대각선 원소들이 실제 (이미지, 텍스트) 쌍에 해당</li>
+</ul>
+<p>이 방식은 <strong>InfoNCE loss</strong> (또는 multi-class N-pair loss)로 알려진 대조 학습 목표의 변형이다.</p>
+<hr>
+<h3 id="24-choosing-and-scaling-a-model">2.4 Choosing and Scaling a Model<a class="anchor" href="#24-choosing-and-scaling-a-model">#</a></h3>
+<p><strong>요약</strong></p>
+<p>이미지 인코더로 두 가지 아키텍처를 실험:</p>
+<ul>
+<li><strong>ResNet 계열</strong>: ResNet-50을 기반으로 ResNet-D 개선 + 안티앨리어싱 풀링 + attention pooling 적용. RN50, RN101, RN50x4, RN50x16, RN50x64 5종.</li>
+<li><strong>Vision Transformer (ViT) 계열</strong>: ViT-B/32, ViT-B/16, ViT-L/14 3종. patch+position 임베딩 전에 layer normalization 추가.</li>
+</ul>
+<p>텍스트 인코더: 63M 파라미터 12-layer 512-wide Transformer, 49,152 vocab BPE, 최대 76 토큰. [EOS] 토큰의 최상위 레이어 activations를 텍스트 표현으로 사용.</p>
+<p>최고 성능 모델: <strong>ViT-L/14@336px</strong> (336px 해상도로 추가 1 epoch fine-tune).</p>
+<hr>
+<h3 id="25-training">2.5 Training<a class="anchor" href="#25-training">#</a></h3>
+<p><strong>요약</strong></p>
+<ul>
+<li>5개 ResNet + 3개 ViT, 총 8개 모델을 동시 훈련</li>
+<li>Adam optimizer, cosine learning rate decay, 32,768의 매우 큰 배치 크기</li>
+<li>혼합 정밀도(mixed-precision) 훈련, gradient checkpointing</li>
+<li>가장 큰 ResNet(RN50x64): 592개 V100 GPU에서 18일 훈련</li>
+<li>가장 큰 ViT(ViT-L/14): 256개 V100 GPU에서 12일 훈련</li>
+<li>온도 파라미터 $\tau$: 0.07로 초기화, 100 이하로 클리핑</li>
+</ul>
+<hr>
+<h2 id="section-3-experiments">Section 3: Experiments<a class="anchor" href="#section-3-experiments">#</a></h2>
+<h3 id="31-zero-shot-transfer">3.1 Zero-Shot Transfer<a class="anchor" href="#31-zero-shot-transfer">#</a></h3>
+<p><strong>요약</strong></p>
+<p><strong>Zero-shot 분류 방법</strong>:</p>
+<ol>
+<li>데이터셋의 모든 클래스 이름을 프롬프트 템플릿에 삽입: <code>&quot;A photo of a {label}.&quot;</code></li>
+<li>텍스트 인코더로 각 클래스 텍스트를 임베딩 → 텍스트 임베딩 집합 생성</li>
+<li>테스트 이미지를 이미지 인코더로 임베딩</li>
+<li>이미지 임베딩과 각 클래스 텍스트 임베딩의 코사인 유사도를 계산</li>
+<li>가장 유사한 클래스를 예측 레이블로 선택</li>
+</ol>
+<p><strong>Prompt Engineering &amp; Ensembling</strong></p>
+<p>단순히 클래스 이름만 사용하면 다의어(polysemy) 문제가 발생한다. 예: &ldquo;crane&quot;이 건설 크레인인지 두루미인지 구분 불가.</p>
+<p><code>&quot;A photo of a {label}.&quot;</code> 템플릿만으로도 ImageNet 정확도가 1.3%p 향상. 태스크에 맞는 문맥 추가로 추가 향상:</p>
+<ul>
+<li>애완동물 분류: <code>&quot;A photo of a {label}, a type of pet.&quot;</code></li>
+<li>위성 이미지: <code>&quot;a satellite photo of a {label}.&quot;</code></li>
+<li>80개 다양한 프롬프트 앙상블 → ImageNet 추가 3.5%p 향상</li>
+</ul>
+<p>프롬프트 엔지니어링 + 앙상블로 평균 <strong>약 5%p 향상</strong> (4배 많은 compute와 동등한 효과).</p>
+<p><strong>주요 결과</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>데이터셋</th>
+          <th>Visual N-Grams</th>
+          <th>Zero-Shot CLIP</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>ImageNet</td>
+          <td>11.5%</td>
+          <td><strong>76.2%</strong></td>
+      </tr>
+      <tr>
+          <td>aYahoo</td>
+          <td>72.4%</td>
+          <td><strong>98.4%</strong></td>
+      </tr>
+      <tr>
+          <td>SUN</td>
+          <td>23.0%</td>
+          <td><strong>58.5%</strong></td>
+      </tr>
+  </tbody>
+</table>
+<ul>
+<li>ImageNet에서 원본 ResNet-50과 동일한 76.2% 달성 (1.28M 학습 데이터 없이)</li>
+<li>top-5 정확도 95% (Inception-V4 수준)</li>
+<li>Zero-shot CLIP이 ResNet-50 위의 linear probe보다 16개 데이터셋에서 우수</li>
+</ul>
+<p><strong>Zero-shot이 약한 태스크</strong>:</p>
+<ul>
+<li>세밀한 분류 (자동차 모델, 꽃 종류, 항공기 변형)</li>
+<li>추상적 계수 (CLEVRCounts)</li>
+<li>위성 이미지 (EuroSAT)</li>
+<li>전문 의료 이미지 (PatchCamelyon)</li>
+<li>거리 추정 (KITTI Distance)</li>
+</ul>
+<hr>
+<h3 id="32-representation-learning">3.2 Representation Learning<a class="anchor" href="#32-representation-learning">#</a></h3>
+<p><strong>요약</strong></p>
+<p>Linear probe (CLIP 특징 위에 선형 분류기 추가 학습) 평가에서 CLIP은 27개 데이터셋 평균 기준 모든 기존 모델을 계산 효율성 면에서 압도한다.</p>
+<ul>
+<li>CLIP ResNet-50x64: 최고 성능 기존 모델(Noisy Student EfficientNet-L2)를 전반적 점수와 계산 효율성 모두에서 소폭 초과</li>
+<li>ViT 모델이 ResNet 대비 약 3배 계산 효율 우수</li>
+</ul>
+<hr>
+<h3 id="33-robustness-to-natural-distribution-shift">3.3 Robustness to Natural Distribution Shift<a class="anchor" href="#33-robustness-to-natural-distribution-shift">#</a></h3>
+<p><strong>요약</strong></p>
+<p>ImageNet에서 학습된 모델들은 distribution shift에 매우 취약하다. ResNet-101은 7개 자연 분포 이동 데이터셋에서 ImageNet 대비 5배 많은 실수를 범한다.</p>
+<p>Zero-shot CLIP은 이 <strong>robustness gap을 최대 75%까지 줄인다</strong>.</p>
+<table>
+  <thead>
+      <tr>
+          <th>데이터셋</th>
+          <th>ResNet-101</th>
+          <th>Zero-Shot CLIP</th>
+          <th>개선</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>ImageNet</td>
+          <td>76.2%</td>
+          <td>76.2%</td>
+          <td>0%</td>
+      </tr>
+      <tr>
+          <td>ImageNet-R</td>
+          <td>37.7%</td>
+          <td><strong>88.9%</strong></td>
+          <td>+51.2%p</td>
+      </tr>
+      <tr>
+          <td>ObjectNet</td>
+          <td>32.6%</td>
+          <td><strong>72.3%</strong></td>
+          <td>+39.7%p</td>
+      </tr>
+      <tr>
+          <td>ImageNet-Sketch</td>
+          <td>25.2%</td>
+          <td><strong>60.2%</strong></td>
+          <td>+35.0%p</td>
+      </tr>
+      <tr>
+          <td>ImageNet-A</td>
+          <td>2.7%</td>
+          <td><strong>77.1%</strong></td>
+          <td>+74.4%p</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>이유</strong>: Zero-shot 모델은 특정 데이터셋의 spurious correlation을 학습할 수 없어 본질적으로 robust. 반면 supervised adaptation은 ImageNet 분포에 과적합되어 다른 분포에서 크게 성능이 하락.</p>
+<hr>
+<h2 id="section-4-comparison-to-human-performance">Section 4: Comparison to Human Performance<a class="anchor" href="#section-4-comparison-to-human-performance">#</a></h2>
+<p><strong>요약</strong></p>
+<p>Oxford IIT Pets 데이터셋에서 인간과 CLIP 비교:</p>
+<table>
+  <thead>
+      <tr>
+          <th>설정</th>
+          <th>정확도</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Zero-shot Human</td>
+          <td>53.7%</td>
+      </tr>
+      <tr>
+          <td><strong>Zero-shot CLIP</strong></td>
+          <td><strong>93.5%</strong></td>
+      </tr>
+      <tr>
+          <td>One-shot Human</td>
+          <td>75.7%</td>
+      </tr>
+      <tr>
+          <td>Two-shot Human</td>
+          <td>75.7%</td>
+      </tr>
+  </tbody>
+</table>
+<p>CLIP의 zero-shot이 인간의 zero-shot을 크게 앞선다. 인간이 어렵다고 느끼는 이미지(불확실성이 높은 경우)는 CLIP도 어려워하는 경향이 있다. 한편 인간은 1장의 예시만으로도 75.7%로 크게 향상되지만, CLIP의 few-shot 전이는 counter-intuitive하게 zero-shot보다 낮아지는 현상이 발생한다.</p>
+<hr>
+<h2 id="section-5-data-overlap-analysis">Section 5: Data Overlap Analysis<a class="anchor" href="#section-5-data-overlap-analysis">#</a></h2>
+<p><strong>요약</strong></p>
+<p>WIT 사전 훈련 데이터와 평가 데이터셋 간의 중복 여부 분석. 35개 데이터셋 중 중앙값 2.2%, 평균 3.2% 중복. 중복으로 인한 정확도 향상은 통계적으로 유의미한 경우가 6개뿐이며, 최대 0.6% (Birdsnap). 실질적으로 중복이 결과에 미치는 영향은 미미하다.</p>
+<hr>
+<h2 id="section-6-limitations">Section 6: Limitations<a class="anchor" href="#section-6-limitations">#</a></h2>
+<p><strong>요약</strong></p>
+<ul>
+<li><strong>태스크 특화 성능 부족</strong>: zero-shot CLIP은 ResNet-50 위의 linear probe 수준이며, 태스크별 SOTA보다 훨씬 낮음.</li>
+<li><strong>약한 few-shot 전이</strong>: zero-shot → few-shot으로 전환 시 성능이 오히려 하락하는 현상. 인간과 달리 prior knowledge를 few-shot 예시에 통합하는 능력 부족.</li>
+<li><strong>세밀한 분류 취약</strong>: 자동차 모델, 꽃 종류 등 세밀한 구분이 필요한 태스크에서 취약.</li>
+<li><strong>추상적 태스크 불가</strong>: 개수 세기, 거리 추정 등.</li>
+<li><strong>데이터 효율 낮음</strong>: 동등 성능에 약 1000배 더 많은 compute 필요. CLIP보다 CLIP의 특징 위 linear probe가 더 효율적이라는 역설.</li>
+<li><strong>사회적 편향</strong>: 인터넷 텍스트로 학습하므로 사회 편향이 내재화됨.</li>
+</ul>
+<hr>
+<h2 id="핵심-개념-정리">핵심 개념 정리<a class="anchor" href="#%ed%95%b5%ec%8b%ac-%ea%b0%9c%eb%85%90-%ec%a0%95%eb%a6%ac">#</a></h2>
+<table>
+  <thead>
+      <tr>
+          <th>개념</th>
+          <th>설명</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>Contrastive Pre-training</strong></td>
+          <td>$N$개 (이미지, 텍스트) 쌍에서 $N \times N$ 유사도 행렬을 학습. 정답 대각 원소를 최대화</td>
+      </tr>
+      <tr>
+          <td><strong>Symmetric Cross-Entropy Loss</strong></td>
+          <td>이미지→텍스트 방향과 텍스트→이미지 방향 loss를 각각 계산하여 평균</td>
+      </tr>
+      <tr>
+          <td><strong>Temperature $\tau$</strong></td>
+          <td>유사도 점수의 날카로움을 제어하는 학습 파라미터</td>
+      </tr>
+      <tr>
+          <td><strong>WIT (WebImageText)</strong></td>
+          <td>인터넷에서 수집한 4억 쌍의 (이미지, 텍스트) 사전 훈련 데이터셋</td>
+      </tr>
+      <tr>
+          <td><strong>Zero-Shot Classifier 합성</strong></td>
+          <td>클래스 이름을 텍스트 인코더에 통과시켜 분류기 가중치를 동적으로 생성</td>
+      </tr>
+      <tr>
+          <td><strong>Prompt Engineering</strong></td>
+          <td><code>&quot;A photo of a {label}.&quot;</code> 같은 텍스트 템플릿으로 다의어 문제 해소 및 성능 향상</td>
+      </tr>
+      <tr>
+          <td><strong>Prompt Ensembling</strong></td>
+          <td>80개 다양한 프롬프트의 텍스트 임베딩을 평균하여 robust한 분류기 구성</td>
+      </tr>
+      <tr>
+          <td><strong>Linear Probe</strong></td>
+          <td>CLIP 특징 위에 선형 분류기만 추가 학습. 표현 품질 평가 지표.</td>
+      </tr>
+      <tr>
+          <td><strong>Effective Robustness</strong></td>
+          <td>분포 이동 하에서 in-distribution 정확도 예측값 대비 실제 out-of-distribution 정확도의 개선량</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="결론-및-시사점">결론 및 시사점<a class="anchor" href="#%ea%b2%b0%eb%a1%a0-%eb%b0%8f-%ec%8b%9c%ec%82%ac%ec%a0%90">#</a></h2>
+<p>CLIP은 &ldquo;자연어로 시각 세계를 기술&quot;하는 방식이 레이블 기반 패러다임의 근본적 한계를 돌파한다는 것을 증명했다. 400M 쌍의 약한 감독만으로 30개 이상의 이질적 태스크에 zero-shot 전이되며, distribution shift에 대한 강인성이 특히 두드러진다.</p>
+<p><strong>자율주행·합성 데이터 관점 시사점</strong></p>
+<ul>
+<li><strong>개방형 어휘 인식</strong>: 자율주행 시나리오의 롱테일 객체(공사 장비, 특이 차량 등)를 추가 레이블 없이 인식하는 기반으로 활용. MagicDrive, DriveArena 등에서 텍스트 조건으로 장면을 제어할 때 CLIP text embedding이 핵심 역할.</li>
+<li><strong>Robust 특징</strong>: CLIP 특징은 distribution shift에 강하여 시뮬레이터→실세계 도메인 갭 완화에 유리. 합성 데이터로 훈련한 모델의 실세계 전이 성능 향상에 활용 가능.</li>
+<li><strong>Zero-shot 평가</strong>: 새로운 시나리오나 엣지 케이스에 대해 레이블 없이 CLIP으로 빠르게 성능 예측 가능.</li>
+<li><strong>한계</strong>: 정밀한 거리 추정, 세밀한 차량 분류 등 자율주행 핵심 태스크에서는 domain-specific fine-tuning이 여전히 필요.</li>
+</ul>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/paper/docs/controlnet-adding-conditional-control-to-text-to-image-diffusion-models/" class="flex align-center">
+        <img src="/paper/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>ControlNet: Adding Conditional Control to Text-to-Image Diffusion Models</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/paper/docs/pointnet-plus-plus-deep-hierarchical-feature-learning/" class="flex align-center">
+        <span>PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space</span>
+        <img src="/paper/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#section-1-introduction-and-motivating-work">Section 1: Introduction and Motivating Work</a></li>
+    <li><a href="#section-2-approach">Section 2: Approach</a>
+      <ul>
+        <li><a href="#21-natural-language-supervision">2.1 Natural Language Supervision</a></li>
+        <li><a href="#22-creating-a-sufficiently-large-dataset-wit">2.2 Creating a Sufficiently Large Dataset (WIT)</a></li>
+        <li><a href="#23-selecting-an-efficient-pre-training-method">2.3 Selecting an Efficient Pre-Training Method</a></li>
+        <li><a href="#24-choosing-and-scaling-a-model">2.4 Choosing and Scaling a Model</a></li>
+        <li><a href="#25-training">2.5 Training</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-3-experiments">Section 3: Experiments</a>
+      <ul>
+        <li><a href="#31-zero-shot-transfer">3.1 Zero-Shot Transfer</a></li>
+        <li><a href="#32-representation-learning">3.2 Representation Learning</a></li>
+        <li><a href="#33-robustness-to-natural-distribution-shift">3.3 Robustness to Natural Distribution Shift</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-4-comparison-to-human-performance">Section 4: Comparison to Human Performance</a></li>
+    <li><a href="#section-5-data-overlap-analysis">Section 5: Data Overlap Analysis</a></li>
+    <li><a href="#section-6-limitations">Section 6: Limitations</a></li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

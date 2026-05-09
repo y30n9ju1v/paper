@@ -5,6 +5,7 @@ draft: false
 categories: ["Papers", "Transformer", "NLP"]
 tags: ["Transformer", "Self-Attention", "Multi-Head Attention", "Positional Encoding", "Seq2Seq"]
 year: 2017
+references: []
 ---
 
 ## 개요

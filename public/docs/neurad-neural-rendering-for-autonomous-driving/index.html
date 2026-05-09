@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="ko-KR" dir="ltr">
+<head><script src="/paper/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=paper/livereload" data-no-instant defer></script>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="개요# 저자: Adam Tonderski, Carl Lindström, Georg Hess, William Ljungbergh, Lennart Svensson, Christoffer Petersson (Zenseact, Chalmers University, Linköping University, Lund University) 발행년도: 2024 (arXiv:2311.15260v3, 18 Apr 2024) 주요 내용: 자율주행(AD) 동적 장면에 특화된 Neural Radiance Field 기반 Novel View Synthesis 방법론. 카메라와 LiDAR를 통합 모델링하여 센서 현실적인 합성 데이터를 생성하고, 에고 차량 및 액터의 포즈를 변경하여 새로운 시나리오를 생성할 수 있음. 한계 극복# 기존 한계 1 — 긴 학습 시간: 기존 NeRF 기반 AD 방법(S-NeRF 등)은 17시간 이상 학습이 필요해 실용성이 낮음 기존 한계 2 — 데이터셋 특화: MARS, UniSim 등 기존 방법들은 특정 데이터셋 가정(밀집 깊이 맵, 시맨틱 레이블 등)에 의존해 범용성이 부족함 기존 한계 3 — LiDAR 모델링 부실: 이전 연구들은 ray drop(레이저 빔이 반환 없이 사라지는 현상), beam divergence(빔 발산) 등 센서 특성을 제대로 모델링하지 못함 기존 한계 4 — rolling shutter 미고려: 고속 이동 차량의 카메라 및 LiDAR에서 발생하는 rolling shutter 효과를 대부분 무시함 이 논문의 접근 방식: iNGP 기반의 단일 통합 네트워크로 정적/동적 요소를 actor-aware hash encoding으로 구분하고, 센서별 물리적 특성을 명시적으로 모델링하여 5개 공개 데이터셋에서 dataset-specific 튜닝 없이 SoTA 달성 목차# Section 1: Introduction Section 2: Related Work Section 3: Method 3.1 Scene Representation and Sensor Modeling 3.2 Extending Neural Feature Fields 3.3 Automotive Data Modeling 3.4 Losses 3.5 Implementation Details Section 4: Experiments Section 5: Conclusions Section 1: Introduction# 요약
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/paper/docs/neurad-neural-rendering-for-autonomous-driving/">
+  <meta property="og:site_name" content="Paper">
+  <meta property="og:title" content="NeuRAD: Neural Rendering for Autonomous Driving">
+  <meta property="og:description" content="개요# 저자: Adam Tonderski, Carl Lindström, Georg Hess, William Ljungbergh, Lennart Svensson, Christoffer Petersson (Zenseact, Chalmers University, Linköping University, Lund University) 발행년도: 2024 (arXiv:2311.15260v3, 18 Apr 2024) 주요 내용: 자율주행(AD) 동적 장면에 특화된 Neural Radiance Field 기반 Novel View Synthesis 방법론. 카메라와 LiDAR를 통합 모델링하여 센서 현실적인 합성 데이터를 생성하고, 에고 차량 및 액터의 포즈를 변경하여 새로운 시나리오를 생성할 수 있음. 한계 극복# 기존 한계 1 — 긴 학습 시간: 기존 NeRF 기반 AD 방법(S-NeRF 등)은 17시간 이상 학습이 필요해 실용성이 낮음 기존 한계 2 — 데이터셋 특화: MARS, UniSim 등 기존 방법들은 특정 데이터셋 가정(밀집 깊이 맵, 시맨틱 레이블 등)에 의존해 범용성이 부족함 기존 한계 3 — LiDAR 모델링 부실: 이전 연구들은 ray drop(레이저 빔이 반환 없이 사라지는 현상), beam divergence(빔 발산) 등 센서 특성을 제대로 모델링하지 못함 기존 한계 4 — rolling shutter 미고려: 고속 이동 차량의 카메라 및 LiDAR에서 발생하는 rolling shutter 효과를 대부분 무시함 이 논문의 접근 방식: iNGP 기반의 단일 통합 네트워크로 정적/동적 요소를 actor-aware hash encoding으로 구분하고, 센서별 물리적 특성을 명시적으로 모델링하여 5개 공개 데이터셋에서 dataset-specific 튜닝 없이 SoTA 달성 목차# Section 1: Introduction Section 2: Related Work Section 3: Method 3.1 Scene Representation and Sensor Modeling 3.2 Extending Neural Feature Fields 3.3 Automotive Data Modeling 3.4 Losses 3.5 Implementation Details Section 4: Experiments Section 5: Conclusions Section 1: Introduction# 요약">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:published_time" content="2026-04-19T11:00:00+09:00">
+    <meta property="article:modified_time" content="2026-04-19T11:00:00+09:00">
+    <meta property="article:tag" content="NeRF">
+    <meta property="article:tag" content="Neural Rendering">
+    <meta property="article:tag" content="Autonomous Driving">
+    <meta property="article:tag" content="Novel View Synthesis">
+    <meta property="article:tag" content="LiDAR Simulation">
+    <meta property="article:tag" content="Sensor Simulation">
+
+
+  <meta itemprop="name" content="NeuRAD: Neural Rendering for Autonomous Driving">
+  <meta itemprop="description" content="개요# 저자: Adam Tonderski, Carl Lindström, Georg Hess, William Ljungbergh, Lennart Svensson, Christoffer Petersson (Zenseact, Chalmers University, Linköping University, Lund University) 발행년도: 2024 (arXiv:2311.15260v3, 18 Apr 2024) 주요 내용: 자율주행(AD) 동적 장면에 특화된 Neural Radiance Field 기반 Novel View Synthesis 방법론. 카메라와 LiDAR를 통합 모델링하여 센서 현실적인 합성 데이터를 생성하고, 에고 차량 및 액터의 포즈를 변경하여 새로운 시나리오를 생성할 수 있음. 한계 극복# 기존 한계 1 — 긴 학습 시간: 기존 NeRF 기반 AD 방법(S-NeRF 등)은 17시간 이상 학습이 필요해 실용성이 낮음 기존 한계 2 — 데이터셋 특화: MARS, UniSim 등 기존 방법들은 특정 데이터셋 가정(밀집 깊이 맵, 시맨틱 레이블 등)에 의존해 범용성이 부족함 기존 한계 3 — LiDAR 모델링 부실: 이전 연구들은 ray drop(레이저 빔이 반환 없이 사라지는 현상), beam divergence(빔 발산) 등 센서 특성을 제대로 모델링하지 못함 기존 한계 4 — rolling shutter 미고려: 고속 이동 차량의 카메라 및 LiDAR에서 발생하는 rolling shutter 효과를 대부분 무시함 이 논문의 접근 방식: iNGP 기반의 단일 통합 네트워크로 정적/동적 요소를 actor-aware hash encoding으로 구분하고, 센서별 물리적 특성을 명시적으로 모델링하여 5개 공개 데이터셋에서 dataset-specific 튜닝 없이 SoTA 달성 목차# Section 1: Introduction Section 2: Related Work Section 3: Method 3.1 Scene Representation and Sensor Modeling 3.2 Extending Neural Feature Fields 3.3 Automotive Data Modeling 3.4 Losses 3.5 Implementation Details Section 4: Experiments Section 5: Conclusions Section 1: Introduction# 요약">
+  <meta itemprop="datePublished" content="2026-04-19T11:00:00+09:00">
+  <meta itemprop="dateModified" content="2026-04-19T11:00:00+09:00">
+  <meta itemprop="wordCount" content="1370">
+  <meta itemprop="keywords" content="NeRF,Neural Rendering,Autonomous Driving,Novel View Synthesis,LiDAR Simulation,Sensor Simulation">
+
+<title>NeuRAD: Neural Rendering for Autonomous Driving | Paper</title>
+<link rel="icon" href="/paper/favicon.png" >
+<link rel="manifest" href="/paper/manifest.json">
+<link rel="canonical" href="http://localhost:1313/paper/docs/neurad-neural-rendering-for-autonomous-driving/">
+<link rel="stylesheet" href="/paper/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/paper/fuse.min.js"></script>
+  <script defer src="/paper/en.search.min.136303f53f731e7f187e59dca354807444ce24732e128843ea97e041d47b7d93.js" integrity="sha256-E2MD9T9zHn8Yflnco1SAdETOJHMuEohD6pfgQdR7fZM=" crossorigin="anonymous"></script>
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '\\[', right: '\\]', display: true},
+      {left: '\\(', right: '\\)', display: false},
+      {left: '$', right: '$', display: false}
+    ]
+  });
+});
+</script>
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/paper/"><span>Paper</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/controlnet-adding-conditional-control-to-text-to-image-diffusion-models/" class="">
+      ControlNet: Adding Conditional Control to Text-to-Image Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/clip-learning-transferable-visual-models-from-natural-language-supervision/" class="">
+      CLIP: Learning Transferable Visual Models From Natural Language Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointnet-plus-plus-deep-hierarchical-feature-learning/" class="">
+      PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/" class="">
+      GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/lidarsim-realistic-lidar-simulation-by-leveraging-the-real-world/" class="">
+      LiDARsim: Realistic LiDAR Simulation by Leveraging the Real World</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vit-an-image-is-worth-16x16-words/" class="">
+      ViT: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/resnet-deep-residual-learning-for-image-recognition/" class="">
+      ResNet: Deep Residual Learning for Image Recognition</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/" class="">
+      StreamMapNet: Streaming Mapping Network for Vectorized Online HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vectormapnet-end-to-end-vectorized-hd-map-learning/" class="">
+      VectorMapNet: End-to-end Vectorized HD Map Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/detr-end-to-end-object-detection-with-transformers/" class="">
+      DETR: End-to-End Object Detection with Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/attention-is-all-you-need/" class="">
+      Attention Is All You Need</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/maptr-structured-modeling-online-vectorized-hd-map-construction/" class="">
+      MapTR: Structured Modeling and Learning for Online Vectorized HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/high-resolution-image-synthesis-with-latent-diffusion-models/" class="">
+      High-Resolution Image Synthesis with Latent Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/proximal-policy-optimization/" class="">
+      Proximal Policy Optimization Algorithms (PPO)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/denoising-diffusion-probabilistic-models/" class="">
+      Denoising Diffusion Probabilistic Models (DDPM)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/" class="">
+      PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/pointpillars-fast-encoders-object-detection-point-clouds/" class="">
+      PointPillars: Fast Encoders for Object Detection from Point Clouds</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/centerpoint-center-based-3d-object-detection-and-tracking/" class="">
+      CenterPoint: Center-based 3D Object Detection and Tracking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/monoscene-monocular-3d-semantic-scene-completion/" class="">
+      MonoScene: Monocular 3D Semantic Scene Completion</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/tpvformer-tri-perspective-view-3d-semantic-occupancy/" class="">
+      TPVFormer: Tri-Perspective View for Vision-Based 3D Semantic Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/drivearena/" class="">
+      DriveArena: A Closed-loop Generative Simulation Platform for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/neurad-neural-rendering-for-autonomous-driving/" class="active">
+      NeuRAD: Neural Rendering for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/omnire-omni-urban-scene-reconstruction/" class="">
+      OmniRe: Omni Urban Scene Reconstruction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/magicdrive-street-view-generation-3d-geometry-control/" class="">
+      MagicDrive: Street View Generation with Diverse 3D Geometry Control</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/surroundocc/" class="">
+      SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/drivedreamer/" class="">
+      DriveDreamer: Towards Real-world-driven World Models for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/street-gaussians-modeling-dynamic-urban-scenes/" class="">
+      Street Gaussians: Modeling Dynamic Urban Scenes with Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bench2drive-multi-ability-benchmarking-e2e-autonomous-driving/" class="">
+      Bench2Drive: Towards Multi-Ability Benchmarking of Closed-Loop End-To-End Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/emernerf/" class="">
+      EmerNeRF: Emergent Spatial-Temporal Scene Decomposition via Self-Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/detr3d-3d-object-detection-multi-view-images/" class="">
+      DETR3D: 3D Object Detection from Multi-view Images via 3D-to-2D Queries</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/occ3d-large-scale-3d-occupancy-prediction-benchmark/" class="">
+      Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/unisim-neural-closed-loop-sensor-simulator/" class="">
+      UniSim: A Neural Closed-Loop Sensor Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevfusion-multi-task-multi-sensor-fusion/" class="">
+      BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/instant-ngp-multiresolution-hash-encoding/" class="">
+      Instant Neural Graphics Primitives with a Multiresolution Hash Encoding</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/lift-splat-shoot/" class="">
+      Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevdepth/" class="">
+      BEVDepth: Acquisition of Reliable Depth for Multi-view 3D Object Detection</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/4d-gaussian-splatting/" class="">
+      4D Gaussian Splatting for Real-Time Dynamic Scene Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/gaia-1/" class="">
+      GAIA-1: A Generative World Model for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/dqn-playing-atari-with-deep-reinforcement-learning/" class="">
+      Playing Atari with Deep Reinforcement Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/bevformer/" class="">
+      BEVFormer: Learning Bird&#39;s-Eye-View Representation from Multi-Camera Images via Spatiotemporal Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/navsim/" class="">
+      NAVSIM: Data-Driven Non-Reactive Autonomous Vehicle Simulation and Benchmarking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nuplan/" class="">
+      nuPlan: A closed-loop ML-based planning benchmark for autonomous vehicles</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/transfuser/" class="">
+      TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3d-gaussian-splatting/" class="">
+      3D Gaussian Splatting for Real-Time Radiance Field Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/driving-gaussian-composite-gaussian-splatting/" class="">
+      DrivingGaussian: Composite Gaussian Splatting for Surrounding Dynamic Autonomous Driving Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3d-gaussian-ray-tracing/" class="">
+      3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/" class="">
+      3DGUT: Enabling Distorted Cameras and Secondary Rays in Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/carla-an-open-urban-driving-simulator/" class="">
+      CARLA: An Open Urban Driving Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/difix3d-plus/" class="">
+      DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/hugsim-real-time-photorealistic-closed-loop-simulator/" class="">
+      HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/" class="">
+      NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/nuscenes-multimodal-dataset-autonomous-driving/" class="">
+      nuScenes: A Multimodal Dataset for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/waymo-open-dataset/" class="">
+      Scalability in Perception for Autonomous Driving: Waymo Open Dataset</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/uniad-planning-oriented-autonomous-driving/" class="">
+      UniAD: Planning-oriented Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/vad/" class="">
+      VAD: Vectorized Scene Representation for Efficient Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/paper/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>NeuRAD: Neural Rendering for Autonomous Driving</h3>
+
+  <label for="toc-control">
+    
+    <img src="/paper/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#section-1-introduction">Section 1: Introduction</a></li>
+    <li><a href="#section-2-related-work">Section 2: Related Work</a></li>
+    <li><a href="#section-3-method">Section 3: Method</a>
+      <ul>
+        <li><a href="#31-scene-representation-and-sensor-modeling">3.1 Scene Representation and Sensor Modeling</a></li>
+        <li><a href="#32-extending-neural-feature-fields--scene-composition">3.2 Extending Neural Feature Fields — Scene Composition</a></li>
+        <li><a href="#33-automotive-data-modeling">3.3 Automotive Data Modeling</a></li>
+        <li><a href="#34-losses">3.4 Losses</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-4-experiments">Section 4: Experiments</a></li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h2 id="개요">개요<a class="anchor" href="#%ea%b0%9c%ec%9a%94">#</a></h2>
+<ul>
+<li><strong>저자</strong>: Adam Tonderski, Carl Lindström, Georg Hess, William Ljungbergh, Lennart Svensson, Christoffer Petersson (Zenseact, Chalmers University, Linköping University, Lund University)</li>
+<li><strong>발행년도</strong>: 2024 (arXiv:2311.15260v3, 18 Apr 2024)</li>
+<li><strong>주요 내용</strong>: 자율주행(AD) 동적 장면에 특화된 Neural Radiance Field 기반 Novel View Synthesis 방법론. 카메라와 LiDAR를 통합 모델링하여 센서 현실적인 합성 데이터를 생성하고, 에고 차량 및 액터의 포즈를 변경하여 새로운 시나리오를 생성할 수 있음.</li>
+</ul>
+<h2 id="한계-극복">한계 극복<a class="anchor" href="#%ed%95%9c%ea%b3%84-%ea%b7%b9%eb%b3%b5">#</a></h2>
+<ul>
+<li><strong>기존 한계 1 — 긴 학습 시간</strong>: 기존 NeRF 기반 AD 방법(S-NeRF 등)은 17시간 이상 학습이 필요해 실용성이 낮음</li>
+<li><strong>기존 한계 2 — 데이터셋 특화</strong>: MARS, UniSim 등 기존 방법들은 특정 데이터셋 가정(밀집 깊이 맵, 시맨틱 레이블 등)에 의존해 범용성이 부족함</li>
+<li><strong>기존 한계 3 — LiDAR 모델링 부실</strong>: 이전 연구들은 ray drop(레이저 빔이 반환 없이 사라지는 현상), beam divergence(빔 발산) 등 센서 특성을 제대로 모델링하지 못함</li>
+<li><strong>기존 한계 4 — rolling shutter 미고려</strong>: 고속 이동 차량의 카메라 및 LiDAR에서 발생하는 rolling shutter 효과를 대부분 무시함</li>
+<li><strong>이 논문의 접근 방식</strong>: iNGP 기반의 단일 통합 네트워크로 정적/동적 요소를 actor-aware hash encoding으로 구분하고, 센서별 물리적 특성을 명시적으로 모델링하여 5개 공개 데이터셋에서 dataset-specific 튜닝 없이 SoTA 달성</li>
+</ul>
+<h2 id="목차">목차<a class="anchor" href="#%eb%aa%a9%ec%b0%a8">#</a></h2>
+<ul>
+<li>Section 1: Introduction</li>
+<li>Section 2: Related Work</li>
+<li>Section 3: Method
+<ul>
+<li>3.1 Scene Representation and Sensor Modeling</li>
+<li>3.2 Extending Neural Feature Fields</li>
+<li>3.3 Automotive Data Modeling</li>
+<li>3.4 Losses</li>
+<li>3.5 Implementation Details</li>
+</ul>
+</li>
+<li>Section 4: Experiments</li>
+<li>Section 5: Conclusions</li>
+</ul>
+<hr>
+<h2 id="section-1-introduction">Section 1: Introduction<a class="anchor" href="#section-1-introduction">#</a></h2>
+<p><strong>요약</strong></p>
+<p>Neural Radiance Fields(NeRF)는 3D 장면으로부터 새로운 시점의 이미지를 합성하는 기술로, 자율주행 분야에서 큰 잠재력을 가집니다. 편집 가능한 디지털 클론을 만들어 안전-임계 시나리오를 물리적 위험 없이 탐색하거나, closed-loop 시뮬레이터의 corner case 데이터를 생성하는 데 활용할 수 있습니다. 그러나 기존 방법들은 긴 학습 시간, 밀집 시맨틱 감독 필요성, 또는 범용성 부족 문제를 가집니다. NeuRAD는 이를 해결하기 위해 대규모 자율주행 장면을 처리하고 여러 데이터셋에서 즉시(out-of-the-box) 동작하도록 설계된 편집 가능한 오픈소스 NVS 방법론입니다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Neural Radiance Field (NeRF)</strong>: 신경망이 3D 장면의 암묵적 표현을 학습하여 임의의 시점에서 렌더링 가능한 기법</li>
+<li><strong>Novel View Synthesis (NVS)</strong>: 학습에 사용되지 않은 새로운 카메라 포즈에서 이미지를 생성하는 것</li>
+<li><strong>Closed-loop simulation</strong>: 자율주행 시스템의 출력이 다시 시뮬레이터에 피드백되어 연속적으로 시나리오가 전개되는 시뮬레이션</li>
+<li><strong>Actor</strong>: 도로 위의 동적 물체(차량, 보행자 등), bounding box와 SO(3) 포즈 집합으로 정의됨</li>
+</ul>
+<hr>
+<h2 id="section-2-related-work">Section 2: Related Work<a class="anchor" href="#section-2-related-work">#</a></h2>
+<p><strong>요약</strong></p>
+<p>관련 연구는 세 갈래로 분류됩니다. (1) NeRF 자체의 발전 계보: Instant-NGP의 multiresolution hash grid, Zip-NeRF의 anti-aliasing 기법 등. (2) 자동차 데이터에 NeRF를 적용한 연구: NSG, PNF, S-NeRF, Block-NeRF, SUDS 등. (3) Closed-loop 시뮬레이션을 위한 연구: MARS, UniSim. NeuRAD는 UniSim과 가장 유사하지만, LiDAR를 직접 포인트 클라우드로 지원하고, upsampling CNN 기반 anti-aliasing 전략을 도입하여 차별화됩니다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Instant-NGP (iNGP)</strong>: 학습 가능한 multiresolution hash grid로 NeRF의 학습/추론 시간을 대폭 단축한 방법</li>
+<li><strong>MARS</strong>: 정적 배경과 동적 액터를 위한 독립 NeRF 모듈을 혼합하는 모듈식 AD 시뮬레이터</li>
+<li><strong>UniSim</strong>: PandaSet 전면 카메라와 360° LiDAR에 특화된 Neural closed-loop sensor simulator</li>
+<li><strong>S-NeRF</strong>: mip-NeRF 360을 자동차 street view에 확장, 각 액터를 별도 MLP로 모델링하나 학습에 하루 이상 소요</li>
+</ul>
+<hr>
+<h2 id="section-3-method">Section 3: Method<a class="anchor" href="#section-3-method">#</a></h2>
+<p><strong>요약</strong></p>
+<p>NeuRAD의 핵심은 **Neural Feature Field(NFF)**를 기반으로 정적 배경과 동적 액터를 단일 네트워크로 통합하는 것입니다. Actor-aware hash encoding을 통해 두 요소를 구분하고, 카메라와 LiDAR 각각의 물리적 특성(rolling shutter, beam divergence, ray drop)을 명시적으로 모델링합니다.</p>
+<h3 id="31-scene-representation-and-sensor-modeling">3.1 Scene Representation and Sensor Modeling<a class="anchor" href="#31-scene-representation-and-sensor-modeling">#</a></h3>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Neural Feature Field (NFF)</strong>: $(s, \mathbf{f}) = \text{NFF}(\mathbf{x}, t, \mathbf{d})$ — 위치 $\mathbf{x}$, 시간 $t$, 시선 방향 $\mathbf{d}$를 입력으로 암묵적 기하학(SDF $s$)과 특징 벡터 $\mathbf{f}$를 출력하는 함수</li>
+<li><strong>Volume rendering</strong>: 레이를 따라 샘플을 적분하여 최종 특징/색상/깊이를 계산</li>
+</ul>
+<p><strong>수식: Alpha Compositing (볼륨 렌더링)</strong></p>
+$$\mathbf{f}(\mathbf{r}) = \sum_{i=1}^{N_r} w_i \mathbf{f}_i, \quad w_i = \alpha_i \prod_{j=1}^{i-1}(1 - \alpha_j)$$<p><strong>수식 설명</strong></p>
+<p>레이 $\mathbf{r}$ 위의 $N_r$개 샘플을 alpha compositing으로 합산하여 최종 특징 벡터를 구합니다:</p>
+<ul>
+<li><strong>$\mathbf{f}(\mathbf{r})$</strong>: 레이의 최종 렌더링 특징 벡터 (카메라면 색상, LiDAR면 반사도 등으로 디코딩됨)</li>
+<li><strong>$\mathbf{f}_i$</strong>: $i$번째 샘플 위치의 특징</li>
+<li><strong>$w_i$</strong>: $i$번째 샘플의 기여 가중치 (앞 샘플들의 불투명도를 통과한 빛의 비율 × 현재 불투명도)</li>
+<li><strong>$\alpha_i$</strong>: $i$번째 샘플의 불투명도. SDF 값 $s_i$로부터 $\alpha_i = 1/(1 + e^{\beta s_i})$로 계산 ($\beta$는 학습 파라미터)</li>
+<li><strong>$\prod_{j=1}^{i-1}(1-\alpha_j)$</strong>: $i$번째 샘플에 도달하기까지 앞 샘플들을 통과한 투과율</li>
+</ul>
+<p><strong>카메라 모델링</strong>: 레이들을 볼륨 렌더링하여 저해상도 특징 맵 $\mathcal{F} \in \mathbb{R}^{H_f \times W_f \times N_f}$를 만들고, CNN으로 업샘플링하여 최종 이미지 $\mathcal{I} \in \mathbb{R}^{H_I \times W_I \times 3}$ 생성. 이를 통해 쿼리 레이 수를 대폭 줄임.</p>
+<p><strong>LiDAR 모델링</strong>: 각 LiDAR 포인트마다 레이를 쏘아 기대 깊이 $\mathbb{E}[D_l(\mathbf{r})] = \sum_{i=1}^{N_r} w_i \tau_i$로 깊이를 예측하고, 특징을 MLP에 통과시켜 반사도(intensity)를 예측.</p>
+<h3 id="32-extending-neural-feature-fields--scene-composition">3.2 Extending Neural Feature Fields — Scene Composition<a class="anchor" href="#32-extending-neural-feature-fields--scene-composition">#</a></h3>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Actor-aware hash encoding</strong>: 샘플 $(\mathbf{x}, t)$이 액터의 bounding box 내부에 있으면 액터 좌표계로 변환 후 4D hash grid(4번째 차원 = 액터 인덱스)를 조회하고, 외부면 정적 multiresolution hash grid를 조회. 하나의 네트워크로 모든 액터를 병렬 처리 가능.</li>
+<li><strong>Unbounded static scene</strong>: 정적 배경은 MipNeRF-360의 contraction 기법으로 무한 공간을 단일 그리드에 표현</li>
+</ul>
+<h3 id="33-automotive-data-modeling">3.3 Automotive Data Modeling<a class="anchor" href="#33-automotive-data-modeling">#</a></h3>
+<p><strong>수식: Frustum Volume (스케일 인식 다운웨이팅)</strong></p>
+$$V_i = \frac{\tau_{i+1} - \tau_i}{3}\left(A_i + \sqrt{A_i A_{i+1}} + A_{i+1}\right)$$<p><strong>수식 설명</strong></p>
+<p>레이의 각 구간을 원뿔 절두체(frustum)로 모델링하여 스케일에 따른 다운웨이팅에 사용합니다:</p>
+<ul>
+<li><strong>$V_i$</strong>: $i$번째 구간의 절두체 부피</li>
+<li><strong>$\tau_i, \tau_{i+1}$</strong>: 구간의 시작/끝 깊이</li>
+<li><strong>$A_i, A_{i+1}$</strong>: 구간 끝점에서의 단면적 (카메라는 pixel size × 깊이², LiDAR는 beam divergence로 결정)</li>
+<li>부피 $V_i$가 클수록 ($= $ 원거리 샘플) hash grid 특징의 기여를 줄여 aliasing 방지</li>
+</ul>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Multiscale anti-aliasing</strong>: Zip-NeRF에서 영감을 받아, hash grid 해상도 $l$에서 가중치 $\omega_{i,l} = \min(1, \frac{1}{n_l V_i^{1/3}})$로 downweighting — 셀 크기 대비 절두체 크기가 클수록 더 억제</li>
+<li><strong>Two-round proposal sampling</strong>: 가벼운 NFF로 weight 분포를 먼저 예측한 후, 중요 위치에 집중 샘플링하여 효율적 렌더링</li>
+<li><strong>Rolling shutter 모델링</strong>: 카메라/LiDAR의 각 레이에 개별 시간을 할당하고, 그 시간의 추정 모션에 따라 레이 원점을 선형 보간. 고속 주행 시 수 미터 오차 발생을 방지</li>
+<li><strong>Ray drop 모델링</strong>: 반환 없는 LiDAR 빔(투명 표면, 거울 등)을 데이터에서 학습하는 확률 예측기로 모델링. 기존 물리 기반 방법의 한계를 데이터 기반으로 극복</li>
+<li><strong>Sensor embeddings</strong>: 센서별(카메라 단위) appearance embedding을 학습하여 서로 다른 노출/파라미터를 가진 카메라를 통합 처리</li>
+</ul>
+<h3 id="34-losses">3.4 Losses<a class="anchor" href="#34-losses">#</a></h3>
+<p><strong>수식: Image Loss</strong></p>
+$$\mathcal{L}^{\text{image}} = \frac{1}{N_p} \sum_{i=1}^{N_p} \lambda^{\text{rgb}} \mathcal{L}_i^{\text{rgb}} + \lambda^{\text{vgg}} \mathcal{L}_i^{\text{vgg}}$$<ul>
+<li><strong>$\mathcal{L}^{\text{rgb}}$</strong>: 예측/실제 픽셀 값의 제곱 오차</li>
+<li><strong>$\mathcal{L}^{\text{vgg}}$</strong>: VGG 특징 공간의 거리 (perceptual loss) — 고주파 디테일 보존</li>
+<li><strong>$N_p$</strong>: 패치 수 (patch-wise 학습)</li>
+</ul>
+<p><strong>수식: LiDAR Loss</strong></p>
+$$\mathcal{L}^{\text{lidar}} = \frac{1}{N} \sum_{i=1}^{N} (\lambda^d \mathcal{L}_i^d + \lambda^{\text{int}} \mathcal{L}_i^{\text{int}} + \lambda^{p_d} \mathcal{L}_i^{p_d} + \lambda^w \mathcal{L}_i^w)$$<ul>
+<li><strong>$\mathcal{L}^d$</strong>: 깊이 예측 오차 (squared error)</li>
+<li><strong>$\mathcal{L}^{\text{int}}$</strong>: 반사도(intensity) 예측 오차</li>
+<li><strong>$\mathcal{L}^{p_d}$</strong>: ray drop 확률 예측을 위한 binary cross-entropy</li>
+<li><strong>$\mathcal{L}^w$</strong>: 빈 공간 밀도 패널티 — 센서 관측 거리 밖 샘플에 weight decay 적용</li>
+</ul>
+<hr>
+<h2 id="section-4-experiments">Section 4: Experiments<a class="anchor" href="#section-4-experiments">#</a></h2>
+<p><strong>요약</strong></p>
+<p>5개 공개 AD 데이터셋(nuScenes, PandaSet, Argoverse 2, KITTI, ZOD)에서 동일한 하이퍼파라미터로 평가. 단일 Nvidia A100으로 약 1시간 학습. 학습 속도(1시간 vs S-NeRF의 17시간)와 성능을 동시에 개선.</p>
+<p><strong>Novel View Synthesis (카메라) 결과</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>데이터셋</th>
+          <th>방법</th>
+          <th>PSNR↑</th>
+          <th>SSIM↑</th>
+          <th>LPIPS↓</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>PandaSet FC</td>
+          <td>NeuRAD (ours)</td>
+          <td>26.58</td>
+          <td>0.778</td>
+          <td>0.190</td>
+      </tr>
+      <tr>
+          <td>PandaSet FC</td>
+          <td>NeuRAD-2x</td>
+          <td><strong>26.84</strong></td>
+          <td><strong>0.801</strong></td>
+          <td><strong>0.148</strong></td>
+      </tr>
+      <tr>
+          <td>KITTI</td>
+          <td>NeuRAD</td>
+          <td>27.00</td>
+          <td>0.795</td>
+          <td>0.082</td>
+      </tr>
+      <tr>
+          <td>KITTI</td>
+          <td>NeuRAD-2x</td>
+          <td><strong>27.91</strong></td>
+          <td><strong>0.822</strong></td>
+          <td><strong>0.066</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>LiDAR Novel View Synthesis 결과</strong> (PandaSet FC 기준, UniSim 대비)</p>
+<table>
+  <thead>
+      <tr>
+          <th>방법</th>
+          <th>Depth↓ (m)</th>
+          <th>Intensity↓</th>
+          <th>Drop acc.↑</th>
+          <th>Chamfer↓</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>UniSim*</td>
+          <td>0.07</td>
+          <td>0.085</td>
+          <td>91.0</td>
+          <td>11.2</td>
+      </tr>
+      <tr>
+          <td>NeuRAD</td>
+          <td><strong>0.01</strong></td>
+          <td><strong>0.062</strong></td>
+          <td><strong>96.2</strong></td>
+          <td><strong>1.6</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Novel scenario generation (FID)</strong>: NeuRAD는 Lane 2m/3m shift 및 Actor shift에서 UniSim 대비 낮은 FID(더 현실적인 이미지)를 달성, 특히 최적화 포즈 사용 시 추가 향상.</p>
+<p><strong>Ablation 주요 결과</strong>:</p>
+<ul>
+<li>CNN decoder 제거 시 PSNR 1.0 감소, 처리 속도 0.1 MP/s로 급감</li>
+<li>Rolling shutter 제거 시 PSNR 0.5 감소, 빠른 장면에서 심각한 블러 발생</li>
+<li>Ray drop 모델링 제거 시 Chamfer 거리 대폭 증가 (1.6 → 100.6)</li>
+<li>SDF를 NeRF-like density로 교체해도 성능 거의 동일 → 필요에 따라 선택 가능</li>
+</ul>
+<hr>
+<h2 id="핵심-개념-정리">핵심 개념 정리<a class="anchor" href="#%ed%95%b5%ec%8b%ac-%ea%b0%9c%eb%85%90-%ec%a0%95%eb%a6%ac">#</a></h2>
+<table>
+  <thead>
+      <tr>
+          <th>개념</th>
+          <th>설명</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>Actor-aware hash encoding</strong></td>
+          <td>정적/동적 요소를 단일 네트워크에서 처리; bounding box 내부면 actor 좌표계로 변환 후 4D hash grid 조회</td>
+      </tr>
+      <tr>
+          <td><strong>Ray drop</strong></td>
+          <td>LiDAR 빔이 반환 신호 없이 사라지는 현상; 투명 표면, 거울 등에서 발생. 데이터 기반으로 확률 예측</td>
+      </tr>
+      <tr>
+          <td><strong>Rolling shutter</strong></td>
+          <td>카메라/LiDAR가 행별로 순차 캡처할 때 고속 이동으로 생기는 왜곡. 레이별 시간을 달리 부여하여 보정</td>
+      </tr>
+      <tr>
+          <td><strong>Beam divergence</strong></td>
+          <td>LiDAR 레이저 빔이 거리에 따라 퍼지는 현상. frustum 볼륨으로 모델링하여 anti-aliasing에 활용</td>
+      </tr>
+      <tr>
+          <td><strong>Sensor embedding</strong></td>
+          <td>센서(카메라)별 appearance 표현; 다른 노출/ISO 등 캡처 조건 차이를 흡수</td>
+      </tr>
+      <tr>
+          <td><strong>Proposal sampling</strong></td>
+          <td>가벼운 NFF로 weight 분포 예측 → 중요 위치 집중 샘플링으로 효율적 렌더링</td>
+      </tr>
+      <tr>
+          <td><strong>SDF vs density</strong></td>
+          <td>SDF(부호 거리 함수)는 명확한 표면 추출 가능; density는 fog·투명 표면에 강건. NeuRAD는 교체 가능하도록 설계</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="결론-및-시사점">결론 및 시사점<a class="anchor" href="#%ea%b2%b0%eb%a1%a0-%eb%b0%8f-%ec%8b%9c%ec%82%ac%ec%a0%90">#</a></h2>
+<p>NeuRAD는 자율주행을 위한 실용적인 Neural Simulation 파운데이션을 제공합니다. 주요 시사점:</p>
+<ol>
+<li><strong>범용성</strong>: 5개 데이터셋에서 동일 하이퍼파라미터로 SoTA — 실제 운영 환경 적용 가능성이 높음</li>
+<li><strong>센서 현실성</strong>: LiDAR ray drop, beam divergence, rolling shutter를 통합 모델링하여 sim-to-real gap 감소</li>
+<li><strong>편집 가능성</strong>: 액터 위치/방향 변경, 에고 차량 레인 변경 등으로 다양한 시나리오 생성 → 회귀 테스트 및 코너 케이스 데이터 증강에 직접 활용 가능</li>
+<li><strong>오픈소스</strong>: Nerfstudio 기반으로 공개되어 후속 연구 확장 용이</li>
+<li><strong>한계</strong>: 액터를 rigid body로 가정(보행자 변형 불가), 악천후(비/눈) 조건 모델링 미지원</li>
+</ol>
+<hr>
+<p><em>관련 논문: <a href="/posts/papers/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/">NeRF</a>, <a href="/posts/papers/instant-ngp-multiresolution-hash-encoding/">Instant-NGP</a>, <a href="/posts/papers/EmerNeRF/">EmerNeRF</a>, <a href="/posts/papers/unisim-neural-closed-loop-sensor-simulator/">UniSim</a>, <a href="/posts/papers/lidarsim-realistic-lidar-simulation-by-leveraging-the-real-world/">LiDARsim</a>, <a href="/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/">nuScenes</a></em></p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/paper/docs/drivearena/" class="flex align-center">
+        <img src="/paper/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>DriveArena: A Closed-loop Generative Simulation Platform for Autonomous Driving</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/paper/docs/omnire-omni-urban-scene-reconstruction/" class="flex align-center">
+        <span>OmniRe: Omni Urban Scene Reconstruction</span>
+        <img src="/paper/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#section-1-introduction">Section 1: Introduction</a></li>
+    <li><a href="#section-2-related-work">Section 2: Related Work</a></li>
+    <li><a href="#section-3-method">Section 3: Method</a>
+      <ul>
+        <li><a href="#31-scene-representation-and-sensor-modeling">3.1 Scene Representation and Sensor Modeling</a></li>
+        <li><a href="#32-extending-neural-feature-fields--scene-composition">3.2 Extending Neural Feature Fields — Scene Composition</a></li>
+        <li><a href="#33-automotive-data-modeling">3.3 Automotive Data Modeling</a></li>
+        <li><a href="#34-losses">3.4 Losses</a></li>
+      </ul>
+    </li>
+    <li><a href="#section-4-experiments">Section 4: Experiments</a></li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -5,6 +5,10 @@ draft: false
 categories: ["Papers", "Autonomous Driving", "3D Occupancy"]
 tags: ["3D Occupancy", "Autonomous Driving", "Multi-Camera", "Scene Understanding"]
 year: 2023
+references:
+  - "BEVFormer"
+  - "monoscene-monocular-3d-semantic-scene-completion"
+  - "nuscenes-multimodal-dataset-autonomous-driving"
 ---
 
 ## 개요

@@ -5,6 +5,8 @@ draft: false
 categories: ["Papers", "Novel View Synthesis"]
 tags: ["NeRF", "Novel View Synthesis", "Neural Rendering", "Hash Encoding", "Real-Time Rendering"]
 year: 2022
+references:
+  - "nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis"
 ---
 
 ## 개요

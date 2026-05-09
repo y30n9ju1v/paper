@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="ko-KR" dir="ltr">
+<head>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="개요# 저자: Zhijian Liu, Haotian Tang, Alexander Amini, Xinyu Yang, Huizi Mao, Daniela L. Rus, Song Han 발행년도: 2024 (arXiv 2022, CVPR 2023) 주요 내용: 카메라와 LiDAR 센서를 Bird’s-Eye View(BEV) 공간에서 통합하여 3D 객체 탐지와 BEV 맵 분할을 동시에 수행하는 멀티태스크 멀티센서 융합 프레임워크 제안 한계 극복# 이 논문은 기존 멀티센서 융합 방식의 핵심 한계를 극복하기 위해 작성되었습니다.
+기존 한계 1 — 포인트 레벨 융합의 의미론적 정보 손실: LiDAR 포인트 클라우드에 카메라 특징을 투영하는 기존 방식은 LiDAR 포인트가 희소(sparse)하기 때문에 카메라의 풍부한 의미론적 밀도(semantic density)를 대부분 버립니다. 기존 한계 2 — 카메라-to-BEV 변환의 속도 병목: 기존 Camera-to-BEV 변환(LSS 등)은 단일 프레임 처리에 500ms 이상 소요되어 실시간 추론이 불가능했습니다. 기존 한계 3 — 단일 태스크 최적화: 기존 방법들은 탐지(geometric) 또는 분할(semantic) 중 하나에만 특화되어 있어 멀티태스크 구조를 지원하지 않습니다. 이 논문의 접근 방식: 카메라와 LiDAR 특징을 모두 공유 BEV 공간으로 변환한 뒤 합산(concatenation)하여 기하학적·의미론적 정보를 동시에 보존하고, 효율적인 BEV pooling으로 속도 병목을 40× 해소합니다. 목차# I. Introduction II. Related Work III. Method: Unified BEV Representation A. Unified Representation B. Efficient Camera-to-BEV Transformation C. Fully-Convolutional Fusion D. Multi-Task Heads IV. Experiments A. 3D Object Detection B. BEV Map Segmentation C. Ablation Studies V. Analysis VI. Conclusion I. Introduction# 요약
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://y30n9ju1v.github.io/paper/docs/autonomous-driving/perception/bevfusion-multi-task-multi-sensor-fusion/">
+  <meta property="og:site_name" content="Paper">
+  <meta property="og:title" content="BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation">
+  <meta property="og:description" content="개요# 저자: Zhijian Liu, Haotian Tang, Alexander Amini, Xinyu Yang, Huizi Mao, Daniela L. Rus, Song Han 발행년도: 2024 (arXiv 2022, CVPR 2023) 주요 내용: 카메라와 LiDAR 센서를 Bird’s-Eye View(BEV) 공간에서 통합하여 3D 객체 탐지와 BEV 맵 분할을 동시에 수행하는 멀티태스크 멀티센서 융합 프레임워크 제안 한계 극복# 이 논문은 기존 멀티센서 융합 방식의 핵심 한계를 극복하기 위해 작성되었습니다.
+기존 한계 1 — 포인트 레벨 융합의 의미론적 정보 손실: LiDAR 포인트 클라우드에 카메라 특징을 투영하는 기존 방식은 LiDAR 포인트가 희소(sparse)하기 때문에 카메라의 풍부한 의미론적 밀도(semantic density)를 대부분 버립니다. 기존 한계 2 — 카메라-to-BEV 변환의 속도 병목: 기존 Camera-to-BEV 변환(LSS 등)은 단일 프레임 처리에 500ms 이상 소요되어 실시간 추론이 불가능했습니다. 기존 한계 3 — 단일 태스크 최적화: 기존 방법들은 탐지(geometric) 또는 분할(semantic) 중 하나에만 특화되어 있어 멀티태스크 구조를 지원하지 않습니다. 이 논문의 접근 방식: 카메라와 LiDAR 특징을 모두 공유 BEV 공간으로 변환한 뒤 합산(concatenation)하여 기하학적·의미론적 정보를 동시에 보존하고, 효율적인 BEV pooling으로 속도 병목을 40× 해소합니다. 목차# I. Introduction II. Related Work III. Method: Unified BEV Representation A. Unified Representation B. Efficient Camera-to-BEV Transformation C. Fully-Convolutional Fusion D. Multi-Task Heads IV. Experiments A. 3D Object Detection B. BEV Map Segmentation C. Ablation Studies V. Analysis VI. Conclusion I. Introduction# 요약">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:published_time" content="2026-04-17T08:30:00+09:00">
+    <meta property="article:modified_time" content="2026-04-17T08:30:00+09:00">
+    <meta property="article:tag" content="Autonomous Driving">
+    <meta property="article:tag" content="Sensor Fusion">
+    <meta property="article:tag" content="BEV">
+    <meta property="article:tag" content="LiDAR">
+    <meta property="article:tag" content="3D Object Detection">
+
+
+  <meta itemprop="name" content="BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation">
+  <meta itemprop="description" content="개요# 저자: Zhijian Liu, Haotian Tang, Alexander Amini, Xinyu Yang, Huizi Mao, Daniela L. Rus, Song Han 발행년도: 2024 (arXiv 2022, CVPR 2023) 주요 내용: 카메라와 LiDAR 센서를 Bird’s-Eye View(BEV) 공간에서 통합하여 3D 객체 탐지와 BEV 맵 분할을 동시에 수행하는 멀티태스크 멀티센서 융합 프레임워크 제안 한계 극복# 이 논문은 기존 멀티센서 융합 방식의 핵심 한계를 극복하기 위해 작성되었습니다.
+기존 한계 1 — 포인트 레벨 융합의 의미론적 정보 손실: LiDAR 포인트 클라우드에 카메라 특징을 투영하는 기존 방식은 LiDAR 포인트가 희소(sparse)하기 때문에 카메라의 풍부한 의미론적 밀도(semantic density)를 대부분 버립니다. 기존 한계 2 — 카메라-to-BEV 변환의 속도 병목: 기존 Camera-to-BEV 변환(LSS 등)은 단일 프레임 처리에 500ms 이상 소요되어 실시간 추론이 불가능했습니다. 기존 한계 3 — 단일 태스크 최적화: 기존 방법들은 탐지(geometric) 또는 분할(semantic) 중 하나에만 특화되어 있어 멀티태스크 구조를 지원하지 않습니다. 이 논문의 접근 방식: 카메라와 LiDAR 특징을 모두 공유 BEV 공간으로 변환한 뒤 합산(concatenation)하여 기하학적·의미론적 정보를 동시에 보존하고, 효율적인 BEV pooling으로 속도 병목을 40× 해소합니다. 목차# I. Introduction II. Related Work III. Method: Unified BEV Representation A. Unified Representation B. Efficient Camera-to-BEV Transformation C. Fully-Convolutional Fusion D. Multi-Task Heads IV. Experiments A. 3D Object Detection B. BEV Map Segmentation C. Ablation Studies V. Analysis VI. Conclusion I. Introduction# 요약">
+  <meta itemprop="datePublished" content="2026-04-17T08:30:00+09:00">
+  <meta itemprop="dateModified" content="2026-04-17T08:30:00+09:00">
+  <meta itemprop="wordCount" content="1382">
+  <meta itemprop="keywords" content="Autonomous Driving,Sensor Fusion,BEV,LiDAR,3D Object Detection">
+
+<title>BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation | Paper</title>
+<link rel="icon" href="/paper/favicon.png" >
+<link rel="manifest" href="/paper/manifest.json">
+<link rel="canonical" href="https://y30n9ju1v.github.io/paper/docs/autonomous-driving/perception/bevfusion-multi-task-multi-sensor-fusion/">
+<link rel="stylesheet" href="/paper/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/paper/fuse.min.js"></script>
+  <script defer src="/paper/en.search.min.b1685711fcbce34e51ac4e2f3f34db3464d1f2809b936b8ce7ecb2014e6bf361.js" integrity="sha256-sWhXEfy8405RrE4vPzTbNGTR8oCbk2uM5&#43;yyAU5r82E=" crossorigin="anonymous"></script>
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '\\[', right: '\\]', display: true},
+      {left: '\\(', right: '\\)', display: false},
+      {left: '$', right: '$', display: false}
+    ]
+  });
+});
+</script>
+  
+</head>
+<body dir="ltr" class="book-kind-page book-type-docs">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/paper/"><span>Paper</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-26dad33899f9ff5c8eb940bf3bc5c8c6" class="toggle"  />
+    <label for="section-26dad33899f9ff5c8eb940bf3bc5c8c6" class="flex">
+      <a role="button" class="">
+        Deep Learning</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/clip-learning-transferable-visual-models-from-natural-language-supervision/" class="">
+      CLIP: Learning Transferable Visual Models From Natural Language Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/pointnet-plus-plus-deep-hierarchical-feature-learning/" class="">
+      PointNet&#43;&#43;: Deep Hierarchical Feature Learning on Point Sets in a Metric Space</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/vit-an-image-is-worth-16x16-words/" class="">
+      ViT: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/resnet-deep-residual-learning-for-image-recognition/" class="">
+      ResNet: Deep Residual Learning for Image Recognition</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/detr-end-to-end-object-detection-with-transformers/" class="">
+      DETR: End-to-End Object Detection with Transformers</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/attention-is-all-you-need/" class="">
+      Attention Is All You Need</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/proximal-policy-optimization/" class="">
+      Proximal Policy Optimization Algorithms (PPO)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/" class="">
+      PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/deep-learning/dqn-playing-atari-with-deep-reinforcement-learning/" class="">
+      Playing Atari with Deep Reinforcement Learning</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-55a967b32f0d01d82a62069db60bc9a4" class="toggle"  />
+    <label for="section-55a967b32f0d01d82a62069db60bc9a4" class="flex">
+      <a role="button" class="">
+        Novel View Synthesis</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/instant-ngp-multiresolution-hash-encoding/" class="">
+      Instant Neural Graphics Primitives with a Multiresolution Hash Encoding</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/4d-gaussian-splatting/" class="">
+      4D Gaussian Splatting for Real-Time Dynamic Scene Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3d-gaussian-splatting/" class="">
+      3D Gaussian Splatting for Real-Time Radiance Field Rendering</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3d-gaussian-ray-tracing/" class="">
+      3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/" class="">
+      3DGUT: Enabling Distorted Cameras and Secondary Rays in Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/difix3d-plus/" class="">
+      DIFIX3D&#43;: Improving 3D Reconstructions with Single-Step Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/novel-view-synthesis/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/" class="">
+      NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-bba278969cd1a39a02e4f40a6eceba0d" class="toggle"  />
+    <label for="section-bba278969cd1a39a02e4f40a6eceba0d" class="flex">
+      <a role="button" class="">
+        Generative Models</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/controlnet-adding-conditional-control-to-text-to-image-diffusion-models/" class="">
+      ControlNet: Adding Conditional Control to Text-to-Image Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/high-resolution-image-synthesis-with-latent-diffusion-models/" class="">
+      High-Resolution Image Synthesis with Latent Diffusion Models</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/denoising-diffusion-probabilistic-models/" class="">
+      Denoising Diffusion Probabilistic Models (DDPM)</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/drivearena/" class="">
+      DriveArena: A Closed-loop Generative Simulation Platform for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/magicdrive-street-view-generation-3d-geometry-control/" class="">
+      MagicDrive: Street View Generation with Diverse 3D Geometry Control</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/drivedreamer/" class="">
+      DriveDreamer: Towards Real-world-driven World Models for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/generative-models/gaia-1/" class="">
+      GAIA-1: A Generative World Model for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-ba66afb2e4f86c05dd02e329f85a3a79" class="toggle" checked />
+    <label for="section-ba66afb2e4f86c05dd02e329f85a3a79" class="flex">
+      <a role="button" class="">
+        Autonomous Driving</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-d7ba9eb4570c2bfc131b9c6410bbe7ec" class="toggle" checked />
+    <label for="section-d7ba9eb4570c2bfc131b9c6410bbe7ec" class="flex">
+      <a role="button" class="">
+        Perception</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/" class="">
+      GaussianWorld: Gaussian World Model for Streaming 3D Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/" class="">
+      StreamMapNet: Streaming Mapping Network for Vectorized Online HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/vectormapnet-end-to-end-vectorized-hd-map-learning/" class="">
+      VectorMapNet: End-to-end Vectorized HD Map Learning</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/maptr-structured-modeling-online-vectorized-hd-map-construction/" class="">
+      MapTR: Structured Modeling and Learning for Online Vectorized HD Map Construction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/pointpillars-fast-encoders-object-detection-point-clouds/" class="">
+      PointPillars: Fast Encoders for Object Detection from Point Clouds</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/centerpoint-center-based-3d-object-detection-and-tracking/" class="">
+      CenterPoint: Center-based 3D Object Detection and Tracking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/monoscene-monocular-3d-semantic-scene-completion/" class="">
+      MonoScene: Monocular 3D Semantic Scene Completion</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/tpvformer-tri-perspective-view-3d-semantic-occupancy/" class="">
+      TPVFormer: Tri-Perspective View for Vision-Based 3D Semantic Occupancy Prediction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/surroundocc/" class="">
+      SurroundOcc: Multi-Camera 3D Occupancy Prediction for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/detr3d-3d-object-detection-multi-view-images/" class="">
+      DETR3D: 3D Object Detection from Multi-view Images via 3D-to-2D Queries</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/occ3d-large-scale-3d-occupancy-prediction-benchmark/" class="">
+      Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevfusion-multi-task-multi-sensor-fusion/" class="active">
+      BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/lift-splat-shoot/" class="">
+      Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevdepth/" class="">
+      BEVDepth: Acquisition of Reliable Depth for Multi-view 3D Object Detection</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/perception/bevformer/" class="">
+      BEVFormer: Learning Bird&#39;s-Eye-View Representation from Multi-Camera Images via Spatiotemporal Transformers</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-7a9153220f9190837dca18e7bc97c48d" class="toggle"  />
+    <label for="section-7a9153220f9190837dca18e7bc97c48d" class="flex">
+      <a role="button" class="">
+        Simulation</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/lidarsim-realistic-lidar-simulation-by-leveraging-the-real-world/" class="">
+      LiDARsim: Realistic LiDAR Simulation by Leveraging the Real World</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/neurad-neural-rendering-for-autonomous-driving/" class="">
+      NeuRAD: Neural Rendering for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/omnire-omni-urban-scene-reconstruction/" class="">
+      OmniRe: Omni Urban Scene Reconstruction</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/street-gaussians-modeling-dynamic-urban-scenes/" class="">
+      Street Gaussians: Modeling Dynamic Urban Scenes with Gaussian Splatting</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/emernerf/" class="">
+      EmerNeRF: Emergent Spatial-Temporal Scene Decomposition via Self-Supervision</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/unisim-neural-closed-loop-sensor-simulator/" class="">
+      UniSim: A Neural Closed-Loop Sensor Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/driving-gaussian-composite-gaussian-splatting/" class="">
+      DrivingGaussian: Composite Gaussian Splatting for Surrounding Dynamic Autonomous Driving Scenes</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/carla-an-open-urban-driving-simulator/" class="">
+      CARLA: An Open Urban Driving Simulator</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/simulation/hugsim-real-time-photorealistic-closed-loop-simulator/" class="">
+      HUGSIM: A Real-Time, Photo-Realistic and Closed-Loop Simulator for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-e9f19cbf840aaca3029a9a86c6765e7f" class="toggle"  />
+    <label for="section-e9f19cbf840aaca3029a9a86c6765e7f" class="flex">
+      <a role="button" class="">
+        Planning</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/bench2drive-multi-ability-benchmarking-e2e-autonomous-driving/" class="">
+      Bench2Drive: Towards Multi-Ability Benchmarking of Closed-Loop End-To-End Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/navsim/" class="">
+      NAVSIM: Data-Driven Non-Reactive Autonomous Vehicle Simulation and Benchmarking</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/transfuser/" class="">
+      TransFuser: Imitation with Transformer-Based Sensor Fusion for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/uniad-planning-oriented-autonomous-driving/" class="">
+      UniAD: Planning-oriented Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/planning/vad/" class="">
+      VAD: Vectorized Scene Representation for Efficient Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <input type="checkbox" id="section-c1644e2152ae0bb887d703d1c6a373f2" class="toggle"  />
+    <label for="section-c1644e2152ae0bb887d703d1c6a373f2" class="flex">
+      <a role="button" class="">
+        Dataset &amp; Benchmark</a>
+      <img src="/paper/icons/chevron-right.svg" class="book-icon" alt="Expand" />
+    </label>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/nuplan/" class="">
+      nuPlan: A closed-loop ML-based planning benchmark for autonomous vehicles</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/nuscenes-multimodal-dataset-autonomous-driving/" class="">
+      nuScenes: A Multimodal Dataset for Autonomous Driving</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/paper/docs/autonomous-driving/dataset/waymo-open-dataset/" class="">
+      Scalability in Perception for Autonomous Driving: Waymo Open Dataset</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/paper/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>BEVFusion: Multi-Task Multi-Sensor Fusion with Unified Bird&#39;s-Eye View Representation</h3>
+
+  <label for="toc-control">
+    
+    <img src="/paper/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#i-introduction">I. Introduction</a></li>
+    <li><a href="#ii-related-work">II. Related Work</a></li>
+    <li><a href="#iii-method-unified-bev-representation">III. Method: Unified BEV Representation</a>
+      <ul>
+        <li><a href="#a-unified-representation">A. Unified Representation</a></li>
+        <li><a href="#b-efficient-camera-to-bev-transformation">B. Efficient Camera-to-BEV Transformation</a></li>
+        <li><a href="#c-fully-convolutional-fusion">C. Fully-Convolutional Fusion</a></li>
+        <li><a href="#d-multi-task-heads">D. Multi-Task Heads</a></li>
+      </ul>
+    </li>
+    <li><a href="#iv-experiments">IV. Experiments</a>
+      <ul>
+        <li><a href="#a-3d-object-detection-nuscenes">A. 3D Object Detection (nuScenes)</a></li>
+        <li><a href="#b-bev-map-segmentation-nuscenes">B. BEV Map Segmentation (nuScenes)</a></li>
+        <li><a href="#c-ablation-studies">C. Ablation Studies</a></li>
+      </ul>
+    </li>
+    <li><a href="#v-analysis">V. Analysis</a>
+      <ul>
+        <li><a href="#날씨조명-강건성">날씨·조명 강건성</a></li>
+        <li><a href="#객체-크기거리별-성능">객체 크기·거리별 성능</a></li>
+        <li><a href="#sparse-lidar-강건성">Sparse LiDAR 강건성</a></li>
+      </ul>
+    </li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h2 id="개요">개요<a class="anchor" href="#%ea%b0%9c%ec%9a%94">#</a></h2>
+<ul>
+<li><strong>저자</strong>: Zhijian Liu, Haotian Tang, Alexander Amini, Xinyu Yang, Huizi Mao, Daniela L. Rus, Song Han</li>
+<li><strong>발행년도</strong>: 2024 (arXiv 2022, CVPR 2023)</li>
+<li><strong>주요 내용</strong>: 카메라와 LiDAR 센서를 Bird&rsquo;s-Eye View(BEV) 공간에서 통합하여 3D 객체 탐지와 BEV 맵 분할을 동시에 수행하는 멀티태스크 멀티센서 융합 프레임워크 제안</li>
+</ul>
+<h2 id="한계-극복">한계 극복<a class="anchor" href="#%ed%95%9c%ea%b3%84-%ea%b7%b9%eb%b3%b5">#</a></h2>
+<p>이 논문은 기존 멀티센서 융합 방식의 핵심 한계를 극복하기 위해 작성되었습니다.</p>
+<ul>
+<li><strong>기존 한계 1 — 포인트 레벨 융합의 의미론적 정보 손실</strong>: LiDAR 포인트 클라우드에 카메라 특징을 투영하는 기존 방식은 LiDAR 포인트가 희소(sparse)하기 때문에 카메라의 풍부한 의미론적 밀도(semantic density)를 대부분 버립니다.</li>
+<li><strong>기존 한계 2 — 카메라-to-BEV 변환의 속도 병목</strong>: 기존 Camera-to-BEV 변환(LSS 등)은 단일 프레임 처리에 500ms 이상 소요되어 실시간 추론이 불가능했습니다.</li>
+<li><strong>기존 한계 3 — 단일 태스크 최적화</strong>: 기존 방법들은 탐지(geometric) 또는 분할(semantic) 중 하나에만 특화되어 있어 멀티태스크 구조를 지원하지 않습니다.</li>
+<li><strong>이 논문의 접근 방식</strong>: 카메라와 LiDAR 특징을 모두 <strong>공유 BEV 공간</strong>으로 변환한 뒤 합산(concatenation)하여 기하학적·의미론적 정보를 동시에 보존하고, 효율적인 BEV pooling으로 속도 병목을 40× 해소합니다.</li>
+</ul>
+<h2 id="목차">목차<a class="anchor" href="#%eb%aa%a9%ec%b0%a8">#</a></h2>
+<ul>
+<li>I. Introduction</li>
+<li>II. Related Work</li>
+<li>III. Method: Unified BEV Representation
+<ul>
+<li>A. Unified Representation</li>
+<li>B. Efficient Camera-to-BEV Transformation</li>
+<li>C. Fully-Convolutional Fusion</li>
+<li>D. Multi-Task Heads</li>
+</ul>
+</li>
+<li>IV. Experiments
+<ul>
+<li>A. 3D Object Detection</li>
+<li>B. BEV Map Segmentation</li>
+<li>C. Ablation Studies</li>
+</ul>
+</li>
+<li>V. Analysis</li>
+<li>VI. Conclusion</li>
+</ul>
+<hr>
+<h2 id="i-introduction">I. Introduction<a class="anchor" href="#i-introduction">#</a></h2>
+<p><strong>요약</strong></p>
+<p>자율주행 차량은 다양한 센서를 통해 환경을 인식합니다. 카메라는 풍부한 의미론적 정보(색상, 텍스처, 차선 등)를 제공하고, LiDAR는 정밀한 3D 기하학 정보(거리, 형상)를 제공합니다. 기존 멀티센서 융합의 주류는 <strong>포인트 레벨 융합</strong>(point-level fusion)으로, LiDAR 포인트 위에 카메라 특징을 투영합니다. 그러나 LiDAR는 희소하기 때문에 카메라의 픽셀 대부분이 버려지고, 결국 카메라의 의미론적 밀도가 크게 손실됩니다.</p>
+<p>BEVFusion은 이에 대한 해답으로 **공유 BEV 공간(shared BEV space)**을 제안합니다. 카메라와 LiDAR를 각각 BEV 특징 맵으로 변환한 뒤 합산하면, 두 센서의 장점을 동시에 보존할 수 있습니다. 또한 이 구조는 자연스럽게 멀티태스크(탐지 + 분할)로 확장됩니다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Bird&rsquo;s-Eye View (BEV)</strong>: 위에서 아래를 내려다보는 시점의 2D 표현. 자율주행의 탐지·분할에 적합한 표준 공간</li>
+<li><strong>Sensor Fusion</strong>: 여러 센서의 데이터를 합쳐 단일 센서의 한계를 보완하는 기술</li>
+<li><strong>Point-level Fusion</strong>: LiDAR 포인트에 카메라 특징을 붙이는 방식. 희소성으로 인해 의미론적 정보가 손실됨</li>
+</ul>
+<hr>
+<h2 id="ii-related-work">II. Related Work<a class="anchor" href="#ii-related-work">#</a></h2>
+<p><strong>요약</strong></p>
+<p>관련 연구는 크게 세 흐름으로 나뉩니다.</p>
+<ol>
+<li><strong>LiDAR 기반 3D 탐지</strong>: PointPillars, SECOND, CenterPoint 등. 정밀하지만 카메라의 색상·텍스처 정보를 활용하지 못함</li>
+<li><strong>카메라 기반 3D 탐지</strong>: BEVDet, BEVDepth, DETR3D 등. 비용이 저렴하지만 깊이 추정의 불확실성이 큼</li>
+<li><strong>멀티센서 융합</strong>: PointPainting, MVP, TransFusion 등. 주로 포인트 레벨에서 융합하여 카메라의 의미론적 밀도를 충분히 활용하지 못함</li>
+</ol>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Semantic-oriented tasks</strong>: BEV 맵 분할처럼 픽셀 단위 의미론적 이해가 필요한 작업. LiDAR만으로는 수행이 어려움</li>
+<li><strong>Geometric-oriented tasks</strong>: 3D 객체 탐지처럼 정확한 위치·형상 추정이 필요한 작업. LiDAR가 핵심</li>
+</ul>
+<hr>
+<h2 id="iii-method-unified-bev-representation">III. Method: Unified BEV Representation<a class="anchor" href="#iii-method-unified-bev-representation">#</a></h2>
+<p><strong>요약</strong></p>
+<p>BEVFusion의 핵심 아이디어는 카메라와 LiDAR를 동일한 BEV 공간으로 변환한 뒤 합산하는 것입니다. 이 섹션에서는 (A) 통합 표현, (B) 효율적 Camera-to-BEV 변환, (C) 완전 합성곱 융합, (D) 멀티태스크 헤드를 설명합니다.</p>
+<h3 id="a-unified-representation">A. Unified Representation<a class="anchor" href="#a-unified-representation">#</a></h3>
+<p>카메라 특징은 <strong>원근 뷰(perspective view)</strong>, LiDAR 특징은 <strong>3D 뷰</strong>에서 나옵니다. 두 표현 사이에는 근본적인 뷰 불일치(view discrepancy)가 있습니다. BEVFusion은 두 모달리티를 모두 BEV 공간으로 변환하여 이 불일치를 해소합니다.</p>
+<ul>
+<li>카메라: 멀티뷰 RGB 이미지 → Camera Encoder → Camera-to-BEV 변환 → Camera BEV Features</li>
+<li>LiDAR: 포인트 클라우드 → LiDAR Encoder → LiDAR Flatten → LiDAR BEV Features</li>
+<li>두 BEV 특징을 채널 축으로 이어붙여(concatenate) → Fused BEV Features → BEV Encoder → Task Heads</li>
+</ul>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>View Discrepancy</strong>: 카메라(원근, 픽셀 단위)와 LiDAR(3D, 포인트 단위)의 데이터 공간 차이. 공유 BEV로 해소</li>
+<li><strong>Shared BEV Space</strong>: 두 센서의 기하학 정보와 의미론 정보를 모두 담는 통합 2D 표현</li>
+</ul>
+<h3 id="b-efficient-camera-to-bev-transformation">B. Efficient Camera-to-BEV Transformation<a class="anchor" href="#b-efficient-camera-to-bev-transformation">#</a></h3>
+<p>카메라를 BEV로 변환하는 핵심 단계는 LSS(Lift-Splat-Shoot) 방식을 따릅니다. 각 카메라 픽셀의 깊이 분포를 예측하고, 3D 공간으로 올린 뒤 BEV 그리드에 투영합니다. 기존 구현은 단일 프레임에 500ms 이상 걸려 실시간 불가능했습니다.</p>
+<p>BEVFusion은 두 가지 최적화로 <strong>40× 속도 향상</strong>을 달성합니다:</p>
+<p><strong>1) Precomputation (사전 계산)</strong></p>
+<p>카메라 내부 행렬과 외부 행렬(intrinsic/extrinsic)로부터 각 픽셀이 BEV 그리드의 어느 셀에 해당하는지를 미리 계산하여 DRAM에 저장합니다. 추론 시에는 이 인덱스 테이블만 조회합니다.</p>
+<p><strong>2) Interval Reduction (구간 합산 커널)</strong></p>
+<p>BEV pooling은 동일 BEV 셀에 속하는 모든 포인트의 특징을 집계(aggregate)합니다. 기존 prefix sum은 불필요한 중간 계산이 많습니다. BEVFusion은 GPU 스레드를 BEV 셀마다 할당하는 전용 커널을 구현하여, 트리 구조 없이 경계 값만 직접 합산합니다. 이로써 DRAM 접근을 최소화하고 집계 지연을 500ms → 2ms로 단축합니다.</p>
+$$
+F_{\text{BEV}}(u, v) = \text{Aggregate}\left(\{f_i \mid (x_i, y_i) \in \text{cell}(u,v)\}\right)
+$$<p><strong>수식 설명</strong></p>
+<ul>
+<li><strong>$F_{\text{BEV}}(u, v)$</strong>: BEV 그리드의 $(u, v)$ 셀에 대응하는 BEV 특징 벡터</li>
+<li><strong>$f_i$</strong>: 3D 공간으로 올려진 $i$번째 카메라 특징 포인트</li>
+<li><strong>$(x_i, y_i)$</strong>: 해당 포인트의 BEV 평면 좌표</li>
+<li><strong>$\text{cell}(u,v)$</strong>: BEV 그리드에서 $(u,v)$ 셀이 커버하는 공간 영역</li>
+<li><strong>$\text{Aggregate}$</strong>: 해당 셀 안의 모든 특징을 하나로 합치는 연산 (합산, 평균 등)</li>
+<li><strong>직관</strong>: 카메라에서 본 여러 픽셀이 3D 공간에서 같은 위치에 모이면, 그것들을 하나의 BEV 셀 특징으로 압축하는 과정</li>
+</ul>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>LSS (Lift-Splat-Shoot)</strong>: 카메라 이미지의 각 픽셀에 깊이 분포를 부여하고 3D로 올린 뒤 BEV에 투영하는 방법</li>
+<li><strong>BEV Pooling</strong>: BEV 셀별로 포인트 특징을 집계하는 연산. 기존에는 느렸으나 BEVFusion이 GPU 최적화로 40× 가속</li>
+<li><strong>Precomputation</strong>: 카메라 파라미터가 고정이므로 픽셀-셀 매핑을 미리 계산해 캐시하는 전략</li>
+</ul>
+<h3 id="c-fully-convolutional-fusion">C. Fully-Convolutional Fusion<a class="anchor" href="#c-fully-convolutional-fusion">#</a></h3>
+<p>카메라 BEV 특징과 LiDAR BEV 특징을 채널 축으로 이어붙인 뒤, **완전 합성곱 BEV 인코더(fully-convolutional BEV encoder)**로 처리합니다. 이 인코더는 잔여 오정렬(spatial misalignment)을 보정합니다. Camera-to-BEV 변환에서 깊이 추정이 부정확할 수 있어 카메라 BEV 특징이 LiDAR BEV 특징과 살짝 어긋날 수 있는데, 합성곱이 수용 영역(receptive field)으로 이를 흡수합니다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Spatial Misalignment</strong>: 깊이 추정 오차로 카메라 BEV 특징이 LiDAR BEV 특징과 공간적으로 어긋나는 현상</li>
+<li><strong>Receptive Field</strong>: 합성곱 레이어가 한 번에 볼 수 있는 입력 영역의 크기. 넓을수록 오정렬 보정 가능</li>
+</ul>
+<h3 id="d-multi-task-heads">D. Multi-Task Heads<a class="anchor" href="#d-multi-task-heads">#</a></h3>
+<p>융합된 BEV 특징 맵 위에 태스크별 헤드를 붙입니다.</p>
+<ul>
+<li><strong>3D Object Detection</strong>: CenterPoint 스타일. 클래스별 히트맵으로 중심점 예측 + 회귀 헤드로 크기·회전·속도 예측</li>
+<li><strong>BEV Map Segmentation</strong>: CVT 스타일. 클래스별 이진 분할(drivable area, 차선, 횡단보도 등). 겹치는 클래스 허용</li>
+</ul>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>Heatmap Head</strong>: 각 BEV 셀이 객체 중심일 확률을 예측하는 맵. 3D 탐지의 핵심 출력</li>
+<li><strong>Binary Segmentation</strong>: 각 BEV 셀이 특정 클래스(예: 주행 가능 영역)에 속하는지 0/1로 분류</li>
+</ul>
+<hr>
+<h2 id="iv-experiments">IV. Experiments<a class="anchor" href="#iv-experiments">#</a></h2>
+<p><strong>요약</strong></p>
+<p>nuScenes와 Waymo 데이터셋에서 3D 탐지와 BEV 분할 성능을 검증합니다.</p>
+<h3 id="a-3d-object-detection-nuscenes">A. 3D Object Detection (nuScenes)<a class="anchor" href="#a-3d-object-detection-nuscenes">#</a></h3>
+<table>
+  <thead>
+      <tr>
+          <th>방법</th>
+          <th>모달리티</th>
+          <th>mAP (test)</th>
+          <th>NDS (test)</th>
+          <th>MACs (G)</th>
+          <th>Latency (ms)</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>PointPainting</td>
+          <td>C+L</td>
+          <td>65.8</td>
+          <td>69.6</td>
+          <td>370.0</td>
+          <td>185.8</td>
+      </tr>
+      <tr>
+          <td>TransFusion</td>
+          <td>C+L</td>
+          <td>67.5</td>
+          <td>71.3</td>
+          <td>485.8</td>
+          <td>156.6</td>
+      </tr>
+      <tr>
+          <td><strong>BEVFusion (Ours)</strong></td>
+          <td><strong>C+L</strong></td>
+          <td><strong>70.2</strong></td>
+          <td><strong>72.9</strong></td>
+          <td><strong>253.2</strong></td>
+          <td><strong>119.2</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p>BEVFusion은 기존 최고 방법 대비 <strong>mAP +1.3%, NDS +1.6%</strong> 향상을 달성하면서 연산량은 <strong>1.9×</strong>, 지연은 <strong>1.3×</strong> 감소시킵니다.</p>
+<h3 id="b-bev-map-segmentation-nuscenes">B. BEV Map Segmentation (nuScenes)<a class="anchor" href="#b-bev-map-segmentation-nuscenes">#</a></h3>
+<table>
+  <thead>
+      <tr>
+          <th>방법</th>
+          <th>모달리티</th>
+          <th>Mean IoU</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>BEVFusion (C only)</td>
+          <td>C</td>
+          <td><strong>56.6</strong></td>
+      </tr>
+      <tr>
+          <td>PointPillars</td>
+          <td>L</td>
+          <td>43.8</td>
+      </tr>
+      <tr>
+          <td>BEVFusion (Ours)</td>
+          <td>C+L</td>
+          <td><strong>62.7</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p>카메라 전용 모델에서도 BEVFusion은 기존 최고 대비 <strong>13.6% 향상</strong>. C+L 융합 시 추가 향상.</p>
+<h3 id="c-ablation-studies">C. Ablation Studies<a class="anchor" href="#c-ablation-studies">#</a></h3>
+<ul>
+<li><strong>카메라 BEV 풀링 최적화</strong>: 지연 500ms → 12ms (40×)</li>
+<li><strong>BEV 인코더</strong>: 공간 오정렬 보정에 핵심. 제거 시 성능 급락</li>
+<li><strong>모달리티별 기여</strong>: 카메라는 의미론, LiDAR는 기하학 기여. 둘 다 필요</li>
+</ul>
+<hr>
+<h2 id="v-analysis">V. Analysis<a class="anchor" href="#v-analysis">#</a></h2>
+<p><strong>요약</strong></p>
+<p>추가 분석에서 BEVFusion의 강건성과 우월성을 확인합니다.</p>
+<h3 id="날씨조명-강건성">날씨·조명 강건성<a class="anchor" href="#%eb%82%a0%ec%94%a8%ec%a1%b0%eb%aa%85-%ea%b0%95%ea%b1%b4%ec%84%b1">#</a></h3>
+<ul>
+<li><strong>악천후(비)</strong>: 단일 모달리티 LiDAR 대비 mAP +7.1%, IoU +13.3 향상</li>
+<li><strong>야간</strong>: BEVFusion C+L 융합 시 LiDAR 전용 대비 mAP +8.1%, IoU +6.6 향상</li>
+<li>카메라가 야간·악천후에서 취약한 것을 LiDAR가 보완하고, LiDAR의 의미론 부족을 카메라가 보완하는 상호 보완 효과</li>
+</ul>
+<h3 id="객체-크기거리별-성능">객체 크기·거리별 성능<a class="anchor" href="#%ea%b0%9d%ec%b2%b4-%ed%81%ac%ea%b8%b0%ea%b1%b0%eb%a6%ac%eb%b3%84-%ec%84%b1%eb%8a%a5">#</a></h3>
+<ul>
+<li><strong>작은 객체</strong>: BEVFusion이 LiDAR 전용 및 MVP 대비 크게 우세 (카메라의 의미론 덕분)</li>
+<li><strong>큰 객체</strong>: 모든 방법이 비슷하나 BEVFusion이 여전히 최고</li>
+<li><strong>먼 거리</strong>: BEVFusion이 기존 방법보다 일관되게 우수</li>
+</ul>
+<h3 id="sparse-lidar-강건성">Sparse LiDAR 강건성<a class="anchor" href="#sparse-lidar-%ea%b0%95%ea%b1%b4%ec%84%b1">#</a></h3>
+<p>LiDAR 빔 수를 32빔 → 1빔으로 줄였을 때, BEVFusion은 LiDAR 전용 대비 훨씬 덜 떨어집니다. 카메라 정보가 희소 LiDAR의 한계를 보완하기 때문입니다.</p>
+<p><strong>핵심 개념</strong></p>
+<ul>
+<li><strong>LiDAR Beam</strong>: LiDAR 스캐너의 레이저 빔 수. 많을수록 밀도 높은 포인트 클라우드 획득. 비용이 비쌈</li>
+<li><strong>Modality Complementarity</strong>: 두 센서가 서로의 약점을 보완하는 성질. BEVFusion의 핵심 강점</li>
+</ul>
+<hr>
+<h2 id="핵심-개념-정리">핵심 개념 정리<a class="anchor" href="#%ed%95%b5%ec%8b%ac-%ea%b0%9c%eb%85%90-%ec%a0%95%eb%a6%ac">#</a></h2>
+<table>
+  <thead>
+      <tr>
+          <th>개념</th>
+          <th>설명</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>BEV (Bird&rsquo;s-Eye View)</strong></td>
+          <td>위에서 내려다본 2D 평면. 자율주행 인식의 표준 출력 공간</td>
+      </tr>
+      <tr>
+          <td><strong>Camera-to-BEV (LSS)</strong></td>
+          <td>카메라 픽셀에 깊이 분포를 부여해 3D→BEV로 변환하는 방법</td>
+      </tr>
+      <tr>
+          <td><strong>BEV Pooling</strong></td>
+          <td>BEV 셀마다 해당 3D 포인트 특징을 집계하는 연산</td>
+      </tr>
+      <tr>
+          <td><strong>Precomputation</strong></td>
+          <td>카메라 파라미터 고정 시 픽셀-셀 매핑을 미리 계산해 추론 가속</td>
+      </tr>
+      <tr>
+          <td><strong>Interval Reduction</strong></td>
+          <td>구간 경계 값만 GPU에서 직접 합산하여 DRAM 접근을 최소화하는 커널</td>
+      </tr>
+      <tr>
+          <td><strong>Fully-Convolutional Fusion</strong></td>
+          <td>합성곱으로 두 모달리티의 공간 오정렬을 흡수하는 융합 방법</td>
+      </tr>
+      <tr>
+          <td><strong>Multi-Task Learning</strong></td>
+          <td>하나의 모델로 탐지·분할 등 여러 태스크를 동시에 수행</td>
+      </tr>
+      <tr>
+          <td><strong>Modality Complementarity</strong></td>
+          <td>카메라(의미론)와 LiDAR(기하학)가 서로의 약점을 보완</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="결론-및-시사점">결론 및 시사점<a class="anchor" href="#%ea%b2%b0%eb%a1%a0-%eb%b0%8f-%ec%8b%9c%ec%82%ac%ec%a0%90">#</a></h2>
+<p>BEVFusion은 카메라와 LiDAR를 <strong>공유 BEV 공간</strong>에서 통합하는 간결하면서도 강력한 프레임워크입니다.</p>
+<p><strong>주요 기여</strong></p>
+<ol>
+<li><strong>통합 BEV 표현</strong>: 기하학적(LiDAR)·의미론적(카메라) 정보를 동시에 보존</li>
+<li><strong>40× Camera-to-BEV 가속</strong>: Precomputation + Interval Reduction으로 실시간 추론 가능</li>
+<li><strong>멀티태스크 지원</strong>: 단일 모델로 3D 탐지 + BEV 분할 동시 수행</li>
+<li><strong>SOTA 달성</strong>: nuScenes 3D 탐지 mAP 70.2, Waymo 1위, BEV 분할 62.7 mIoU</li>
+</ol>
+<p><strong>실무적 시사점</strong></p>
+<ul>
+<li>카메라 전용 모델도 BEV 공간으로 올리면 LiDAR와 자연스럽게 융합 가능</li>
+<li>Camera-to-BEV의 속도 병목은 전처리 캐싱과 GPU 커널 최적화로 해결 가능</li>
+<li>악천후·야간 등 단일 센서가 취약한 환경에서 멀티센서 융합의 강건성이 두드러짐</li>
+<li>BEV 공간은 탐지, 분할, 추적, 모션 예측 등 다양한 태스크로 쉽게 확장 가능</li>
+</ul>
+<hr>
+<p><em>관련 논문: <a href="/posts/papers/BEVFormer/">BEVFormer</a>, <a href="/posts/papers/bevdepth/">BEVDepth</a>, <a href="/posts/papers/pointpillars-fast-encoders-object-detection-point-clouds/">PointPillars</a>, <a href="/posts/papers/centerpoint-center-based-3d-object-detection-and-tracking/">CenterPoint</a>, <a href="/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/">nuScenes</a></em></p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/paper/docs/autonomous-driving/perception/occ3d-large-scale-3d-occupancy-prediction-benchmark/" class="flex align-center">
+        <img src="/paper/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>Occ3D: A Large-Scale 3D Occupancy Prediction Benchmark for Autonomous Driving</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/paper/docs/autonomous-driving/perception/lift-splat-shoot/" class="flex align-center">
+        <span>Lift, Splat, Shoot: Encoding Images from Arbitrary Camera Rigs by Implicitly Unprojecting to 3D</span>
+        <img src="/paper/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#개요">개요</a></li>
+    <li><a href="#한계-극복">한계 극복</a></li>
+    <li><a href="#목차">목차</a></li>
+    <li><a href="#i-introduction">I. Introduction</a></li>
+    <li><a href="#ii-related-work">II. Related Work</a></li>
+    <li><a href="#iii-method-unified-bev-representation">III. Method: Unified BEV Representation</a>
+      <ul>
+        <li><a href="#a-unified-representation">A. Unified Representation</a></li>
+        <li><a href="#b-efficient-camera-to-bev-transformation">B. Efficient Camera-to-BEV Transformation</a></li>
+        <li><a href="#c-fully-convolutional-fusion">C. Fully-Convolutional Fusion</a></li>
+        <li><a href="#d-multi-task-heads">D. Multi-Task Heads</a></li>
+      </ul>
+    </li>
+    <li><a href="#iv-experiments">IV. Experiments</a>
+      <ul>
+        <li><a href="#a-3d-object-detection-nuscenes">A. 3D Object Detection (nuScenes)</a></li>
+        <li><a href="#b-bev-map-segmentation-nuscenes">B. BEV Map Segmentation (nuScenes)</a></li>
+        <li><a href="#c-ablation-studies">C. Ablation Studies</a></li>
+      </ul>
+    </li>
+    <li><a href="#v-analysis">V. Analysis</a>
+      <ul>
+        <li><a href="#날씨조명-강건성">날씨·조명 강건성</a></li>
+        <li><a href="#객체-크기거리별-성능">객체 크기·거리별 성능</a></li>
+        <li><a href="#sparse-lidar-강건성">Sparse LiDAR 강건성</a></li>
+      </ul>
+    </li>
+    <li><a href="#핵심-개념-정리">핵심 개념 정리</a></li>
+    <li><a href="#결론-및-시사점">결론 및 시사점</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

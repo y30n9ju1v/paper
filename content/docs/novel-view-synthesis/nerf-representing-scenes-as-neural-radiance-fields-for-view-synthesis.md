@@ -5,6 +5,7 @@ draft: false
 categories: ["Papers", "Novel View Synthesis"]
 tags: ["NeRF", "Novel View Synthesis", "Neural Rendering", "3D Reconstruction"]
 year: 2020
+references: []
 ---
 
 ## 개요

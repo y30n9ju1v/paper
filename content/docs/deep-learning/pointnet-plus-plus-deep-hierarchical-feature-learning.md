@@ -5,6 +5,8 @@ draft: false
 categories: ["Papers"]
 tags: ["Point Cloud", "3D Classification", "3D Segmentation", "Deep Learning", "LiDAR", "Hierarchical Learning", "PointNet"]
 year: 2017
+references:
+  - "pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation"
 ---
 
 ## 개요

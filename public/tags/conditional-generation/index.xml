@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Conditional Generation on Paper</title>
+    <link>https://y30n9ju1v.github.io/paper/tags/conditional-generation/</link>
+    <description>Recent content in Conditional Generation on Paper</description>
+    <generator>Hugo</generator>
+    <language>ko-KR</language>
+    <lastBuildDate>Wed, 29 Apr 2026 02:00:00 +0900</lastBuildDate>
+    <atom:link href="https://y30n9ju1v.github.io/paper/tags/conditional-generation/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>ControlNet: Adding Conditional Control to Text-to-Image Diffusion Models</title>
+      <link>https://y30n9ju1v.github.io/paper/docs/generative-models/controlnet-adding-conditional-control-to-text-to-image-diffusion-models/</link>
+      <pubDate>Wed, 29 Apr 2026 02:00:00 +0900</pubDate>
+      <guid>https://y30n9ju1v.github.io/paper/docs/generative-models/controlnet-adding-conditional-control-to-text-to-image-diffusion-models/</guid>
+      <description>&lt;h2 id=&#34;개요&#34;&gt;개요&lt;a class=&#34;anchor&#34; href=&#34;#%ea%b0%9c%ec%9a%94&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;strong&gt;저자&lt;/strong&gt;: Lvmin Zhang, Anyi Rao, Maneesh Agrawala (Stanford University)&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;발행년도&lt;/strong&gt;: 2023&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;arXiv&lt;/strong&gt;: 2302.05543&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;주요 내용&lt;/strong&gt;: 대규모 사전 훈련된 text-to-image diffusion 모델(Stable Diffusion)에 엣지맵·깊이맵·포즈·세그멘테이션 등 공간적 조건 이미지를 추가 학습 없이 주입하는 신경망 아키텍처. &amp;ldquo;Zero Convolution&amp;quot;으로 사전 훈련 모델을 보호하면서 소량의 데이터(1k~1M)로도 안정적 학습 가능.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;한계-극복&#34;&gt;한계 극복&lt;a class=&#34;anchor&#34; href=&#34;#%ed%95%9c%ea%b3%84-%ea%b7%b9%eb%b3%b5&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;strong&gt;기존 한계 1 — 텍스트만으로는 공간 제어 불가&lt;/strong&gt;: text-to-image 모델은 &amp;ldquo;사람이 왼팔을 들고 있는 모습&amp;quot;을 정확한 포즈로 생성하기 매우 어려움. 프롬프트 엔지니어링으로는 복잡한 레이아웃·형태·포즈 제어에 한계.&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;기존 한계 2 — 대형 모델 파인튜닝의 위험&lt;/strong&gt;: 수십억 개 파라미터 모델을 직접 파인튜닝하면 과적합·catastrophic forgetting 발생. 태스크별 데이터는 ImageNet 대비 5만 배 적음(~100K).&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;기존 한계 3 — 기존 조건부 방법의 성능 부족&lt;/strong&gt;: PITI·Sketch-Guided Diffusion 등은 결과 품질과 조건 충실도 모두 ControlNet에 비해 낮음.&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;이 논문의 접근 방식&lt;/strong&gt;: 원본 모델을 완전히 잠그고(freeze), 인코더 레이어만 복사한 &lt;strong&gt;trainable copy&lt;/strong&gt;를 만들어 &lt;strong&gt;zero convolution&lt;/strong&gt;으로 연결. 초기에는 노이즈를 추가하지 않고, 학습이 진행되면서 점진적으로 조건을 반영하는 구조.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;목차&#34;&gt;목차&lt;a class=&#34;anchor&#34; href=&#34;#%eb%aa%a9%ec%b0%a8&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Section 1: Introduction&lt;/li&gt;&#xA;&lt;li&gt;Section 2: Related Work&lt;/li&gt;&#xA;&lt;li&gt;Section 3: Method&#xA;&lt;ul&gt;&#xA;&lt;li&gt;3.1 ControlNet 기본 구조&lt;/li&gt;&#xA;&lt;li&gt;3.2 Stable Diffusion에 ControlNet 적용&lt;/li&gt;&#xA;&lt;li&gt;3.3 Training&lt;/li&gt;&#xA;&lt;li&gt;3.4 Inference&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;/li&gt;&#xA;&lt;li&gt;Section 4: Experiments&lt;/li&gt;&#xA;&lt;li&gt;Section 5: Conclusion&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;hr&gt;&#xA;&lt;h2 id=&#34;section-1-introduction&#34;&gt;Section 1: Introduction&lt;a class=&#34;anchor&#34; href=&#34;#section-1-introduction&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;p&gt;&lt;strong&gt;요약&lt;/strong&gt;&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

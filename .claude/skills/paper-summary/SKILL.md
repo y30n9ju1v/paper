@@ -33,6 +33,7 @@ parameters:
 5. 전체 논문의 핵심 개념을 정리합니다
 6. 수식은 KaTeX 형식($$...$$)으로 작성하며, **각 수식마다 변수 설명과 직관적 의미를 초보자도 이해할 수 있도록** 추가합니다
 7. 날짜는 KST(한국 표준시) 타임스탐프로 작성합니다 (예: `2026-04-10T08:30:00+09:00`)
+   `year`는 논문의 실제 발행년도(arXiv 공개 또는 학회 발표 기준)를 정수로 작성합니다 (예: `year: 2017`)
 8. 논문 주제에 맞는 카테고리 폴더를 판단하여 `content/docs/<category>/논문-제목.md` 파일을 Hugo 블로그 포스트 형식으로 생성합니다
    - `deep-learning/` — Transformer, CNN, RL 등 기반 딥러닝 논문
    - `novel-view-synthesis/` — NeRF, 3DGS 등 뷰 합성 논문
@@ -52,6 +53,7 @@ title: "논문 제목"
 date: 2026-04-10T08:30:00+09:00
 draft: false
 categories: ["Papers"]
+year: 2017
 ---
 
 ## 개요

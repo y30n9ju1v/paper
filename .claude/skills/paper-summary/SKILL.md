@@ -10,7 +10,7 @@ parameters:
 
 # Paper Summary Skill
 
-논문 PDF를 받아서 챕터별로 요약하고 핵심 개념을 정리한 마크다운 파일을 `content/posts/` 디렉토리에 생성합니다.
+논문 PDF를 받아서 챕터별로 요약하고 핵심 개념을 정리한 마크다운 파일을 `content/docs/` 디렉토리에 생성합니다.
 
 ## Usage
 
@@ -33,7 +33,14 @@ parameters:
 5. 전체 논문의 핵심 개념을 정리합니다
 6. 수식은 KaTeX 형식($$...$$)으로 작성하며, **각 수식마다 변수 설명과 직관적 의미를 초보자도 이해할 수 있도록** 추가합니다
 7. 날짜는 KST(한국 표준시) 타임스탐프로 작성합니다 (예: `2026-04-10T08:30:00+09:00`)
-8. `content/posts/papers/논문-제목.md` 파일을 Hugo 블로그 포스트 형식으로 생성합니다
+8. 논문 주제에 맞는 카테고리 폴더를 판단하여 `content/docs/<category>/논문-제목.md` 파일을 Hugo 블로그 포스트 형식으로 생성합니다
+   - `deep-learning/` — Transformer, CNN, RL 등 기반 딥러닝 논문
+   - `novel-view-synthesis/` — NeRF, 3DGS 등 뷰 합성 논문
+   - `generative-models/` — Diffusion, GAN, World Model 등 생성 모델 논문
+   - `autonomous-driving/perception/` — BEV, Occupancy, HD Map, 3D Detection 등
+   - `autonomous-driving/simulation/` — 센서 시뮬레이터, 클로즈드 루프 시뮬레이션
+   - `autonomous-driving/planning/` — E2E 자율주행, Planning 논문
+   - `autonomous-driving/dataset/` — 데이터셋 및 벤치마크 논문
 
 ## Output format
 

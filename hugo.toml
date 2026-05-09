@@ -2,3 +2,9 @@ baseURL = "https://y30n9ju1v.github.io/paper/"
 languageCode = "ko-KR"
 title = "Paper"
 theme = "hugo-book"
+
+[markup.goldmark.extensions.passthrough]
+enable = true
+[markup.goldmark.extensions.passthrough.delimiters]
+block = [['\[', '\]'], ['$$', '$$']]
+inline = [['\(', '\)'], ['$', '$']]

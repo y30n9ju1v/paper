@@ -4,6 +4,7 @@ date: 2026-04-17T00:00:00+09:00
 draft: false
 categories: ["Papers", "Autonomous Driving"]
 tags: ["3D Object Detection", "BEV", "Depth Estimation", "Autonomous Driving"]
+year: 2022
 ---
 
 ## 개요

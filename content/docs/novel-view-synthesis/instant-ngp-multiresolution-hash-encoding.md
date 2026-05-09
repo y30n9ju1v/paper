@@ -4,6 +4,7 @@ date: 2026-04-17T08:00:00+09:00
 draft: false
 categories: ["Papers", "Novel View Synthesis"]
 tags: ["NeRF", "Novel View Synthesis", "Neural Rendering", "Hash Encoding", "Real-Time Rendering"]
+year: 2022
 ---
 
 ## 개요

@@ -4,6 +4,7 @@ date: 2026-04-19T23:30:00+09:00
 draft: false
 categories: ["Papers", "Deep Learning", "Reinforcement Learning"]
 tags: ["reinforcement learning", "policy gradient", "PPO", "deep learning", "OpenAI"]
+year: 2017
 ---
 
 ## 개요

@@ -1,0 +1,207 @@
+{{ define "main" }}
+<style>
+  .paper-list-container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 1rem 2rem;
+  }
+  .paper-list-header {
+    margin-bottom: 1.5rem;
+  }
+  .paper-list-header h1 {
+    font-size: 1.6rem;
+    margin-bottom: 0.25rem;
+  }
+  .paper-list-header p {
+    color: var(--body-font-color);
+    opacity: 0.7;
+    font-size: 0.9rem;
+  }
+  .paper-filters {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+    align-items: center;
+  }
+  .filter-btn {
+    padding: 0.3rem 0.75rem;
+    border: 1px solid var(--body-font-color);
+    border-radius: 20px;
+    background: transparent;
+    color: var(--body-font-color);
+    cursor: pointer;
+    font-size: 0.8rem;
+    opacity: 0.6;
+    transition: all 0.15s;
+  }
+  .filter-btn:hover, .filter-btn.active {
+    opacity: 1;
+    background: var(--body-font-color);
+    color: var(--body-background);
+  }
+  .paper-search {
+    margin-left: auto;
+    padding: 0.3rem 0.75rem;
+    border: 1px solid var(--body-font-color);
+    border-radius: 20px;
+    background: transparent;
+    color: var(--body-font-color);
+    font-size: 0.85rem;
+    outline: none;
+    width: 200px;
+  }
+  .paper-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  .paper-table th {
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 2px solid var(--body-font-color);
+    opacity: 0.6;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .paper-table td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid rgba(128,128,128,0.2);
+    vertical-align: middle;
+  }
+  .paper-table tr:hover td {
+    background: rgba(128,128,128,0.07);
+  }
+  .paper-title-link {
+    color: var(--body-font-color);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .paper-title-link:hover {
+    text-decoration: underline;
+  }
+  .paper-category {
+    font-size: 0.75rem;
+    opacity: 0.6;
+    white-space: nowrap;
+  }
+  .paper-date {
+    font-size: 0.78rem;
+    opacity: 0.5;
+    white-space: nowrap;
+  }
+  .paper-count {
+    font-size: 0.8rem;
+    opacity: 0.5;
+    margin-bottom: 0.75rem;
+  }
+  .paper-mobile-meta { display: none; font-size: 0.72rem; opacity: 0.5; margin-top: 0.2rem; }
+  @media (max-width: 640px) {
+    .paper-list-container { padding: 1rem; }
+    .paper-search { margin-left: 0; width: 100%; }
+    .paper-table th:nth-child(2),
+    .paper-table td:nth-child(2),
+    .paper-table th:nth-child(3),
+    .paper-table td:nth-child(3) { display: none; }
+    .paper-mobile-meta { display: block; }
+    .paper-table { font-size: 0.85rem; }
+    .paper-table td { padding: 0.5rem 0.25rem; }
+  }
+</style>
+
+<div class="paper-list-container">
+  <div class="paper-list-header">
+    <h1>Paper Notes</h1>
+    <p>자율주행 & 3D 장면 표현 논문 요약 모음</p>
+  </div>
+
+  <div class="paper-filters">
+    <button class="filter-btn active" data-cat="all">전체</button>
+    <button class="filter-btn" data-cat="deep-learning">Deep Learning</button>
+    <button class="filter-btn" data-cat="novel-view-synthesis">Novel View Synthesis</button>
+    <button class="filter-btn" data-cat="generative-models">Generative Models</button>
+    <button class="filter-btn" data-cat="perception">Perception</button>
+    <button class="filter-btn" data-cat="simulation">Simulation</button>
+    <button class="filter-btn" data-cat="planning">Planning</button>
+    <button class="filter-btn" data-cat="dataset">Dataset</button>
+    <input class="paper-search" type="text" id="paperSearch" placeholder="논문 검색...">
+  </div>
+
+  {{ $allPapers := where .Site.RegularPages "Type" "docs" }}
+  {{ $allPapers = where $allPapers "File.Path" "ne" "docs/roadmap.md" }}
+  <div class="paper-count" id="paperCount">{{ len $allPapers }}편</div>
+
+  <table class="paper-table" id="paperTable">
+    <thead>
+      <tr>
+        <th>제목</th>
+        <th>카테고리</th>
+        <th>발행년도</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{ range sort $allPapers "Date" "desc" }}
+      {{ $path := .File.Dir }}
+      {{ $cat := "" }}
+      {{ $catLabel := "" }}
+      {{ if in $path "deep-learning" }}
+        {{ $cat = "deep-learning" }}{{ $catLabel = "Deep Learning" }}
+      {{ else if in $path "novel-view-synthesis" }}
+        {{ $cat = "novel-view-synthesis" }}{{ $catLabel = "Novel View Synthesis" }}
+      {{ else if in $path "generative-models" }}
+        {{ $cat = "generative-models" }}{{ $catLabel = "Generative Models" }}
+      {{ else if in $path "perception" }}
+        {{ $cat = "perception" }}{{ $catLabel = "Perception" }}
+      {{ else if in $path "simulation" }}
+        {{ $cat = "simulation" }}{{ $catLabel = "Simulation" }}
+      {{ else if in $path "planning" }}
+        {{ $cat = "planning" }}{{ $catLabel = "Planning" }}
+      {{ else if in $path "dataset" }}
+        {{ $cat = "dataset" }}{{ $catLabel = "Dataset" }}
+      {{ end }}
+      <tr data-cat="{{ $cat }}" data-title="{{ lower .Title }}">
+        <td>
+          <a class="paper-title-link" href="{{ .RelPermalink }}">{{ .Title }}</a>
+          <div class="paper-mobile-meta">{{ $catLabel }} · {{ with .Params.year }}{{ . }}{{ end }}</div>
+        </td>
+        <td><span class="paper-category">{{ $catLabel }}</span></td>
+        <td><span class="paper-date">{{ with .Params.year }}{{ . }}{{ else }}–{{ end }}</span></td>
+      </tr>
+      {{ end }}
+    </tbody>
+  </table>
+</div>
+
+<script>
+  const filterBtns = document.querySelectorAll('.filter-btn');
+  const rows = document.querySelectorAll('#paperTable tbody tr');
+  const searchInput = document.getElementById('paperSearch');
+  const paperCount = document.getElementById('paperCount');
+
+  function filterRows() {
+    const activeCat = document.querySelector('.filter-btn.active')?.dataset.cat || 'all';
+    const query = searchInput.value.toLowerCase();
+    let visible = 0;
+    rows.forEach(row => {
+      const catMatch = activeCat === 'all' || row.dataset.cat === activeCat;
+      const titleMatch = row.dataset.title.includes(query);
+      const show = catMatch && titleMatch;
+      row.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    paperCount.textContent = visible + '편';
+  }
+
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      filterRows();
+    });
+  });
+
+  searchInput.addEventListener('input', filterRows);
+</script>
+{{ end }}

@@ -4,6 +4,7 @@ date: 2026-04-24T12:00:00+09:00
 draft: false
 categories: ["Papers", "Computer Vision", "Deep Learning"]
 tags: ["Vision Transformer", "ViT", "Image Classification", "Self-Attention", "ICLR 2021"]
+year: 2021
 ---
 
 ## 개요

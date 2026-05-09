@@ -4,6 +4,7 @@ date: 2026-04-19T07:00:00+09:00
 draft: false
 tags: ["World Model", "Autonomous Driving", "Diffusion Model", "Video Generation", "nuScenes"]
 categories: ["Papers", "Autonomous Driving", "Generative Models"]
+year: 2023
 ---
 
 ## 개요

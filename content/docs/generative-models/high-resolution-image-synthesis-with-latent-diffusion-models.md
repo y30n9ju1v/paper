@@ -4,6 +4,7 @@ date: 2026-04-20T08:00:00+09:00
 draft: false
 categories: ["Papers", "Generative Models", "Diffusion"]
 tags: ["LDM", "Stable Diffusion", "Diffusion Models", "Image Synthesis", "Latent Space", "Cross-Attention"]
+year: 2022
 ---
 
 ## 개요

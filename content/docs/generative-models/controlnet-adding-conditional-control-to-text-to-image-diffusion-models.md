@@ -4,6 +4,7 @@ date: 2026-04-29T02:00:00+09:00
 draft: false
 categories: ["Papers"]
 tags: ["ControlNet", "Diffusion Model", "Stable Diffusion", "Conditional Generation", "Image Synthesis", "Zero Convolution", "LDM", "CLIP"]
+year: 2023
 ---
 
 ## 개요

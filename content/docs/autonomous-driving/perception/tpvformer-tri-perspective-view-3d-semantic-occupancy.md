@@ -4,6 +4,7 @@ date: 2026-04-19T14:00:00+09:00
 draft: false
 categories: ["Papers", "Autonomous Driving", "3D Occupancy"]
 tags: ["3D Occupancy", "BEV", "Autonomous Driving", "Transformer", "Semantic Scene Completion", "nuScenes"]
+year: 2023
 ---
 
 ## 개요

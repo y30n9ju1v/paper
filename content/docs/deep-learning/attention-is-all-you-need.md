@@ -4,6 +4,7 @@ date: 2026-04-20T13:00:00+09:00
 draft: false
 categories: ["Papers", "Transformer", "NLP"]
 tags: ["Transformer", "Self-Attention", "Multi-Head Attention", "Positional Encoding", "Seq2Seq"]
+year: 2017
 ---
 
 ## 개요

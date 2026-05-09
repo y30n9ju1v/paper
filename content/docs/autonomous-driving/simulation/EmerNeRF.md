@@ -4,6 +4,7 @@ date: 2026-04-18T10:30:00+09:00
 draft: false
 categories: ["Papers", "Autonomous Driving", "Novel View Synthesis"]
 tags: ["NeRF", "Autonomous Driving", "Dynamic Scene", "Self-Supervised Learning", "Neural Rendering"]
+year: 2023
 ---
 
 ## 개요

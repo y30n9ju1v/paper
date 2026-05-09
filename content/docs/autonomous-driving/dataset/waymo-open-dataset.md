@@ -4,6 +4,7 @@ date: 2026-04-10T09:00:00+09:00
 draft: false
 categories: ["Papers", "Autonomous Driving", "Benchmark & Dataset"]
 tags: ["Autonomous Driving", "Dataset", "LiDAR", "3D Object Detection", "Multi-Object Tracking"]
+year: 2020
 ---
 
 ## 개요

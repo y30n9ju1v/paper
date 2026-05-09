@@ -4,6 +4,7 @@ date: 2026-04-10T10:00:00+09:00
 draft: false
 categories: ["Papers", "Novel View Synthesis"]
 tags: ["3D Gaussian Splatting", "Novel View Synthesis", "Real-Time Rendering", "Neural Rendering"]
+year: 2023
 ---
 
 ## 개요

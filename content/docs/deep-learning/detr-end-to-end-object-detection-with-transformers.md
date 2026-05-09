@@ -4,6 +4,7 @@ date: 2026-04-20T14:00:00+09:00
 draft: false
 categories: ["Papers", "Computer Vision", "Deep Learning"]
 tags: ["Object Detection", "Transformer", "Bipartite Matching", "DETR", "Facebook AI"]
+year: 2020
 ---
 
 ## 개요

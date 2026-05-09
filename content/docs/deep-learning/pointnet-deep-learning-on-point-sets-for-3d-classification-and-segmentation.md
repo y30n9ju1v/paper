@@ -4,6 +4,7 @@ date: 2026-04-19T22:56:00+09:00
 draft: false
 categories: ["Papers", "Computer Vision"]
 tags: ["Point Cloud", "3D Classification", "3D Segmentation", "Deep Learning"]
+year: 2017
 ---
 
 ## 개요

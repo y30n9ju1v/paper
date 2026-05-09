@@ -4,6 +4,7 @@ date: 2026-04-20T12:00:00+09:00
 draft: false
 categories: ["Papers", "Autonomous Driving", "HD Map"]
 tags: ["HD Map", "Autonomous Driving", "Transformer", "BEV", "Vectorized Map"]
+year: 2022
 ---
 
 ## 개요

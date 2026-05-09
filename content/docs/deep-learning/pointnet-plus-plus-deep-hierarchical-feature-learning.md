@@ -4,6 +4,7 @@ date: 2026-04-29T00:00:00+09:00
 draft: false
 categories: ["Papers"]
 tags: ["Point Cloud", "3D Classification", "3D Segmentation", "Deep Learning", "LiDAR", "Hierarchical Learning", "PointNet"]
+year: 2017
 ---
 
 ## 개요

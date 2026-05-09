@@ -4,6 +4,7 @@ date: 2026-04-29T00:00:00+09:00
 draft: false
 categories: ["Papers"]
 tags: ["CLIP", "Contrastive Learning", "Zero-Shot Transfer", "Multi-Modal", "Vision-Language", "OpenAI", "Image Classification", "Transfer Learning"]
+year: 2021
 ---
 
 ## 개요

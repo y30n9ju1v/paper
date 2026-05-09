@@ -4,6 +4,7 @@ date: 2026-04-14T00:00:00+09:00
 draft: false
 categories: ["Papers", "Autonomous Driving"]
 tags: ["Autonomous Driving", "Transformer", "Sensor Fusion", "Imitation Learning", "LiDAR"]
+year: 2022
 ---
 
 ## 개요

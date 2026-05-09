@@ -4,6 +4,7 @@ date: 2026-04-10T09:00:00+09:00
 draft: false
 categories: ["Papers", "Novel View Synthesis"]
 tags: ["3D Gaussian Splatting", "Ray Tracing", "Novel View Synthesis", "Neural Rendering"]
+year: 2024
 ---
 
 ## 개요

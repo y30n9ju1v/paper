@@ -4,6 +4,7 @@ date: 2026-04-19T22:00:00+09:00
 draft: false
 categories: ["Papers", "Autonomous Driving", "3D Object Detection"]
 tags: ["LiDAR", "3D Detection", "Object Tracking", "Point Cloud", "BEV"]
+year: 2021
 ---
 
 ## 개요

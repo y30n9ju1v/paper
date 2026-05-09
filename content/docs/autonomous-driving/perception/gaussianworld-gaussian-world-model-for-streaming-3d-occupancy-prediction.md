@@ -4,6 +4,7 @@ date: 2026-04-24T13:00:00+09:00
 draft: false
 categories: ["Papers", "Autonomous Driving", "3D Occupancy"]
 tags: ["3D Gaussian Splatting", "Occupancy Prediction", "World Model", "Temporal Modeling", "Streaming", "nuScenes"]
+year: 2024
 ---
 
 ## 개요

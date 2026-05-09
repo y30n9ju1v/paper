@@ -4,6 +4,7 @@ date: 2026-04-10T09:00:00+09:00
 draft: false
 categories: ["Papers", "Autonomous Driving", "Novel View Synthesis"]
 tags: ["3D Gaussian Splatting", "Autonomous Driving", "Simulation", "Closed-Loop"]
+year: 2024
 ---
 
 ## 개요

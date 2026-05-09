@@ -4,6 +4,7 @@ date: 2026-04-19T13:00:00+09:00
 draft: false
 categories: ["Papers", "Autonomous Driving", "Generative Models"]
 tags: ["Autonomous Driving", "Simulation", "Generative Model", "Closed-loop", "Diffusion"]
+year: 2024
 ---
 
 ## 개요

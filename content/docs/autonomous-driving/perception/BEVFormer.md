@@ -4,6 +4,7 @@ date: 2026-04-14T00:00:00+09:00
 draft: false
 categories: ["Papers", "Autonomous Driving"]
 tags: ["Autonomous Driving", "BEV", "Transformer", "3D Object Detection", "Multi-Camera"]
+year: 2022
 ---
 
 ## 개요

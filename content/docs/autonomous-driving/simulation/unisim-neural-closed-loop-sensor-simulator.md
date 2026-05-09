@@ -4,6 +4,7 @@ date: 2026-04-17T08:45:00+09:00
 draft: false
 categories: ["Papers", "Autonomous Driving", "Novel View Synthesis"]
 tags: ["Autonomous Driving", "Neural Rendering", "Simulation", "NeRF", "LiDAR", "Closed-Loop"]
+year: 2023
 ---
 
 ## 개요

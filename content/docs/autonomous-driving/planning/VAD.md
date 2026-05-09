@@ -4,6 +4,7 @@ date: 2026-04-10T08:30:00+09:00
 draft: false
 categories: ["Papers", "Autonomous Driving"]
 tags: ["Autonomous Driving", "End-to-End Planning", "BEV", "Vectorized Representation"]
+year: 2023
 ---
 
 ## 개요

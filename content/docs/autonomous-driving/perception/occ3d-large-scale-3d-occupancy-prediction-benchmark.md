@@ -4,6 +4,7 @@ date: 2026-04-17T09:10:00+09:00
 draft: false
 categories: ["Papers", "Autonomous Driving", "3D Occupancy", "Benchmark & Dataset"]
 tags: ["Autonomous Driving", "3D Occupancy", "LiDAR", "Dataset", "Benchmark"]
+year: 2023
 ---
 
 ## 개요

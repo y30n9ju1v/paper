@@ -4,6 +4,7 @@ date: 2026-04-24T12:00:00+09:00
 draft: false
 categories: ["Papers", "Autonomous Driving", "Sensor Simulation"]
 tags: ["LiDAR", "Simulation", "Synthetic Data", "Point Cloud", "Domain Gap", "Ray Casting"]
+year: 2020
 ---
 
 ## 개요

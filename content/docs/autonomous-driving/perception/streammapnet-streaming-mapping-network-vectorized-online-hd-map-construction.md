@@ -4,6 +4,7 @@ date: 2026-04-20T20:00:00+09:00
 draft: false
 categories: ["Papers", "Autonomous Driving", "HD Map"]
 tags: ["Autonomous Driving", "HD Map", "BEV", "Temporal Fusion", "Transformer", "Streaming"]
+year: 2024
 ---
 
 ## 개요

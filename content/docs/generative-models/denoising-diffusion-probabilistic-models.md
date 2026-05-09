@@ -4,6 +4,7 @@ date: 2026-04-19T23:00:00+09:00
 draft: false
 categories: ["Papers", "Generative Models", "Deep Learning"]
 tags: ["diffusion models", "generative models", "image synthesis", "deep learning"]
+year: 2020
 ---
 
 ## 개요

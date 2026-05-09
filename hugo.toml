@@ -1,6 +1,6 @@
 baseURL = "https://y30n9ju1v.github.io/paper/"
 languageCode = "ko-KR"
-title = "Paper"
+title = "y30n9ju1v's Papers"
 theme = "hugo-book"
 
 [outputs]

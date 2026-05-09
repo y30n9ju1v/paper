@@ -5,18 +5,22 @@
     margin: 0 auto;
     padding: 1rem 2rem;
   }
+
   .paper-list-header {
     margin-bottom: 1.5rem;
   }
+
   .paper-list-header h1 {
     font-size: 1.6rem;
     margin-bottom: 0.25rem;
   }
+
   .paper-list-header p {
     color: var(--body-font-color);
     opacity: 0.7;
     font-size: 0.9rem;
   }
+
   .paper-filters {
     display: flex;
     gap: 0.5rem;
@@ -24,6 +28,7 @@
     margin-bottom: 1.25rem;
     align-items: center;
   }
+
   .filter-btn {
     padding: 0.3rem 0.75rem;
     border: 1px solid var(--body-font-color);
@@ -35,11 +40,14 @@
     opacity: 0.6;
     transition: all 0.15s;
   }
-  .filter-btn:hover, .filter-btn.active {
+
+  .filter-btn:hover,
+  .filter-btn.active {
     opacity: 1;
     background: var(--body-font-color);
     color: var(--body-background);
   }
+
   .paper-search {
     margin-left: auto;
     padding: 0.3rem 0.75rem;
@@ -51,11 +59,13 @@
     outline: none;
     width: 200px;
   }
+
   .paper-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.9rem;
   }
+
   .paper-table th {
     text-align: left;
     padding: 0.5rem 0.75rem;
@@ -66,55 +76,88 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
+
   .paper-table td {
     padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid rgba(128,128,128,0.2);
+    border-bottom: 1px solid rgba(128, 128, 128, 0.2);
     vertical-align: middle;
   }
+
   .paper-table tr:hover td {
-    background: rgba(128,128,128,0.07);
+    background: rgba(128, 128, 128, 0.07);
   }
+
   .paper-title-link {
     color: var(--body-font-color);
     text-decoration: none;
     font-weight: 500;
   }
+
   .paper-title-link:hover {
     text-decoration: underline;
   }
+
   .paper-category {
     font-size: 0.75rem;
     opacity: 0.6;
     white-space: nowrap;
   }
+
   .paper-date {
     font-size: 0.78rem;
     opacity: 0.5;
     white-space: nowrap;
   }
+
   .paper-count {
     font-size: 0.8rem;
     opacity: 0.5;
     margin-bottom: 0.75rem;
   }
-  .paper-mobile-meta { display: none; font-size: 0.72rem; opacity: 0.5; margin-top: 0.2rem; }
+
+  .paper-mobile-meta {
+    display: none;
+    font-size: 0.72rem;
+    opacity: 0.5;
+    margin-top: 0.2rem;
+  }
+
   @media (max-width: 640px) {
-    .paper-list-container { padding: 1rem; }
-    .paper-search { margin-left: 0; width: 100%; }
+    .paper-list-container {
+      padding: 1rem;
+    }
+
+    .paper-search {
+      margin-left: 0;
+      width: 100%;
+    }
+
     .paper-table th:nth-child(2),
     .paper-table td:nth-child(2),
     .paper-table th:nth-child(3),
-    .paper-table td:nth-child(3) { display: none; }
-    .paper-mobile-meta { display: block; }
-    .paper-table { font-size: 0.85rem; }
-    .paper-table td { padding: 0.5rem 0.25rem; }
+    .paper-table td:nth-child(3) {
+      display: none;
+    }
+
+    .paper-mobile-meta {
+      display: block;
+    }
+
+    .paper-table {
+      font-size: 0.85rem;
+    }
+
+    .paper-table td {
+      padding: 0.5rem 0.25rem;
+    }
   }
 </style>
 
 <div class="paper-list-container">
   <div class="paper-list-header">
-    <h1>Paper Notes</h1>
-    <p>자율주행 & 3D 장면 표현 논문 요약 모음 &nbsp;·&nbsp; <a href="{{ "graph/" | relURL }}" style="opacity:0.6;font-size:0.85rem;">연관 관계 그래프 →</a></p>
+    <h1>Paper List</h1>
+    <p>자율주행 & 3D 장면 표현 논문 요약 모음 &nbsp;·&nbsp; <a href="{{ " graph/" | relURL }}"
+        style="opacity:0.6;font-size:0.85rem;">연관 관계 그래프 →</a></p>
   </div>
 
   <div class="paper-filters">
@@ -147,19 +190,19 @@
       {{ $cat := "" }}
       {{ $catLabel := "" }}
       {{ if in $path "deep-learning" }}
-        {{ $cat = "deep-learning" }}{{ $catLabel = "Deep Learning" }}
+      {{ $cat = "deep-learning" }}{{ $catLabel = "Deep Learning" }}
       {{ else if in $path "novel-view-synthesis" }}
-        {{ $cat = "novel-view-synthesis" }}{{ $catLabel = "Novel View Synthesis" }}
+      {{ $cat = "novel-view-synthesis" }}{{ $catLabel = "Novel View Synthesis" }}
       {{ else if in $path "generative-models" }}
-        {{ $cat = "generative-models" }}{{ $catLabel = "Generative Models" }}
+      {{ $cat = "generative-models" }}{{ $catLabel = "Generative Models" }}
       {{ else if in $path "perception" }}
-        {{ $cat = "perception" }}{{ $catLabel = "Perception" }}
+      {{ $cat = "perception" }}{{ $catLabel = "Perception" }}
       {{ else if in $path "simulation" }}
-        {{ $cat = "simulation" }}{{ $catLabel = "Simulation" }}
+      {{ $cat = "simulation" }}{{ $catLabel = "Simulation" }}
       {{ else if in $path "planning" }}
-        {{ $cat = "planning" }}{{ $catLabel = "Planning" }}
+      {{ $cat = "planning" }}{{ $catLabel = "Planning" }}
       {{ else if in $path "dataset" }}
-        {{ $cat = "dataset" }}{{ $catLabel = "Dataset" }}
+      {{ $cat = "dataset" }}{{ $catLabel = "Dataset" }}
       {{ end }}
       <tr data-cat="{{ $cat }}" data-title="{{ lower .Title }}">
         <td>

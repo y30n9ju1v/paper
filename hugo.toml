@@ -3,6 +3,8 @@ languageCode = "ko-KR"
 title = "y30n9ju1v's Papers"
 theme = "hugo-book"
 
+disableKinds = ["taxonomy", "term"]
+
 [outputs]
 home = ["HTML", "JSON"]
 

@@ -9,38 +9,35 @@ references:
   - "waymo-open-dataset"
 ---
 
-## 개요
+## 💡 한 줄 요약
+실제 주행 데이터로 구축한 3D 자산 위에 물리 기반 레이캐스팅과 학습된 raydrop 모델을 결합하여, CARLA 등 아티스트 제작 시뮬레이터보다 sim-to-real 도메인 갭이 훨씬 작은 현실적인 LiDAR 포인트 클라우드를 생성한다.
 
+## 📌 개요 및 핵심 기여 (Key Contributions)
 - **저자**: Sivabalan Manivasagam, Shenlong Wang, Kelvin Wong, Wenyuan Zeng, Mikita Sazanovich, Shuhan Tan, Bin Yang, Wei-Chiu Ma, Raquel Urtasun (Uber ATG, University of Toronto, MIT)
-- **발행년도**: 2020
-- **학회/저널**: CVPR 2020
-- **주요 내용**: 실제 주행 데이터를 기반으로 현실적인 LiDAR 포인트 클라우드를 시뮬레이션하는 시스템. 물리 기반 레이캐스팅과 딥러닝을 결합하여 CARLA 대비 sim-to-real 도메인 갭을 크게 줄임.
+- **발행년도**: 2020 (CVPR 2020)
+- **주요 기여점**:
+  1. 실제 데이터 기반 3D 자산(25,000+ 동적 객체 메시, 대용량 도시 정적 맵)의 자동화된 대량 구축 파이프라인
+  2. 물리 레이캐스팅 + ML 기반 raydrop을 결합한 하이브리드 접근으로 레이캐스팅 단독 대비 현실성 향상
+  3. 추가 학습 없이 실제 데이터 학습 모델을 LiDARsim에 직접 적용 가능할 만큼 낮은 도메인 갭 실증
+  4. 실제로 수집 불가능한 롱테일·안전 임계 시나리오의 폐루프(closed-loop) 평가 가능성 검증
 
-## 한계 극복
+## 🎯 관련 연구 흐름 및 기존 한계 (Related Work & Motivation)
+- **연구 흐름**: 자율주행 검증을 위한 시뮬레이션은 CARLA, AirSim 같은 게임 엔진 기반 가상 환경에서 출발했다. 이들은 아티스트가 제작한 3D 에셋과 단순화된 물리 모델을 사용해 빠르게 다양한 장면을 만들 수 있었지만, 실제 센서 데이터와의 통계적 분포 차이(도메인 갭)가 크다는 문제가 있었다. LiDARsim은 이 갭을 줄이기 위해 "가상 에셋 제작" 대신 "실제 주행 데이터로부터 자산을 재구성"하는 방향으로 접근을 전환한다.
+- **기존 한계점**:
+  1. 가상 환경의 도메인 갭 — CARLA, AirSim 같은 기존 시뮬레이터는 실제 LiDAR 데이터와 통계적 분포가 크게 달라, 시뮬레이터에서 학습한 모델이 실제 환경에서 성능이 급락함
+  2. 안전 시나리오 수집의 어려움 — 재귀율이 낮은 롱테일 이벤트(도로 위 동물, 갑자기 끼어드는 차량 등)는 실제 주행으로 충분한 데이터를 모으는 것이 현실적으로 불가능하고 위험함
+  3. 레이캐스팅만으로는 부족한 현실성 — 순수 물리 기반 레이캐스팅은 실제 LiDAR보다 약 10% 많은 포인트를 생성하고, 재질 반사율·입사각·대기 투과율 등 복잡한 물리 현상을 모두 모델링하지 못함
+- **이 논문의 접근 방식**: 실제 주행 데이터로부터 대용량 3D 정적 맵과 동적 객체 메시 카탈로그를 구축하고, 레이캐스팅으로 초기 렌더링 후 신경망으로 "raydrop"을 학습해 현실적 포인트 클라우드를 생성한다.
 
-이 논문이 기존 연구의 어떤 한계를 극복하기 위해 작성되었는지 설명합니다.
-
-- **기존 한계 1 — 가상 환경의 도메인 갭**: CARLA, AirSim 같은 기존 시뮬레이터는 아티스트가 제작한 3D 에셋과 단순화된 물리 모델을 사용해 실제 LiDAR 데이터와 통계적 분포가 크게 다름. 이 갭으로 인해 시뮬레이터에서 학습한 모델이 실제 환경에서 성능이 급락함.
-- **기존 한계 2 — 안전 시나리오 수집의 어려움**: 재귀율이 낮은 롱테일 이벤트(도로 위 동물, 갑자기 끼어드는 차량 등)는 실제 주행으로 충분한 데이터를 모으는 것이 현실적으로 불가능하고 위험함.
-- **기존 한계 3 — 레이캐스팅만으로는 부족한 현실성**: 순수 물리 기반 레이캐스팅은 실제 LiDAR보다 약 10% 많은 포인트를 생성하고, 재질 반사율·입사각·대기 투과율 등 복잡한 물리 현상을 모두 모델링하지 못함.
-- **이 논문의 접근 방식**: 실제 주행 데이터로부터 대용량 3D 정적 맵과 동적 객체 메시 카탈로그를 구축하고, 레이캐스팅으로 초기 렌더링 후 신경망으로 "raydrop"을 학습해 현실적 포인트 클라우드를 생성.
-
-## 목차
-
+## 📑 목차
 - Section 1: Introduction
 - Section 2: Related Work
 - Section 3: Reconstructing the World for Simulation (자산 구축)
-  - 3.1 3D Mapping for Simulation
-  - 3.2 3D Reconstruction of Objects for Simulation
 - Section 4: Realistic Simulation for Self-driving (센서 시뮬레이션)
-  - 4.1 Physics-based Simulation
-  - 4.2 Learning to Simulate Raydrop
 - Section 5: Experimental Evaluation
 - Section 6: Conclusion
 
----
-
-## Section 1: Introduction
+## 🛠️ Section 1: Introduction
 
 **요약**
 
@@ -57,9 +54,7 @@ references:
 - **롱테일 이벤트(Long-tail Events)**: 희귀하지만 안전에 치명적인 시나리오. 실제 주행 데이터만으로는 충분한 샘플 확보가 불가능.
 - **클로즈드루프 평가(Closed-loop Evaluation)**: 에이전트의 행동이 환경 상태를 변경하고 그 변경된 환경에서 다시 감지·행동하는 반응형 평가. 오픈루프와 달리 계획 오류가 누적됨.
 
----
-
-## Section 3: Reconstructing the World for Simulation
+## 🛠️ Section 3: Reconstructing the World for Simulation
 
 **요약**
 
@@ -97,9 +92,7 @@ LiDARsim의 첫 단계는 시뮬레이션에 사용할 고품질 3D 자산을 �
 - **Color-ICP(Iterative Closest Point)**: 포인트 클라우드 정합 알고리즘. 색상(여기서는 LiDAR 반사 강도) 정보를 추가 제약으로 사용해 정합 정확도 향상.
 - **CAD 모델 대비 장점**: CAD 모델은 표준화된 형상만 표현하지만, 실제 데이터 기반 메시는 열린 트렁크·지붕 위 자전거·특수 차량 등 다양한 실제 변형을 자동으로 포착.
 
----
-
-## Section 4: Realistic Simulation for Self-driving
+## 🛠️ Section 4: Realistic Simulation for Self-driving
 
 **요약**
 
@@ -115,7 +108,7 @@ Velodyne HDL-64E LiDAR를 모델링합니다. 64개 에미터-수신기 쌍이 3
 - LiDAR 스윕 중 다른 차량의 움직임을 36개 등간격 자세 업데이트로 시뮬레이션
 - Intel Embree 레이캐스팅 엔진(Möller-Trumbore 알고리즘)으로 모든 서펠에 대한 레이-삼각형 충돌 검사
 
-**수식: 각 LiDAR 레이의 표현**
+**수식 예제**
 
 $$\mathbf{c} = \mathbf{c}_0 + (t_1 - t_0)\mathbf{v}_0, \quad \mathbf{n} = \mathbf{R}_0[\cos\theta\cos\phi,\ \cos\theta\sin\phi,\ \sin\theta]^T$$
 
@@ -156,21 +149,20 @@ $$\mathbf{c} = \mathbf{c}_0 + (t_1 - t_0)\mathbf{v}_0, \quad \mathbf{n} = \mathb
 - **극좌표 이미지 그리드(Polar Image Grid)**: LiDAR 스캔을 64(수직 채널) × 2048(수평 해상도)의 2D 이미지로 표현. 각 픽셀이 하나의 레이에 대응.
 - **U-Net**: 인코더-디코더 구조의 CNN으로, 공간적 맥락을 보존하며 픽셀 단위 예측에 강점.
 
----
-
-## Section 5: Experimental Evaluation
+## 🛠️ Section 5: Experimental Evaluation
 
 **요약**
 
 LiDARsim을 4가지 관점에서 검증합니다: (1) CARLA 대비 높은 재현도, (2) 실제 데이터 대비 성능, (3) 합성 데이터를 통한 성능 향상, (4) 안전 시나리오 평가.
 
-### 5.1 데이터셋
+**핵심 개념**
 
-- **자체 도시 데이터셋**: 5,500개 25초 스니펫, 140만 LiDAR 스윕, 북미 여러 도시, 사계절 포함
-  - 맵 구축: ~87%, 다운스트림 인식 학습/검증/테스트: ~7%/~1%/~5%
-- **KITTI**: 공개 벤치마크로 타 시뮬레이터와 비교 시 사용
+- **데이터셋**: 자체 도시 데이터셋(5,500개 25초 스니펫, 140만 LiDAR 스윕, 북미 여러 도시, 사계절 포함 — 맵 구축 ~87%, 다운스트림 인식 학습/검증/테스트 ~7%/~1%/~5%), KITTI(공개 벤치마크로 타 시뮬레이터와 비교 시 사용)
 
-### 5.2 CARLA 대비 우월한 재현도
+## 📊 주요 실험 및 결과 (Experiments & Results)
+- **사용 데이터셋 / 벤치마크**: 자체 대규모 도시 주행 데이터셋(5,500개 25초 스니펫, 140만 LiDAR 스윕), KITTI, SemanticKITTI
+
+- **CARLA 대비 우월한 재현도**
 
 | 학습 데이터 | 차량 세그멘테이션 mIOU | 차량 탐지 mAP (IoU 0.5) |
 |------------|----------------------|------------------------|
@@ -181,7 +173,7 @@ LiDARsim을 4가지 관점에서 검증합니다: (1) CARLA 대비 높은 재현
 
 LiDARsim은 실제 데이터(Oracle)에 근접하며 CARLA를 크게 상회.
 
-### 5.3 Raydrop 효과 분석
+- **Raydrop 효과 분석**
 
 | Raydrop 방법 | 차량 탐지 mAP (≥1pt, IoU 0.7) |
 |-------------|-------------------------------|
@@ -193,7 +185,7 @@ LiDARsim은 실제 데이터(Oracle)에 근접하며 CARLA를 크게 상회.
 
 ML raydrop이 무작위 드롭이나 드롭 없음 대비 ~2% AP 향상, Oracle에 근접.
 
-### 5.4 실제 데이터 기반 객체 vs CAD 모델
+- **실제 데이터 기반 객체 vs CAD 모델**
 
 | 객체 소스 | 차량 탐지 mAP |
 |----------|--------------|
@@ -203,9 +195,7 @@ ML raydrop이 무작위 드롭이나 드롭 없음 대비 ~2% AP 향상, Oracle�
 
 실제 데이터 기반 객체가 CAD 대비 ~6% AP 향상.
 
-### 5.5 합성 데이터를 활용한 데이터 증강
-
-실제 데이터가 적을 때 LiDARsim 합성 데이터를 추가하면 성능이 향상됩니다.
+- **합성 데이터를 활용한 데이터 증강**
 
 | 학습 셋 | 차량 세그 mIOU |
 |---------|--------------|
@@ -216,53 +206,19 @@ ML raydrop이 무작위 드롭이나 드롭 없음 대비 ~2% AP 향상, Oracle�
 
 실제 100k에 합성 100k를 추가하면 추가 성능 향상(96.1→96.3).
 
-### 5.6 안전 시나리오 및 롱테일 테스팅
+- **안전 시나리오 및 롱테일 테스팅**: Rare Object Testing에서 CAD 모델 동물·구조물을 배치해 미지 객체 탐지 능력 평가(OSIS 알고리즘, Unknown UQ: 실제 54.9 vs LiDARsim 66.0). Safety-critical Testing에서 "버스 뒤에서 갑자기 끼어드는 차량" 시나리오를 110개 지역·교통 설정에서 생성, NMP(Neural Motion Planner)가 90% 성공률 달성. Real2Sim 평가에서 Detection Agreement($\kappa_{det}$) = 86.5% (IoU 0.7) 달성.
 
-**Rare Object Testing**: LiDARsim에 CAD 모델 동물·구조물을 배치해 미지 객체 탐지 능력 평가. OSIS 알고리즘이 실제 LiDAR와 LiDARsim에서 유사한 성능 보임 (Unknown UQ: 54.9 vs 66.0).
+- **주요 성과**: CARLA 대비 차량 탐지 mAP 84.6 vs 20.0으로 압도적 향상, 실제 데이터(Oracle) 대비 성능 격차를 크게 줄임. ML raydrop과 실제 데이터 기반 동적 객체가 각각 현실성 향상에 핵심적으로 기여.
 
-**Safety-critical Testing**: "버스 뒤에서 갑자기 끼어드는 차량" 시나리오를 110개 지역·교통 설정에서 생성. NMP(Neural Motion Planner)가 90% 성공률 달성.
+## 💡 결론 및 시사점 (Conclusion & Insights)
+LiDARsim은 실제 주행 데이터를 활용해 현존 LiDAR 시뮬레이터 중 가장 낮은 sim-to-real 도메인 갭을 달성한다. LiDAR 합성 데이터의 핵심은 기하 정확성(레이캐스팅)뿐 아니라 포인트 밀도 분포의 현실성(raydrop)에 있다는 점, 실제 데이터 기반 동적 객체 카탈로그가 CAD 모델 대비 훨씬 높은 다양성과 현실성을 제공한다는 점, 합성 데이터가 실제 데이터가 충분할 때도 추가적 성능 향상(데이터 증강 효과)에 기여한다는 점이 실무적으로 중요한 시사점이다. 시뮬레이터의 유효성을 Detection Agreement($\kappa_{det}$) 같은 새로운 지표로 정량화할 수 있다는 방법론적 기여도 눈여겨볼 만하다.
 
-**Real2Sim 평가**: 실제 데이터로만 학습한 모델을 LiDARsim과 실제 테스트셋에서 각각 평가 시, Detection Agreement($\kappa_{det}$) = 86.5% (IoU 0.7). 시뮬레이터에서 놓치는 객체와 실제에서 놓치는 객체가 86.5% 일치함을 의미.
-
----
-
-## 핵심 개념 정리
-
-| 개념 | 설명 |
-|------|------|
-| **LiDARsim** | 실제 데이터 기반 자산 + 물리 레이캐스팅 + ML raydrop의 3단계 LiDAR 시뮬레이션 시스템 |
-| **Surfel** | 디스크 형태 렌더링 프리미티브. 중심점 + 법선 벡터 + 메타데이터(강도·거리·입사각)로 구성 |
-| **Raydrop** | 레이캐스팅 후 실제 LiDAR에서 발생하는 포인트 누락 현상. 물리적으로 복잡하여 ML로 학습 |
-| **Sim-to-Real Gap** | 시뮬레이터와 실제 환경의 감각 데이터 분포 차이. 기하·광학·잡음 특성 차이에서 기인 |
-| **Rolling Shutter Effect** | LiDAR가 회전하며 스캔하는 동안 센서와 객체가 이동해 발생하는 기하 왜곡 |
-| **Graph-SLAM** | 이동 궤적을 그래프로 최적화해 누적 오차를 제거하는 위치 추정 기법 |
-| **Color-ICP** | 강도(색상) 정보를 활용한 포인트 클라우드 정합 알고리즘 |
-| **Detection Agreement ($\kappa_{det}$)** | 실제/시뮬레이션 평가에서 탐지·미탐지 집합이 얼마나 일치하는지 측정하는 새로운 지표 |
+- 이 논문은 이후 카메라와 LiDAR를 동시에 NeRF 기반으로 시뮬레이션하는 방향(예: UniSim, CVPR 2023)으로 이어지는 직접적 선행 연구로 평가된다.
+- **한계점 및 아쉬운 점**:
+  1. 현재는 강체(rigid) 차량 위주로 설계되어 보행자·자전거 등 변형 가능 객체로의 확장이 필요하다.
+  2. 날씨·조명 조건 변화에 대한 시뮬레이션을 지원하지 않아, 조건부 생성 모델과의 통합이 후속 과제로 남는다.
+  3. Raydrop 모델이 학습 데이터 분포(특정 도시·계절)에 의존적이라, 완전히 새로운 센서나 환경으로의 일반화는 검증되지 않았다.
 
 ---
 
-## 결론 및 시사점
-
-LiDARsim은 실제 주행 데이터를 활용해 현존 LiDAR 시뮬레이터 중 가장 낮은 sim-to-real 도메인 갭을 달성합니다.
-
-**핵심 기여**:
-1. 실제 데이터 기반 3D 자산(25,000+ 동적 객체, 대용량 도시 맵)의 자동화된 대량 구축 파이프라인
-2. 물리 레이캐스팅 + ML raydrop의 하이브리드 접근으로 레이캐스팅 단독 대비 현실성 향상
-3. 추가 학습 없이 실제 데이터 학습 모델을 LiDARsim에 직접 적용 가능한 낮은 도메인 갭 실증
-4. 수집 불가능한 롱테일·안전 임계 시나리오의 폐루프 평가 가능성 검증
-
-**자율주행 합성 데이터 생성 관점의 시사점**:
-- LiDAR 합성 데이터의 핵심은 기하 정확성(레이캐스팅)뿐 아니라 **포인트 밀도 분포의 현실성(raydrop)**
-- 실제 데이터 기반 동적 객체 카탈로그가 CAD 모델 대비 훨씬 높은 다양성과 현실성 제공
-- 합성 데이터는 실제 데이터가 충분할 때도 추가적 성능 향상(데이터 증강 효과)에 기여
-- 시뮬레이터의 유효성은 Detection Agreement($\kappa_{det}$) 같은 새로운 지표로 정량화 가능
-
-**한계 및 후속 연구 방향**:
-- 현재는 강체(rigid) 차량 위주 → 보행자·자전거 등 변형 가능 객체로 확장 필요
-- 날씨·조명 조건 변화 시뮬레이션 미지원 → 조건부 생성 모델 통합 연구 필요
-- 이 논문은 UniSim(CVPR 2023)의 직접적 선행 연구로, UniSim은 카메라와 LiDAR를 동시에 NeRF 기반으로 시뮬레이션하는 방향으로 발전
-
-
----
-
-*관련 논문: [NeuRAD](/posts/papers/neurad-neural-rendering-for-autonomous-driving/), [UniSim](/posts/papers/unisim-neural-closed-loop-sensor-simulator/), [PointNet](/posts/papers/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/)*
+*관련 논문: [PointNet](/posts/papers/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/)*

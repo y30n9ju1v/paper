@@ -10,39 +10,35 @@ references:
   - "nuscenes-multimodal-dataset-autonomous-driving"
 ---
 
-## 개요
+## 💡 한 줄 요약
+Street Gaussians는 정적 배경과 동적 차량을 각각 별도의 명시적 포인트 클라우드(3D Gaussian)로 표현하고 차량 외관을 4D 구형 조화 함수로 인코딩하여, 30분 내 훈련과 135 FPS 실시간 렌더링으로 Waymo 기준 PSNR 34.61을 달성한다.
 
-- **저자**: Yunzhi Yan, Haotong Lin, Chenxu Zhou, Weijie Wang, Haiyang Sun, Kun Zhan, Xianpeng Lang, Xiaowei Zhou, Sida Peng
-- **소속**: Zhejiang University, Li Auto
-- **발행년도**: 2024 (arXiv:2401.01339v3, 18 Aug 2024)
-- **주요 내용**: 동적 도심 장면을 명시적 Gaussian Splatting으로 표현하는 Street Gaussians를 제안. 정적 배경과 동적 전경 차량을 각각 별도의 포인트 클라우드로 모델링하고, 차량의 시간에 따른 외관 변화를 4D 구형 조화 함수(4D Spherical Harmonics)로 표현하여 30분 내 훈련, 135 FPS 실시간 렌더링을 달성
+## 📌 개요 및 핵심 기여 (Key Contributions)
+- **저자**: Yunzhi Yan, Haotong Lin, Chenxu Zhou, Weijie Wang, Haiyang Sun, Kun Zhan, Xianpeng Lang, Xiaowei Zhou, Sida Peng (Zhejiang University, Li Auto)
+- **발행년도**: 2024 (arXiv:2401.01339v3)
+- **주요 기여점**:
+  1. 정적 배경과 동적 차량을 분리된 포인트 클라우드(Background Model / Object Model)로 표현하는 명시적 Street Gaussians 프레임워크 제안
+  2. 차량의 시간에 따른 외관 변화를 저장 효율적으로 표현하는 4D 구형 조화 함수(4D Spherical Harmonics, 푸리에 계수 기반) 도입
+  3. 노이즈가 있는 트래커 포즈를 렌더링 손실로 직접 보정하는 Tracking Pose Optimization으로 GT 포즈보다도 높은 품질 달성
+  4. 30분 내 훈련, 135 FPS 실시간 렌더링, 명시적 표현 기반의 씬 편집(회전·이동·교체) 지원
 
-## 한계 극복
+## 🎯 관련 연구 흐름 및 기존 한계 (Related Work & Motivation)
+- **연구 흐름**: 정적 장면 NeRF(MLP + 체적 렌더링) → Block-NeRF, GridNeRF 등 대규모 도시 확장 → NSG, MARS, EmerNeRF 등 추적된 차량 포즈를 활용한 동적 장면 NeRF 확장 → 3D Gaussian Splatting(3D-GS)의 명시적·고속 렌더링 등장이라는 흐름 속에서, Street Gaussians는 3D-GS를 동적 도심 장면으로 확장하는 방향을 취한다.
+- **기존 한계점**:
+  1. EmerNeRF, MARS 등 NeRF 기반 방법들은 훈련에 2.5시간 이상 소요되며 렌더링도 0.2~0.7 FPS에 불과해 느림
+  2. 기존 방법들은 구형 조화 함수를 단일 timestep 단위로 별도 할당하거나, 글로벌 외관 변화를 제대로 포착하지 못함
+  3. NeRF 기반 암시적 표현은 객체별 분리 및 편집이 어려워 장면 편집이 사실상 불가능함
+- **이 논문의 접근 방식**: 명시적 포인트 클라우드 기반 3D Gaussian을 활용해 빠른 훈련과 렌더링을 달성하고, 4D 구형 조화 함수로 동적 외관을 저장 효율적으로 표현한다. 명시적 표현 덕분에 차량 회전·이동·교체 등 씬 편집도 자연스럽게 지원한다.
 
-- **기존 한계 1 — 느린 훈련 속도**: EmerNeRF, MARS 등 NeRF 기반 방법들은 훈련에 2.5시간 이상 소요되며 렌더링도 0.2~0.7 FPS에 불과
-- **기존 한계 2 — 동적 객체의 외관 모델링 부족**: 기존 방법들은 구형 조화 함수(Spherical Harmonics)를 단일 timestep 단위로 별도 할당하거나, 글로벌 외관 변화를 제대로 포착하지 못함
-- **기존 한계 3 — 장면 편집 불가**: NeRF 기반 암시적 표현은 객체별 분리 및 편집이 어려움
-- **이 논문의 접근 방식**: 명시적 포인트 클라우드 기반 3D Gaussian을 활용해 빠른 훈련과 렌더링을 달성하고, 4D 구형 조화 함수로 동적 외관을 저장 효율적으로 표현. 명시적 표현 덕분에 차량 회전·이동·교체 등 씬 편집도 자연스럽게 지원
+## 📑 목차
+- Chapter 1: Introduction
+- Chapter 2: Related Work
+- Chapter 3: Method (배경/객체 모델, 렌더링, 훈련)
+- Chapter 4: Implementation Details
+- Chapter 5: Experiments
+- Chapter 6: Conclusion
 
-## 목차
-
-1. Introduction
-2. Related Work
-3. Method
-   - 3.1 Street Gaussians (배경 모델 + 객체 모델)
-   - 3.2 Rendering of Street Gaussians
-   - 3.3 Training (Tracking Pose Optimization + Loss Function)
-4. Implementation Details
-5. Experiments
-   - 5.1 Experimental Setup
-   - 5.2 Comparisons with State-of-the-art
-   - 5.3 Ablations and Analysis
-   - 5.4 Applications
-6. Conclusion
-
----
-
-## 1. Introduction
+## 🛠️ Chapter 1: Introduction
 
 **요약**
 
@@ -61,9 +57,7 @@ references:
 - **3D Gaussian Splatting (3D-GS)**: 수백만 개의 3D Gaussian 타원체로 씬을 표현하고, 2D 이미지 평면에 투영(splatting)하여 빠르게 렌더링
 - **구형 조화 함수(Spherical Harmonics, SH)**: 빛의 방향에 따라 달라지는 색상을 표현하는 수학적 함수 집합. 카메라 시점이 바뀌어도 자연스러운 하이라이트·반사 표현 가능
 
----
-
-## 2. Related Work
+## 🛠️ Chapter 2: Related Work
 
 **요약**
 
@@ -79,9 +73,7 @@ references:
 - **NSG (Neural Scene Graph)**: 씬을 그래프로 표현하고 각 노드에 NeRF 네트워크를 할당하는 구조
 - **EmerNeRF**: 정적·동적 필드를 분리 학습하는 NeRF (이 논문과 직접 비교됨)
 
----
-
-## 3. Method
+## 🛠️ Chapter 3: Method
 
 ### 3.1 Street Gaussians
 
@@ -101,6 +93,8 @@ Street Gaussians는 도심 씬을 **두 종류의 포인트 클라우드**로 �
 - 시맨틱 로짓 $\boldsymbol{\beta}_b \in \mathbb{R}^M$ (M개 클래스의 의미 정보)
 
 공분산 행렬은 스케일 행렬 $\mathbf{S}_b$와 회전 행렬 $\mathbf{R}_b$로 분해하여 최적화 중 유효성을 유지합니다:
+
+**수식 예제**
 
 $$\boldsymbol{\Sigma}_b = \mathbf{R}_b \mathbf{S}_b \mathbf{S}_b^T \mathbf{R}_b^T \tag{1}$$
 
@@ -136,8 +130,6 @@ $$z_{m,l} = \sum_{i=0}^{k-1} f_i \cos\left(\frac{i\pi}{N_t} t\right) \tag{3}$$
 - **$\cos(\cdot)$**: 코사인 기저 함수 (실수값 역 이산 푸리에 변환)
 - **직관**: "차량 색상이 시간에 따라 부드럽게 변한다"는 사실을 $k$개의 푸리에 계수로 압축 표현. 시간 정보를 추가 저장 없이 외관에 인코딩
 
----
-
 ### 3.2 Rendering of Street Gaussians
 
 **요약**
@@ -147,7 +139,9 @@ $$z_{m,l} = \sum_{i=0}^{k-1} f_i \cos\left(\frac{i\pi}{N_t} t\right) \tag{3}$$
 1. 식 (3)으로 각 객체 Gaussian의 현재 SH 계수 계산
 2. 식 (2)로 객체 포인트 클라우드를 월드 좌표계로 변환
 3. 배경 포인트 클라우드와 합산하여 통합 포인트 클라우드 형성
-4. 카메라 외부 파라미터 $\mathbf{W}$와 내부 파라미터 $\mathbf{K}$로 2D 이미지 공간에 투영:
+4. 카메라 외부 파라미터 $\mathbf{W}$와 내부 파라미터 $\mathbf{K}$로 2D 이미지 공간에 투영
+
+**수식 예제**
 
 $$\boldsymbol{\mu}' = \mathbf{K}\mathbf{W}\boldsymbol{\mu}$$
 $$\boldsymbol{\Sigma}' = \mathbf{J}\mathbf{W}\boldsymbol{\Sigma}\mathbf{W}^T\mathbf{J}^T \tag{4}$$
@@ -180,8 +174,6 @@ $$\mathbf{C} = \mathbf{C}_g + (1 - \mathbf{O}_g) \cdot \mathbf{C}_{sky} \tag{8}$
 - **$\mathbf{O}_g$**: Gaussian 전체 불투명도 (하늘이 얼마나 가려졌는지)
 - **$\mathbf{C}_{sky}$**: 큐브맵에서 조회한 하늘 색상
 - **직관**: Gaussian이 덮지 못한 픽셀(투명한 부분)에 하늘 색상을 채워 넣음
-
----
 
 ### 3.3 Training
 
@@ -217,9 +209,9 @@ $$\mathcal{L}_{reg} = -\sum(\mathbf{O}_{obj}\log\mathbf{O}_{obj} + (1 - \mathbf{
 - 즉, 각 Gaussian이 배경이 아니면 완전히 전경 객체에 속하도록 유도
 - **직관**: 전경 객체 주변의 '유령 Gaussian(floaters)'을 제거하여 깨끗한 분리 달성
 
----
+## 🛠️ Chapter 4: Implementation Details
 
-## 4. Implementation Details
+**요약**
 
 - **훈련**: RTX 4090 GPU 1개, Adam optimizer, 30,000 iterations
 - **학습률**: $\Delta\mathbf{T}_t$는 $5\times10^{-3}$에서 $5\times10^{-5}$로 감소, $\Delta\mathbf{R}_t$는 $1\times10^{-3}$에서 $1\times10^{-5}$로 감소
@@ -229,27 +221,10 @@ $$\mathcal{L}_{reg} = -\sum(\mathbf{O}_{obj}\log\mathbf{O}_{obj} + (1 - \mathbf{
 - **푸리에 계수**: $k=5$ (성능과 저장 비용의 균형)
 - **SH 차수**: 1차 (도심 씬의 뷰 의존성이 상대적으로 약하여 오버피팅 방지)
 
----
+## 📊 주요 실험 및 결과 (Experiments & Results)
+- **사용 데이터셋 / 벤치마크**: Waymo Open Dataset(8개 시퀀스, 10Hz, 약 100프레임), KITTI/VKITTI2(MARS 설정을 따라 75%/50%/25% 훈련 비율로 평가). 비교 방법: NSG, MARS, 3D GS, EmerNeRF. 평가 지표: PSNR, SSIM, LPIPS, PSNR*(이동 객체 영역만), FPS
 
-## 5. Experiments
-
-### 5.1 Experimental Setup
-
-**데이터셋**:
-- **Waymo Open Dataset**: 8개 시퀀스 (복잡한 차량 이동, 다양한 조명), 10Hz, 약 100프레임
-- **KITTI / VKITTI2**: MARS 설정을 따라 75%/50%/25% 훈련 비율로 평가
-
-**비교 방법**:
-- **NSG**: 멀티 평면 이미지 배경 + 객체별 학습 잠재 코드
-- **MARS**: Nerfstudio 기반 Neural Scene Graph
-- **3D GS**: 정적 장면용 원본 3D Gaussian Splatting
-- **EmerNeRF**: 정적·동적 필드 분리 학습
-
-**평가 지표**: PSNR↑, SSIM↑, LPIPS↓, PSNR\*↑ (이동 객체 영역만), FPS↑
-
-### 5.2 Comparisons with State-of-the-art
-
-**Waymo 벤치마크 (1066×1600 해상도)**:
+- **Waymo 벤치마크 (1066×1600 해상도)**
 
 | Method | PSNR↑ | SSIM↑ | LPIPS↓ | PSNR\*↑ | FPS↑ |
 |--------|-------|-------|--------|---------|------|
@@ -259,10 +234,9 @@ $$\mathcal{L}_{reg} = -\sum(\mathbf{O}_{obj}\log\mathbf{O}_{obj} + (1 - \mathbf{
 | EmerNeRF | 30.87 | 0.905 | 0.133 | 21.67 | 0.21 |
 | **Ours** | **34.61** | **0.938** | **0.079** | **30.23** | 135 |
 
-- 기존 최고 대비 PSNR +3.74dB, PSNR\* +3.69dB 향상
-- 렌더링 속도는 NeRF 기반 대비 100배 이상 빠름 (EmerNeRF 대비 642배)
+- 기존 최고 대비 PSNR +3.74dB, PSNR\* +3.69dB 향상. 렌더링 속도는 NeRF 기반 대비 100배 이상 빠름 (EmerNeRF 대비 642배)
 
-**KITTI / VKITTI2 벤치마크 (375×1242 해상도)**:
+- **KITTI / VKITTI2 벤치마크 (375×1242 해상도)**
 
 | Method | KITTI-75% PSNR↑ | VKITTI2-75% PSNR↑ |
 |--------|----------------|-------------------|
@@ -273,9 +247,7 @@ $$\mathcal{L}_{reg} = -\sum(\mathbf{O}_{obj}\log\mathbf{O}_{obj} + (1 - \mathbf{
 
 모든 데이터셋, 모든 분할 비율에서 일관된 SOTA 달성.
 
-### 5.3 Ablations and Analysis
-
-**Ablation Study (Waymo)**:
+- **Ablation Study (Waymo)**
 
 | 설정 | PSNR↑ | PSNR\*↑ | SSIM↑ | LPIPS↓ |
 |-----|-------|---------|-------|--------|
@@ -285,55 +257,19 @@ $$\mathcal{L}_{reg} = -\sum(\mathbf{O}_{obj}\log\mathbf{O}_{obj} + (1 - \mathbf{
 | w/ GT pose | 34.61 | 29.84 | 0.937 | 0.080 |
 | **Complete** | **34.61** | **30.23** | **0.938** | **0.079** |
 
-**핵심 발견**:
-- **Tracking Pose Optimization**: GT 포즈보다도 PSNR\* +0.39dB 높음. GT 어노테이션에도 노이즈가 있기 때문
-- **4D SH**: 이동 객체의 PSNR\* 향상에 가장 큰 기여. 차량이 글로벌 조명과 상호작용하며 변하는 외관(그림자 등)을 부드럽게 표현
-- **LiDAR**: 배경과 이동 객체 모두에서 성능 향상. 기하 구조 정확도를 높여 블러리 아티팩트 감소
+- Tracking Pose Optimization은 GT 포즈보다도 PSNR\* +0.39dB 높음 (GT 어노테이션에도 노이즈가 있기 때문). 4D SH는 이동 객체의 PSNR\* 향상에 가장 큰 기여. LiDAR는 배경과 이동 객체 모두에서 성능 향상에 기여.
+- **응용(Applications)**: 명시적 표현 덕분에 차량 회전·이동·교체 등 씬 편집 가능. NSG는 전경 분리가 불가하고 MARS는 플로터가 발생하는 반면 Street Gaussians는 깨끗한 전경 차량 분리 달성. KITTI에서 시맨틱 세그멘테이션 mIoU 58.81 달성(Video K-Net GT 57.94, rendered 53.81 대비 최고).
 
-### 5.4 Applications
+- **주요 성과**: Waymo에서 PSNR 34.61, PSNR* 30.23으로 SOTA 대비 대폭 향상. 30분 내 훈련, 135 FPS 실시간 렌더링으로 NeRF 기반 대비 최대 642배 빠른 속도 달성.
 
-**씬 편집**: 명시적 표현 덕분에 차량별로 독립된 Gaussian을 직접 조작 가능
-- 차량 **회전(Rotation)**: 차량 진행 방향 변경
-- 차량 **이동(Translation)**: 차량 위치 이동
-- 차량 **교체(Swapping)**: 다른 차량 객체와 교환
+## 💡 결론 및 시사점 (Conclusion & Insights)
+Street Gaussians는 자율주행 합성 데이터 생성 파이프라인에서 NeRF 기반 방법을 대체하는 유력한 후보로, 실시간 렌더링(135 FPS)은 회귀 테스트 및 대규모 시나리오 생성에 직접 활용 가능하다. 트래커 노이즈를 학습 가능한 파라미터로 흡수해 GT 포즈보다도 좋은 결과를 얻는다는 발견은, 어노테이션 품질에 대한 통념(GT가 항상 최선)을 재고하게 만드는 실용적 인사이트다. 명시적 표현 기반의 씬 편집 능력은 코너 케이스 생성 등 시뮬레이션 활용도를 크게 넓힌다.
 
-**객체 분리(Object Decomposition)**: NSG는 전경 분리가 불가하고 MARS는 플로터가 발생하는 반면, Street Gaussians는 깨끗한 전경 차량 분리 달성
-
-**시맨틱 세그멘테이션**: KITTI 데이터셋에서 mIoU 58.81 달성 (Video K-Net GT: 57.94, rendered: 53.81 대비 최고 성능). 3D 시맨틱 융합 덕분에 그림자 등 애매한 영역에서 특히 우수
+- **한계점 및 아쉬운 점**:
+  1. 보행자와 같은 비강체(non-rigid) 동적 객체는 처리 불가하며 차량만 지원한다.
+  2. off-the-shelf 트래커에 의존하므로 트래커가 차량을 놓치면 품질이 저하된다.
+  3. per-scene 최적화 방식이라 일반화(generalizable) 3D Gaussian 방향으로의 확장이 필요하며, 새로운 장면마다 재학습이 필요하다는 점은 실제 대규모 배포에서 비용 부담이 될 수 있다.
 
 ---
 
-## 핵심 개념 정리
-
-| 개념 | 설명 |
-|------|------|
-| **Street Gaussians** | 동적 도심 씬을 배경(정적)과 차량(동적)으로 분리한 명시적 Gaussian Splatting 표현 |
-| **4D Spherical Harmonics** | SH 계수를 푸리에 변환 계수로 대체하여 시간에 따른 외관 변화를 저장 효율적으로 인코딩 |
-| **Tracking Pose Optimization** | off-the-shelf 트래커의 노이즈 있는 포즈를 학습 가능한 변환으로 보정. GT 포즈보다도 성능 향상 |
-| **Sky Cubemap** | 하늘처럼 먼 배경은 고해상도 큐브맵으로 별도 모델링. 추론 속도에 영향 없음 |
-| **LiDAR Initialization** | SfM 대신 LiDAR 포인트 클라우드로 Gaussian 초기화. 텍스처 없는 넓은 도로 영역에서 특히 효과적 |
-| **$\mathcal{L}_{reg}$** | 전경 Gaussian의 알파값을 0/1로 수렴시키는 엔트로피 정규화. 플로터 제거에 핵심 |
-| **PSNR\*** | 이동 객체 영역 마스크 내에서만 계산한 PSNR. 동적 객체 재구성 품질의 핵심 지표 |
-
----
-
-## 결론 및 시사점
-
-Street Gaussians는 동적 도심 장면 모델링에서 다음을 달성합니다:
-
-1. **품질**: Waymo 기준 PSNR 34.61, PSNR\* 30.23으로 기존 SOTA 대비 대폭 향상
-2. **속도**: 30분 내 훈련 완료, 1066×1600에서 135 FPS 실시간 렌더링
-3. **동적 객체 품질**: 4D SH + Tracking Pose Optimization으로 이동 차량의 외관을 정확하게 재구성
-4. **씬 편집**: 명시적 표현 덕분에 차량 회전·이동·교체 등 씬 편집이 자연스럽게 지원
-
-**한계**:
-1. 보행자와 같은 비강체(non-rigid) 동적 객체는 처리 불가 (차량만 지원)
-2. off-the-shelf 트래커에 의존하므로 차량 누락 시 품질 저하
-3. per-scene 최적화 방식이라 일반화(generalizable) 3D Gaussian 방향으로의 확장이 필요
-
-**실무적 시사점**: 자율주행 합성 데이터 생성 파이프라인에서 NeRF 기반 방법을 대체하는 유력한 후보. 특히 실시간 렌더링(135 FPS)은 회귀 테스트 및 대규모 시나리오 생성에 직접 활용 가능. 트래커 품질에 크게 의존하므로 LiDAR 기반 3D MOT와 결합하는 것이 실용적.
-
-
----
-
-*관련 논문: [3D Gaussian Splatting](/posts/papers/3d-gaussian-splatting/), [4D Gaussian Splatting](/posts/papers/4d-gaussian-splatting/), [DrivingGaussian](/posts/papers/driving-gaussian-composite-gaussian-splatting/), [OmniRe](/posts/papers/omnire-omni-urban-scene-reconstruction/), [EmerNeRF](/posts/papers/EmerNeRF/), [HUGSIM](/posts/papers/hugsim-real-time-photorealistic-closed-loop-simulator/)*
+*관련 논문: [3D Gaussian Splatting](/posts/papers/3d-gaussian-splatting/), [4D Gaussian Splatting](/posts/papers/4d-gaussian-splatting/), [DrivingGaussian](/posts/papers/driving-gaussian-composite-gaussian-splatting/), [OmniRe](/posts/papers/omnire-omni-urban-scene-reconstruction/), [HUGSIM](/posts/papers/hugsim-real-time-photorealistic-closed-loop-simulator/)*

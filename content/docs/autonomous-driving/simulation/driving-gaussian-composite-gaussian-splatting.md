@@ -11,32 +11,34 @@ references:
   - "nuscenes-multimodal-dataset-autonomous-driving"
 ---
 
-## 개요
+## 💡 한 줄 요약
+DrivingGaussian은 정적 배경을 점진적으로 쌓아가는 Incremental Static 3D Gaussians와 동적 객체를 그래프로 관리하는 Composite Dynamic Gaussian Graph를 결합해, 자율주행 서라운드 뷰(멀티카메라) 동적 장면을 nuScenes 기준 PSNR 28.74로 기존 최고 대비 2dB 이상 향상시키며 재구성한다.
 
-- **저자**: Xiaoyu Zhou, Zhiwei Lin, Xiaojun Shan, Yongtao Wang, Deqing Sun, Ming-Hsuan Yang
-- **소속**: Wangxuan Institute of Computer Technology, Peking University; Google Research; University of California, Merced
-- **발행년도**: 2024 (arXiv:2312.07920v3, 20 Mar 2024)
-- **주요 내용**: 자율주행 주변 동적 장면을 효율적으로 재구성하기 위해 Composite Gaussian Splatting 프레임워크(DrivingGaussian)를 제안. 정적 배경은 Incremental Static 3D Gaussians으로, 동적 객체는 Composite Dynamic Gaussian Graph로 각각 모델링한 후 결합하여 고품질 서라운드 뷰 합성을 달성
+## 📌 개요 및 핵심 기여 (Key Contributions)
+- **저자**: Xiaoyu Zhou, Zhiwei Lin, Xiaojun Shan, Yongtao Wang, Deqing Sun, Ming-Hsuan Yang (Peking University, Google Research, UC Merced)
+- **발행년도**: 2024 (arXiv:2312.07920v3)
+- **주요 기여점**:
+  1. 정적 배경을 LiDAR 깊이 범위 기준 N개 bin으로 나눠 점진적으로 재구성하는 Incremental Static 3D Gaussians 제안
+  2. 여러 동적 객체를 그래프 구조로 개별 모델링 후 통합하는 Composite Dynamic Gaussian Graph 제안
+  3. LiDAR 포인트를 SfM 대신 Gaussian 초기화 프라이어로 활용하고 멀티카메라 Bundle Adjustment로 정밀도 향상
+  4. 재구성된 Gaussian 필드에 임의 객체를 삽입하는 코너 케이스 시뮬레이션 지원으로 안전 검증까지 확장
 
-## 목차
+## 🎯 관련 연구 흐름 및 기존 한계 (Related Work & Motivation)
+- **연구 흐름**: 제한된 공간의 NeRF(MipNeRF, Point-NeRF) → 대규모 무한 공간을 다루는 Unbounded NeRF(Urban-NeRF, EmerNeRF) → 빠른 명시적 렌더링을 위한 3D Gaussian Splatting(3D-GS) → 단일 객체 동적 확장(HexPlane, D-NeRF) 순으로 발전해 왔으나, 멀티카메라 서라운드 뷰의 자율주행 동적 장면 전용 확장은 부재했다.
+- **기존 한계점**:
+  1. 멀티카메라 환경에서 다양한 조명 변화 및 뷰 차이에 취약 (NeRF의 ray sampling 의존성)
+  2. LiDAR를 보조 깊이 감독으로만 활용하고 기하학적 프라이어로는 미활용
+  3. 정적 장면 가정으로 빠르게 움직이는 동적 객체 표현 불가
+- **이 논문의 접근 방식**: 정적 배경은 Incremental Static 3D Gaussians로 점진적·순차적으로, 동적 객체는 Composite Dynamic Gaussian Graph로 개별 재구성한 뒤 결합하며, LiDAR를 Gaussian 초기화의 기하학적 프라이어로 적극 활용한다.
 
-1. Introduction
-2. Related Work
-3. Method
-   - 3.1 Composite Gaussian Splatting
-   - 3.2 LiDAR Prior with surrounding views
-   - 3.3 Global Rendering via Gaussian Splatting
-4. Experiments
-   - 4.1 Datasets
-   - 4.2 Implementation Details
-   - 4.3 Results and Comparisons
-   - 4.4 Ablation Study
-   - 4.5 Corner Case Simulation
-5. Conclusion
+## 📑 목차
+- Chapter 1: Introduction
+- Chapter 2: Related Work
+- Chapter 3: Method (Composite Gaussian Splatting, LiDAR Prior, Global Rendering)
+- Chapter 4: Experiments
+- Chapter 5: Conclusion
 
----
-
-## 1. Introduction
+## 🛠️ Chapter 1: Introduction
 
 **요약**
 
@@ -56,13 +58,11 @@ DrivingGaussian은 이 문제를 해결하기 위해 Composite Gaussian Splattin
 - **Composite Gaussian Splatting**: 정적 배경과 동적 객체를 각각 독립적으로 Gaussian으로 모델링한 후 합성하는 방식
 - **NeRF 기반 방법의 한계**: Ray sampling에 의존해 멀티카메라 환경에서 품질 저하 발생
 
----
-
-## 2. Related Work
+## 🛠️ Chapter 2: Related Work
 
 **요약**
 
-기존 방법들을 크게 세 범주로 정리합니다:
+기존 방법들을 크게 세 범주로 정리합니다.
 
 **NeRF for Bounded Scenes**: MipNeRF, Point-NeRF 등은 제한된 공간에서 좋은 성능을 보이지만 자율주행의 대규모 무한 공간에는 적용 어려움.
 
@@ -78,9 +78,7 @@ DrivingGaussian은 이 문제를 해결하기 위해 Composite Gaussian Splattin
 - **미분가능 렌더링(Differentiable Rendering)**: 렌더링 과정 자체를 미분 가능하게 만들어 역전파로 Gaussian 파라미터를 최적화
 - **SfM (Structure-from-Motion)**: 여러 이미지에서 카메라 포즈와 희소 3D 포인트 클라우드를 동시에 추정하는 기법
 
----
-
-## 3. Method
+## 🛠️ Chapter 3: Method
 
 ### 3.1 Composite Gaussian Splatting
 
@@ -96,6 +94,8 @@ DrivingGaussian의 핵심 구조는 두 컴포넌트로 구성됩니다.
 - 첫 번째 bin은 LiDAR prior로 Gaussian 모델 초기화 (식 1)
 - 이후 bin들은 이전 bin의 Gaussian을 포지션 프라이어로 활용 (식 2)
 - 멀티카메라 이미지의 겹치는 영역을 공동 정렬에 활용
+
+**수식 예제**
 
 $$p_{b_0}(l|\mu, \Sigma) = e^{-\frac{1}{2}(l-\mu)^\top \Sigma^{-1}(l-\mu)}$$
 
@@ -179,8 +179,6 @@ $$G_{comp} = \sum H \langle O, G_d, M, P, A, T \rangle + G_s$$
 - **$G_s$**: Incremental Static 3D Gaussians (정적 배경)
 - **$\sum H$**: 그래프의 모든 동적 객체 Gaussian
 
----
-
 ### 3.2 LiDAR Prior with surrounding views
 
 **요약**
@@ -190,7 +188,7 @@ $$G_{comp} = \sum H \langle O, G_d, M, P, A, T \rangle + G_s$$
 1. 여러 LiDAR 스윕을 합쳐 완전한 포인트 클라우드 $L$ 생성
 2. 각 LiDAR 포인트를 카메라 이미지로 투영하여 색상 할당
 
-LiDAR 포인트 → 이미지 투영:
+**수식 예제**
 
 $$x_p^q = K[R_t^q \cdot l_s + T_t^q]$$
 
@@ -209,15 +207,13 @@ $$x_p^q = K[R_t^q \cdot l_s + T_t^q]$$
 - **Bundle Adjustment**: 카메라 포즈와 3D 포인트를 동시에 최적화하는 기법. 멀티카메라로 확장하면 모든 카메라의 일관성 보장 가능
 - **멀티카메라 일관성**: 여러 카메라가 겹치는 영역에서 동일한 3D 구조가 일관되게 나타나야 함
 
----
-
 ### 3.3 Global Rendering via Gaussian Splatting
 
 **요약**
 
 복합 Gaussian 필드 $G_{comp}$를 2D 이미지로 렌더링합니다.
 
-2D 공분산 행렬 투영:
+**수식 예제**
 
 $$\tilde{\Sigma} = JE\Sigma E^\top J^\top$$
 
@@ -259,88 +255,21 @@ $$L_{LiDAR}(\delta) = \frac{1}{S} \sum \|P(G_{comp}) - L_s\|^2$$
 - **$L_s$**: LiDAR 포인트 위치
 - **직관**: Gaussian 위치가 실제 LiDAR 측정값과 가까워지도록 강제하여 정확한 기하 구조 유지
 
----
+## 📊 주요 실험 및 결과 (Experiments & Results)
+- **사용 데이터셋 / 벤치마크**: nuScenes(1000개 드라이빙 씬, 6카메라 + 1 LiDAR, 23개 객체 클래스, 6개 도전적 씬의 키프레임 320K+ 이미지·포인트 클라우드 사용), KITTI-360(멀티센서 데이터셋, 단안 카메라 씬 검증)
+- **주요 성과**:
+  - nuScenes: EmerNeRF(PSNR 26.75), 3D-GS(26.08) 대비 Ours-L이 **PSNR 28.74, SSIM 0.865, LPIPS 0.237**로 최고 성능 (기존 최고 대비 PSNR 약 2dB 이상 향상)
+  - KITTI-360: DNMP(PSNR 23.41) 대비 Ours-L **PSNR 25.62**
+  - Ablation: LiDAR-2M 초기화(PSNR 28.78)가 랜덤 초기화(22.18), SfM 초기화(28.51) 대비 최고. Composite Dynamic Gaussian Graph(CDGG) 제거 시 PSNR 26.97로 급락해 동적 객체 처리 모듈의 기여도가 큼을 확인
+  - 코너 케이스 시뮬레이션: 재구성된 Gaussian 필드에 임의 객체를 삽입해 보행자 낙상, 차량 근접 등 시간적·센서 간 일관성을 유지한 안전 검증 시나리오 생성 가능
 
-## 4. Experiments
+## 💡 결론 및 시사점 (Conclusion & Insights)
+DrivingGaussian은 NeRF 기반 방법 대신 Gaussian Splatting 기반 복합 표현을 채택하면 자율주행 서라운드 뷰 합성에서 렌더링 속도와 품질을 모두 향상시킬 수 있음을 보여준다. 특히 LiDAR를 단순 깊이 감독이 아닌 Gaussian 초기화 프라이어로 활용하는 방식이 멀티카메라 일관성 문제 해결에 효과적이다. 정적/동적 분리 모델링 구조는 이후 Street Gaussians, OmniRe 등 후속 연구의 공통 설계 패턴으로 자리잡았다.
 
-### 4.1 데이터셋
-
-- **nuScenes**: 1000개 드라이빙 씬, 6카메라 + 1 LiDAR, 23개 객체 클래스. 6개 도전적 씬의 키프레임(총 320K+ 이미지·포인트 클라우드)을 사용
-- **KITTI-360**: 멀티센서 데이터셋, 단안 카메라 씬 검증에 활용
-
-### 4.2 주요 결과
-
-**nuScenes 벤치마크 (Table 1)**:
-
-| Methods | Input | PSNR↑ | SSIM↑ | LPIPS↓ |
-|---------|-------|-------|-------|--------|
-| EmerNeRF | Images + LiDAR | 26.75 | 0.760 | 0.311 |
-| 3D-GS | Images + SfM Points | 26.08 | 0.717 | 0.298 |
-| **Ours-S** | Images + SfM Points | **28.36** | **0.851** | **0.256** |
-| **Ours-L** | Images + LiDAR | **28.74** | **0.865** | **0.237** |
-
-- Ours-S: SfM 초기화, Ours-L: LiDAR prior 사용
-- 기존 최고 성능 대비 PSNR 약 2dB 이상 향상
-
-**KITTI-360 벤치마크 (Table 2)**:
-
-| Methods | PSNR↑ | SSIM↑ |
-|---------|-------|-------|
-| DNMP | 23.41 | 0.846 |
-| **Ours-S** | **25.18** | **0.862** |
-| **Ours-L** | **25.62** | **0.868** |
-
-### 4.3 Ablation Study
-
-**초기화 방법 비교 (Table 3)**:
-- 랜덤 초기화(Random): PSNR 22.18, SSIM 0.653 — 기하 프라이어 없이 최악
-- SfM 초기화(NeRF-1M): PSNR 28.51, SSIM 0.858 — 합리적인 기준점
-- **LiDAR-2M**: PSNR **28.78**, SSIM **0.867** — 최고 성능, 기하 구조 가장 정확
-
-**모듈별 기여도 (Table 4)**:
-- Composite Dynamic Gaussian Graph(CDGG) 제거 시: PSNR 26.97 → 재구성 품질 큰 하락
-- $L_{TSSIM}$ 제거 시: PSNR 27.88 → 세부 텍스처 손실
-- $L_{Robust}$ 제거 시: PSNR 28.05 → 이상치로 인한 품질 저하
-- $L_{LiDAR}$ 제거 시: PSNR 28.45 → 기하 정확도 감소
-
----
-
-## 4.5 Corner Case Simulation
-
-DrivingGaussian은 재구성된 Gaussian 필드에 임의 객체를 삽입하여 **코너 케이스 시뮬레이션**을 지원합니다:
-- 예: 보행자가 갑자기 넘어지거나, 차량이 앞으로 접근하는 상황
-- 시간적 일관성과 센서 간 일관성(멀티카메라)을 유지
-- 자율주행 안전 검증을 위한 controllable simulation 가능
-
----
-
-## 핵심 개념 정리
-
-| 개념 | 설명 |
-|------|------|
-| **Composite Gaussian Splatting** | 정적 배경(Incremental Static 3D Gaussians)과 동적 객체(Composite Dynamic Gaussian Graph)를 분리 모델링 후 합성 |
-| **Incremental Static 3D Gaussians** | LiDAR 깊이 범위로 씬을 N개 bin으로 나눠 순차적으로 Gaussian을 구성. 시간적 이웃 관계 활용 |
-| **Composite Dynamic Gaussian Graph** | 각 동적 객체를 그래프 노드로 표현. 객체별 로컬 좌표계에서 독립 모델링 후 월드 좌표로 변환 |
-| **LiDAR Prior** | SfM 대신 LiDAR 포인트를 Gaussian 초기화에 사용. 멀티카메라 Bundle Adjustment로 정확도 추가 향상 |
-| **Tile SSIM Loss** | 이미지를 타일로 분할하여 구조적 유사도를 국소적으로 측정, Gaussian의 세부 텍스처 학습 강화 |
-| **Robust Loss** | Gaussian 이상치 억제를 위한 강인한 손실 함수 |
-| **LiDAR Loss** | Gaussian 위치가 LiDAR 포인트에 근접하도록 강제하는 기하 감독 |
-| **Grounded SAM** | 바운딩 박스로부터 픽셀 수준의 동적 객체 마스크를 생성하는 데 활용 |
-
----
-
-## 결론 및 시사점
-
-DrivingGaussian은 자율주행 씬 재구성에서 다음을 달성합니다:
-
-1. **품질**: nuScenes에서 PSNR 28.74 달성, 기존 최고 대비 약 2dB 이상 향상
-2. **멀티카메라 일관성**: 6방향 서라운드 뷰를 동시에 고품질로 합성
-3. **동적 객체 처리**: 빠르게 움직이는 차량, 보행자를 고스팅·블러링 없이 정확히 재구성
-4. **LiDAR 활용**: 깊이 프라이어로만 쓰던 LiDAR를 Gaussian 초기화에 적극 활용
-5. **확장성**: 코너 케이스 시뮬레이션으로 안전 검증까지 지원
-
-**실무적 시사점**: 자율주행 시뮬레이터 구축 시 NeRF 기반 방법 대신 Gaussian Splatting 기반 복합 표현을 채택하면 렌더링 속도와 품질 모두 향상 가능. 특히 LiDAR-카메라 융합 방식이 멀티카메라 일관성 문제 해결에 효과적.
-
+- **한계점 및 아쉬운 점**:
+  1. 동적 객체 모델링이 주로 차량 등 강체(rigid) 위주로 설명되며, 보행자 같은 비강체 객체에 대한 처리는 상대적으로 深이 얕다.
+  2. Incremental Static Gaussian의 bin 개수 $N$ 선택 기준이나 민감도에 대한 분석이 부족해 실제 적용 시 하이퍼파라미터 튜닝 부담이 있을 수 있다.
+  3. 실시간 렌더링 속도(FPS)에 대한 정량적 수치가 본문에 제시되지 않아, Street Gaussians·HUGSIM 등과의 직접적인 속도 비교가 어렵다.
 
 ---
 

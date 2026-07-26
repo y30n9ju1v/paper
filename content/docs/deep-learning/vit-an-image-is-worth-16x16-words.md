@@ -10,32 +10,32 @@ references:
   - "attention-is-all-you-need"
 ---
 
-## 개요
+## 💡 한 줄 요약
+CNN 없이 표준 Transformer만으로 이미지를 16×16 패치 시퀀스로 처리하여, 대규모 데이터(JFT-300M)로 사전학습하면 CNN 기반 SOTA를 능가하면서도 사전학습 비용을 크게 절감할 수 있음을 보였다.
 
+## 📌 개요 및 핵심 기여 (Key Contributions)
 - **저자**: Alexey Dosovitskiy, Lucas Beyer, Alexander Kolesnikov, Dirk Weissenborn, Xiaohua Zhai, Thomas Unterthiner, Mostafa Dehghani, Matthias Minderer, Georg Heigold, Sylvain Gelly, Jakob Uszkoreit, Neil Houlsby (Google Brain)
 - **발행년도**: 2021 (ICLR 2021)
-- **주요 내용**: CNN 없이 순수 Transformer만으로 이미지를 16×16 패치 시퀀스로 처리하여 대규모 사전학습 후 이미지 분류 SOTA 달성
+- **주요 기여점**:
+  1. 이미지를 고정 크기 패치로 분할해 NLP 토큰처럼 취급, CNN 구조 없이 표준 Transformer Encoder를 그대로 적용하는 아키텍처(ViT) 제안
+  2. 대규모 데이터(JFT-300M)로 사전학습 시 CNN 고유의 귀납적 편향 없이도 CNN 기반 SOTA(BiT-L, Noisy Student)를 능가함을 실증
+  3. 동일 성능 기준 ViT가 ResNet 대비 2~4배 적은 사전학습 연산으로 도달 가능함을 스케일링 실험으로 증명
+  4. Masked Patch Prediction 기반 자기지도 학습 예비 실험으로 이후 MAE/DINO 계열 연구의 가능성을 시사
 
-## 한계 극복
+## 🎯 관련 연구 흐름 및 기존 한계 (Related Work & Motivation)
+- **연구 흐름**: NLP에서 Transformer가 사실상 표준 아키텍처로 자리잡은 이후, 비전 분야에서도 Self-Attention을 적용하려는 시도가 이어졌다. 그러나 픽셀 단위로 직접 Self-Attention을 적용하면 계산 비용이 픽셀 수의 제곱에 비례하므로, 기존 연구들은 로컬 영역에만 Attention을 적용하거나 CNN 피처맵 위에 특수한 Attention 패턴을 추가하는 절충안을 택해왔다.
+- **기존 한계점**:
+  1. CNN의 귀납적 편향 의존 — 기존 비전 모델은 지역성(locality), 이동 등변성(translation equivariance) 같은 CNN 고유의 가정에 의존하며, 이는 소량 데이터에서는 유리하지만 대규모 데이터에서는 오히려 표현력을 제한한다.
+  2. Transformer의 비전 적용 시 CNN 병용 — 기존 Self-Attention 기반 비전 모델들은 CNN과 결합하거나 특수한 Attention 패턴을 사용해 하드웨어 가속기에서 효율적으로 동작하지 못했다.
+- **이 논문의 접근 방식**: 이미지를 16×16 고정 크기 패치로 분할하고 각 패치를 NLP의 토큰처럼 취급하여, 추가적인 이미지 특화 구조 없이 표준 Transformer를 그대로 사용한다. 대규모 데이터셋으로 사전학습 후 소규모 벤치마크에 파인튜닝한다.
 
-- **기존 한계 1 — CNN의 귀납적 편향 의존**: 기존 비전 모델은 지역성(locality), 이동 등변성(translation equivariance) 같은 CNN 고유의 귀납적 편향에 의존. 이는 데이터가 적을 때 유리하지만 대규모 데이터에서는 오히려 표현력을 제한.
-- **기존 한계 2 — Transformer의 비전 적용 시 CNN 병용**: 기존 Self-Attention 기반 비전 모델들은 CNN과 결합하거나 특수한 Attention 패턴을 사용해 하드웨어 가속기에서 효율적으로 동작하지 못했음.
-- **이 논문의 접근 방식**: 이미지를 고정 크기 패치로 분할하고 각 패치를 NLP의 토큰처럼 취급. CNN 구조 없이 표준 Transformer Encoder를 그대로 적용. 대규모 데이터(JFT-300M)로 사전학습 시 귀납적 편향 없이도 CNN을 능가.
+## 📑 목차
+- Chapter 1-2: Introduction & Related Work
+- Chapter 3: Method — Vision Transformer (ViT)
+- Chapter 4: Experiments
+- Chapter 5: Conclusion (Appendix A: Multihead Self-Attention, Appendix B/D 포함)
 
-## 목차
-
-- Section 1: Introduction
-- Section 2: Related Work
-- Section 3: Method — Vision Transformer (ViT)
-- Section 4: Experiments
-- Section 5: Conclusion
-- Appendix A: Multihead Self-Attention
-- Appendix B: Experiment Details
-- Appendix D: Additional Analyses
-
----
-
-## Section 1-2: Introduction & Related Work
+## 🛠️ Chapter 1-2: Introduction & Related Work
 
 **요약**
 
@@ -48,15 +48,15 @@ NLP에서 Transformer는 사실상 표준 아키텍처가 되었지만, 비전�
 - **귀납적 편향 (Inductive Bias)**: 모델이 학습 전부터 가지고 있는 가정. CNN은 "가까운 픽셀끼리 관련이 높다(locality)"와 "같은 패턴은 위치가 달라도 같다(translation equivariance)"를 내장. ViT는 이를 제거하여 데이터로부터 직접 학습.
 - **스케일링 법칙 (Scaling Law)**: 데이터와 모델 크기가 커질수록 성능이 지속적으로 향상되는 현상. ViT는 NLP의 스케일링 법칙이 비전에도 적용됨을 보임.
 
----
-
-## Section 3: Method — Vision Transformer (ViT)
+## 🛠️ Chapter 3: Method — Vision Transformer (ViT)
 
 **요약**
 
 ViT의 핵심 아이디어는 2D 이미지를 1D 패치 시퀀스로 변환하는 것입니다. 이후 처리는 표준 Transformer Encoder와 동일합니다.
 
 ### 3.1 패치 임베딩
+
+**수식 예제**
 
 $$\mathbf{z}_0 = [\mathbf{x}_{class};\, \mathbf{x}_p^1\mathbf{E};\, \mathbf{x}_p^2\mathbf{E};\, \cdots;\, \mathbf{x}_p^N\mathbf{E}] + \mathbf{E}_{pos}$$
 
@@ -70,6 +70,8 @@ $$\mathbf{z}_0 = [\mathbf{x}_{class};\, \mathbf{x}_p^1\mathbf{E};\, \mathbf{x}_p
 - **$N = HW/P^2$**: 총 패치 수. 예: 224×224 이미지를 16×16 패치로 나누면 $N = 196$.
 
 ### 3.2 Transformer Encoder 순전파
+
+**수식 예제**
 
 $$\mathbf{z}'_\ell = \text{MSA}(\text{LN}(\mathbf{z}_{\ell-1})) + \mathbf{z}_{\ell-1}, \quad \ell = 1 \ldots L$$
 
@@ -86,6 +88,8 @@ $$\mathbf{y} = \text{LN}(\mathbf{z}_L^0)$$
 - **$\mathbf{z}_L^0$**: $L$번째 레이어의 `[class]` 토큰 출력. 이것이 최종 이미지 표현 $\mathbf{y}$가 됨.
 
 ### 3.3 Multihead Self-Attention (Appendix A)
+
+**수식 예제**
 
 $$[\mathbf{q}, \mathbf{k}, \mathbf{v}] = \mathbf{z}\mathbf{U}_{qkv}, \quad \mathbf{U}_{qkv} \in \mathbb{R}^{D \times 3D_h}$$
 
@@ -109,15 +113,11 @@ $$\text{SA}(\mathbf{z}) = A\mathbf{v}$$
 - **Hybrid Architecture**: 패치 대신 CNN(ResNet)의 중간 피처맵을 입력으로 사용하는 변형. 소규모 데이터에서 순수 ViT보다 약간 유리하지만 대규모에서 차이 소멸.
 - **파인튜닝 시 해상도 조정**: 사전학습보다 높은 해상도로 파인튜닝 시, 패치 크기를 유지하면 시퀀스 길이가 늘어남. 기존 위치 임베딩을 2D 보간(interpolation)하여 적응.
 
----
+## 📊 주요 실험 및 결과 (Experiments & Results)
 
-## Section 4: Experiments
+- **사용 데이터셋 / 벤치마크**: ImageNet, ImageNet-21k, JFT-300M (사전학습), ImageNet/ImageNet ReaL/CIFAR-100/VTAB(19 tasks) (평가)
 
-**요약**
-
-ViT를 세 가지 규모(Base, Large, Huge)로 구성하고, 세 가지 데이터셋(ImageNet, ImageNet-21k, JFT-300M)으로 사전학습 후 다양한 벤치마크에서 평가합니다.
-
-### 4.1 모델 변형
+**모델 변형**
 
 | 모델 | 레이어 수 | 히든 크기 $D$ | MLP 크기 | 헤드 수 | 파라미터 수 |
 |------|---------|------------|--------|--------|-----------|
@@ -127,9 +127,7 @@ ViT를 세 가지 규모(Base, Large, Huge)로 구성하고, 세 가지 데이�
 
 표기법: ViT-L/16 = Large 모델, 패치 크기 16×16.
 
-### 4.2 State-of-the-Art 비교 결과
-
-JFT-300M으로 사전학습한 ViT-H/14는 기존 SOTA(BiT-L ResNet152x4, Noisy Student EfficientNet-L2)를 모든 벤치마크에서 능가하면서 **사전학습 비용은 약 4배 절감**:
+- **주요 성과**: JFT-300M으로 사전학습한 ViT-H/14는 기존 SOTA(BiT-L ResNet152x4, Noisy Student EfficientNet-L2)를 모든 벤치마크에서 능가하면서 **사전학습 비용은 약 4배 절감**:
 
 | 벤치마크 | ViT-H/14 (JFT) | BiT-L | Noisy Student |
 |---------|---------------|-------|--------------|
@@ -140,53 +138,26 @@ JFT-300M으로 사전학습한 ViT-H/14는 기존 SOTA(BiT-L ResNet152x4, Noisy 
 
 TPUv3-core-days: ViT-H/14 = 2.5k, BiT-L = 9.9k, Noisy Student = 12.3k.
 
-### 4.3 사전학습 데이터 요구량
+- **사전학습 데이터 요구량**:
+  - 소규모 (ImageNet 1.3M): ViT가 ResNet(BiT) 대비 몇 퍼센트 포인트 낮음. CNN의 귀납적 편향이 소량 데이터에서 유리하게 작용.
+  - 중규모 (ImageNet-21k 14M): 차이가 좁혀짐.
+  - 대규모 (JFT-300M 303M): ViT가 ResNet을 능가. 대규모 데이터가 귀납적 편향을 대체.
+- **스케일링 연구**: 같은 사전학습 연산량 기준으로 ViT는 ResNet 대비 약 2~4배 적은 연산으로 동일 성능 달성. Hybrid(CNN+ViT)는 소규모 연산 예산에서 약간 유리하지만 큰 모델에서 차이 소멸.
+- **ViT 내부 분석**: 첫 번째 레이어 필터는 CNN의 Gabor 필터와 유사한 구조를 자발적으로 학습. 위치 임베딩은 가까운 패치일수록 높은 유사도를 가지며 행-열 구조가 자연스럽게 학습됨. 낮은 레이어에서도 일부 헤드는 이미지 전체에 걸친 전역 Attention을 수행하며, 깊어질수록 평균 Attention 거리 증가.
+- **자기지도 학습 예비 실험**: Masked Patch Prediction(BERT의 MLM과 유사) 방식으로 자기지도 학습 시, ViT-B/16이 ImageNet에서 79.9% 달성. 지도학습 대비 4% 차이로, 자기지도 ViT의 가능성을 시사 (→ MAE, DINO 등으로 이어짐).
 
-- **소규모 (ImageNet 1.3M)**: ViT가 ResNet(BiT) 대비 몇 퍼센트 포인트 낮음. CNN의 귀납적 편향이 소량 데이터에서 유리하게 작용.
-- **중규모 (ImageNet-21k 14M)**: 차이가 좁혀짐.
-- **대규모 (JFT-300M 303M)**: ViT가 ResNet을 능가. **대규모 데이터가 귀납적 편향을 대체**.
-
-### 4.4 스케일링 연구
-
-같은 사전학습 연산량 기준으로 ViT는 ResNet 대비 약 **2~4배 적은 연산으로 동일 성능** 달성. Hybrid(CNN+ViT)는 소규모 연산 예산에서 약간 유리하지만 큰 모델에서 차이 소멸.
-
-### 4.5 ViT 내부 분석
-
-- **첫 번째 레이어 필터**: 저차원 주성분 분석 결과가 CNN의 Gabor 필터와 유사한 구조를 자발적으로 학습.
-- **위치 임베딩**: 가까운 패치일수록 높은 유사도를 가지며, 행-열 구조가 자연스럽게 학습됨.
-- **Attention Distance**: 낮은 레이어에서도 일부 헤드는 이미지 전체에 걸친 전역 Attention을 수행. 깊어질수록 평균 Attention 거리 증가.
-
-### 4.6 자기지도 학습 예비 실험
-
-Masked Patch Prediction(BERT의 MLM과 유사) 방식으로 자기지도 학습 시, ViT-B/16이 ImageNet에서 79.9% 달성. 지도학습 대비 4% 차이로, 자기지도 ViT의 가능성을 시사 (→ MAE, DINO 등으로 이어짐).
-
----
-
-## 핵심 개념 정리
-
-- **패치 토큰화**: 이미지를 $P \times P$ 패치로 분할 → 플래튼 → 선형 투영. NLP의 단어 임베딩과 동일한 구조.
-- **[CLS] 토큰**: 시퀀스 앞에 붙이는 학습 가능한 임베딩. 모든 패치와 Attention 후 최종 표현으로 분류에 사용.
-- **1D 위치 임베딩**: 2D 구조를 명시적으로 인코딩하지 않아도 위치 임베딩이 2D 공간 구조를 자발적으로 학습함을 실험으로 확인.
-- **대규모 사전학습의 중요성**: ViT의 핵심 전제. 충분한 데이터 없이는 CNN 귀납적 편향을 이길 수 없음. JFT-300M이 결정적 역할.
-- **전이 학습 효율**: 사전학습 후 작은 데이터셋(CIFAR, Pets 등)에 파인튜닝 시 CNN 대비 훨씬 적은 연산으로 동등 이상 성능.
-
----
-
-## 결론 및 시사점
+## 💡 결론 및 시사점 (Conclusion & Insights)
 
 ViT는 "이미지도 패치 시퀀스로 처리할 수 있다"는 단순한 아이디어가 대규모 데이터와 결합될 때 CNN을 능가할 수 있음을 증명했습니다.
 
-**자율주행·AV 인식 계보에서의 의미**:
-- BEVFormer, SurroundOcc, TPVFormer 등 대부분의 BEV 인식 논문이 ViT를 backbone으로 채택.
-- 멀티카메라 이미지를 패치 단위로 처리하는 방식이 BEV Attention과 자연스럽게 결합.
-- 카메라 피처 추출기의 표준이 ResNet에서 ViT 계열(ViT-B/16, InternImage 등)로 전환되는 계기.
-
-**한계 및 후속 연구 방향**:
-- 소규모 데이터에서 CNN 대비 열세 → DeiT (데이터 효율 개선), MAE (자기지도 사전학습)로 해결.
-- 고해상도 이미지에서 $O(N^2)$ 계산 비용 → Swin Transformer (윈도우 Attention)로 해결.
-- 탐지·분할 등 밀집 예측 태스크 미지원 → ViTDet, DINOv2 등으로 확장.
-
+- **패치 토큰화**와 **[CLS] 토큰**, **1D 위치 임베딩** 등 NLP의 개념을 그대로 비전에 이식할 수 있음을 실증적으로 보여준 최초 사례이며, 이후 전이 학습 효율(사전학습 후 CIFAR, Pets 등 소규모 데이터셋 파인튜닝 시 CNN 대비 훨씬 적은 연산으로 동등 이상 성능)을 확보했다는 점에서 실무적 가치가 크다.
+- **자율주행·AV 인식 계보에서의 의미**: BEVFormer, SurroundOcc, TPVFormer 등 대부분의 BEV 인식 논문이 ViT를 backbone으로 채택했으며, 멀티카메라 이미지를 패치 단위로 처리하는 방식이 BEV Attention과 자연스럽게 결합되었다. 카메라 피처 추출기의 표준이 ResNet에서 ViT 계열(ViT-B/16, InternImage 등)로 전환되는 계기가 되었다.
+- **한계점 및 아쉬운 점**:
+  - 소규모 데이터에서 CNN 대비 열세 — DeiT(데이터 효율 개선), MAE(자기지도 사전학습)로 해결됨
+  - 고해상도 이미지에서 $O(N^2)$ 계산 비용 — Swin Transformer(윈도우 Attention)로 해결됨
+  - 탐지·분할 등 밀집 예측 태스크 미지원 — ViTDet, DINOv2 등으로 확장됨
+  - JFT-300M과 같은 비공개 초대규모 데이터셋에 의존한다는 점은 재현성·접근성 측면에서 아쉬운 부분
 
 ---
 
-*관련 논문: [Attention Is All You Need](/posts/papers/attention-is-all-you-need/), [ResNet](/posts/papers/resnet-deep-residual-learning-for-image-recognition/), [DETR](/posts/papers/detr-end-to-end-object-detection-with-transformers/), [BEVFormer](/posts/papers/BEVFormer/), [EmerNeRF](/posts/papers/EmerNeRF/)*
+*관련 논문: [Attention Is All You Need](/posts/papers/attention-is-all-you-need/), [ResNet](/posts/papers/resnet-deep-residual-learning-for-image-recognition/), [DETR](/posts/papers/detr-end-to-end-object-detection-with-transformers/), [BEVFormer](/posts/papers/BEVFormer/)*

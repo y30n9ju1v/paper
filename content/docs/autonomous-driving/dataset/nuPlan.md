@@ -9,24 +9,33 @@ references:
   - "nuscenes-multimodal-dataset-autonomous-driving"
 ---
 
-## 개요
+## 💡 한 줄 요약
+자율주행 ML 기반 계획(planning) 연구를 위한 세계 최초의 클로즈드루프 벤치마크로, 4개 도시에서 수집한 1500시간 실제 주행 데이터와 반응형 시뮬레이터를 결합해 기존 예측 중심 벤치마크의 한계를 극복했다.
 
-- **저자**: Holger Caesar, Juraj Kabzan, Kok Seang Tan, Whye Kit Fong, Eric Wolff, Alex Lang, Luke Fletcher, Oscar Beijbom, Sammy Omari
-- **소속**: Motional
+## 📌 개요 및 핵심 기여 (Key Contributions)
+- **저자**: Holger Caesar, Juraj Kabzan, Kok Seang Tan, Whye Kit Fong, Eric Wolff, Alex Lang, Luke Fletcher, Oscar Beijbom, Sammy Omari (Motional)
 - **발행년도**: 2022 (arXiv:2106.11810, NeurIPS 2021 Dataset & Benchmarks)
-- **주요 내용**: 자율주행 ML 기반 계획(planning)을 위한 **세계 최초의 클로즈드루프 벤치마크** nuPlan을 제안. 4개 도시(보스턴, 피츠버그, 라스베이거스, 싱가포르)에서 수집한 1500시간 실제 주행 데이터와 반응형 시뮬레이터를 결합하여, 기존 예측(prediction) 중심 벤치마크의 한계를 극복. NAVSIM의 직접적인 데이터 기반이 되는 핵심 인프라 논문.
+- **주요 기여점**:
+  1. 4개 도시(보스턴, 피츠버그, 라스베이거스, 싱가포르)에서 수집한 1500시간 실제 주행 데이터셋 공개
+  2. 반응형(reactive) 에이전트를 포함한 세계 최초의 클로즈드루프 계획 벤치마크 제공
+  3. 교통 법규 위반, 인간 주행 유사도, 차량 동역학, 목표 달성 등 계획 특화 지표(CLS)를 정의
+  4. 오픈루프/비반응형 클로즈드루프/반응형 클로즈드루프 세 가지 난이도의 태스크와 평가 서버 챌린지 제공
 
-## 목차
+## 🎯 관련 연구 흐름 및 기존 한계 (Related Work & Motivation)
+- **연구 흐름**: 예측 데이터셋으로는 Argoverse, nuScenes, Waymo Open Motion Dataset 등이 있었지만 모두 단기 예측(3~8초) 중심이며 오픈루프 평가만 지원했다. 시뮬레이터 측면에서는 CARLA(그래픽 렌더링 기반, 도메인 갭 존재), AirSim(고품질 시각 시뮬레이션) 등이 있었으나 실제 데이터 기반으로 도메인 갭을 최소화한 클로즈드루프 시뮬레이터는 부재했다. ML 기반 계획 연구로는 ChauffeurNet(모방 학습), MP3(라이다 기반 맵리스 계획) 등 다양한 접근이 있었으나 공통 벤치마크가 없어 비교가 어려웠다.
+- **기존 한계점**:
+  1. 목표 모호성 — 교차로에서 좌회전/우회전 모두 유효하지만 데이터에는 하나의 선택만 있어, L2 거리로 평가하면 다른 선택지는 무조건 나쁜 것으로 평가된다.
+  2. 다중 모달 무시 — 즉시 합류하거나 나중에 합류하는 것 모두 안전하지만, L2 메트릭은 이를 구분하지 못한다.
+  3. 에이전트 상호작용 부재 — 차선 변경 결정은 주변 모든 차량의 연속적 행동을 고려해야 하지만, 오픈루프에서는 상호작용이 없다.
+- **이 논문의 접근 방식**: 대규모 실제 주행 데이터셋(1500시간, 4개 도시)에 반응형 에이전트를 포함한 클로즈드루프 시뮬레이터를 결합하고, 교통 법규 위반·인간 주행 유사도·차량 동역학·목표 달성 등 계획 특화 지표를 함께 제공한다.
 
+## 📑 목차
 - Chapter 1: Introduction — 기존 예측 벤치마크의 한계와 계획 벤치마크의 필요성
 - Chapter 2: Related Work — 기존 데이터셋, 시뮬레이터, ML 기반 계획 연구 정리
 - Chapter 3: Dataset — 대규모 실제 주행 데이터 구성
 - Chapter 4: Benchmarks — 태스크 정의, 평가 지표, 벤치마크 챌린지
-- Chapter 5: Conclusion
 
----
-
-## Chapter 1: Introduction
+## 🛠️ Chapter 1: Introduction
 
 **요약**
 
@@ -51,9 +60,7 @@ references:
 - **오픈루프 vs 클로즈드루프**: 오픈루프는 고정된 데이터로 평가하여 에이전트 행동이 환경에 영향 없음. 클로즈드루프는 시뮬레이터에서 자차 행동이 다른 에이전트에 반응을 유발
 - **분포 이탈(Distribution Shift)**: 오픈루프 평가에서 좋은 성능을 내도 실제 주행에서는 오류가 누적되어 좋지 않은 결과를 낼 수 있는 현상
 
----
-
-## Chapter 2: Related Work
+## 🛠️ Chapter 2: Related Work
 
 **요약**
 
@@ -63,9 +70,7 @@ references:
 
 **ML 기반 계획**: ChauffeurNet(모방 학습), MP3(라이다 기반 맵리스 계획), 다양한 멀티모달 접근 등이 있으나 공통 벤치마크 부재로 비교 어려움. nuPlan이 이 공백을 채움.
 
----
-
-## Chapter 3: Dataset
+## 🛠️ Chapter 3: Dataset
 
 **요약**
 
@@ -90,9 +95,7 @@ PointPillars + CenterPoint, 멀티뷰 퓨전(MVF++)을 사용하여 오프라인
 
 이 태그는 시나리오 기반 평가 지표 계산에 활용된다.
 
----
-
-## Chapter 4: Benchmarks
+## 🛠️ Chapter 4: Benchmarks
 
 **요약**
 
@@ -138,9 +141,12 @@ PointPillars + CenterPoint, 멀티뷰 퓨전(MVF++)을 사용하여 오프라인
 
 nuPlan의 클로즈드루프 점수는 위 지표들을 가중 결합하여 계산한다:
 
+**수식 예제**
+
 $$\text{CLS} = \frac{1}{N} \sum_{i=1}^{N} \left( \prod_{m \in \text{penalties}} s_m^{(i)} \right) \times \left( \sum_{k \in \text{weighted}} w_k \cdot s_k^{(i)} \right)$$
 
-**수식 설명**:
+**수식 설명**
+
 - **$N$**: 전체 평가 시나리오 수
 - **$s_m^{(i)}$**: i번째 시나리오에서 패널티 지표 $m$의 점수 (충돌 시 0 또는 감점 곱)
 - **$w_k$**: 가중 평균 지표 $k$의 가중치
@@ -151,23 +157,12 @@ $$\text{CLS} = \frac{1}{N} \sum_{i=1}^{N} \left( \prod_{m \in \text{penalties}} 
 
 평가 서버에 플래너 코드를 제출하면 비공개 테스트 셋에서 자동으로 클로즈드루프 평가가 수행된다. NeurIPS 2021에서 데이터셋 공개 및 첫 챌린지 개최.
 
----
+## 📊 주요 실험 및 결과 (Experiments & Results)
 
-## 핵심 개념 정리
+- **사용 데이터셋 / 벤치마크**: nuPlan 1500시간 실주행 데이터 (보스턴, 피츠버그, 라스베이거스, 싱가포르), OpenScene 축소 재배포본(2TB→450GB)
+- **주요 성과**: 오픈루프·비반응형 클로즈드루프·반응형 클로즈드루프 세 태스크 체계와 CLS 지표를 통해 규칙 기반 플래너(PDM-Closed 등)와 ML 기반 플래너를 공통 기준으로 비교할 수 있는 최초의 인프라를 확립. 이 CLS 구조는 이후 NAVSIM의 PDMS 점수로 직접 계승되었다.
 
-| 개념 | 설명 |
-|------|------|
-| **클로즈드루프 평가** | 플래너가 실제로 차량을 제어하며 환경과 상호작용. 오류가 누적되는 현실과 가장 유사한 평가 방식 |
-| **반응형 vs 비반응형** | 반응형: 다른 차량이 자차 행동에 반응. 비반응형: 다른 차량은 기록된 궤적만 재현 (NAVSIM이 후자 채택) |
-| **목표 모호성** | 교차로에서 여러 경로가 모두 유효할 때, 인간이 선택한 경로만 정답으로 삼는 것의 한계 |
-| **시나리오 기반 지표** | 특정 상황(차선 변경, 보행자 교차 등)에 특화된 평가 지표. 일반 지표로 놓치는 세부 능력 평가 |
-| **자동 레이블링** | 오프라인 인식 시스템으로 대규모 데이터를 고품질로 자동 주석 처리. 인간 레이블러 없이 1500시간 데이터 구축 가능 |
-| **IDM (Intelligent Driver Model)** | 앞차와의 간격, 속도를 수식으로 모델링한 고전적 차량 추종 모델. 반응형 시뮬레이션에서 배경 차량 행동에 사용 |
-| **분포 이탈 (Distribution Shift)** | 학습 데이터와 다른 상황에 처했을 때 성능이 급격히 떨어지는 현상. 클로즈드루프 평가가 이를 드러냄 |
-
----
-
-## 결론 및 시사점
+## 💡 결론 및 시사점 (Conclusion & Insights)
 
 nuPlan은 자율주행 ML 계획 연구에 필요한 세 가지를 한꺼번에 제공한다:
 
@@ -175,17 +170,12 @@ nuPlan은 자율주행 ML 계획 연구에 필요한 세 가지를 한꺼번에 
 2. **클로즈드루프 평가**: 오픈루프의 분포 이탈 문제 극복. 반응형/비반응형 두 설정 모두 지원
 3. **계획 특화 지표**: 교통 법규, 편안함, 목표 달성, 시나리오별 지표 → 예측 지표(ADE/FDE)의 한계 극복
 
-**후속 영향**:
-- **NAVSIM**이 nuPlan의 OpenScene 데이터를 재배포하고 CLS 구조를 계승한 PDMS를 정의함
-- **PDM-Closed** 등 nuPlan 전용 규칙 기반 플래너들이 개발되어 ML 방법의 baseline이 됨
-- UniAD, VAD 등 E2E 방법들이 nuPlan에서의 평가를 추가하여 계획 능력을 검증
-
-**한계**:
-- 비반응형 설정에서 대부분의 개입이 단순 충돌로 나타나 장기 상호작용 평가 어려움
-- 200+ TB 전체 데이터셋 사용이 현실적으로 어려움 → OpenScene(2TB→450GB)으로 축소 재배포
-- 초기 지표 정의가 커뮤니티 피드백을 반영한 개선 필요 (이후 nuPlan 1.1, 1.2 등으로 업데이트)
-
+- **후속 영향**: NAVSIM이 nuPlan의 OpenScene 데이터를 재배포하고 CLS 구조를 계승한 PDMS를 정의했다. PDM-Closed 등 nuPlan 전용 규칙 기반 플래너들이 개발되어 ML 방법의 baseline이 되었으며, UniAD, VAD 등 E2E 방법들이 nuPlan에서의 평가를 추가하여 계획 능력을 검증하고 있다.
+- **한계점 및 아쉬운 점**:
+  - 비반응형 설정에서 대부분의 개입이 단순 충돌로 나타나 장기 상호작용 평가가 어려움
+  - 200+ TB 전체 데이터셋 사용이 현실적으로 어려워 OpenScene(2TB→450GB)으로 축소 재배포됨
+  - 초기 지표 정의가 커뮤니티 피드백을 반영한 개선이 필요했음 (이후 nuPlan 1.1, 1.2 등으로 업데이트)
 
 ---
 
-*관련 논문: [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/), [CARLA](/posts/papers/CARLA-An-Open-Urban-Driving-Simulator/), [NAVSIM](/posts/papers/NAVSIM/), [Bench2Drive](/posts/papers/bench2drive-multi-ability-benchmarking-e2e-autonomous-driving/)*
+*관련 논문: [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/), [CARLA](/posts/papers/CARLA-An-Open-Urban-Driving-Simulator/)*

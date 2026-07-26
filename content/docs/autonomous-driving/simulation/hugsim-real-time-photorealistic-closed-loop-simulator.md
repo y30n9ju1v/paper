@@ -12,26 +12,36 @@ references:
   - "CARLA-An-Open-Urban-Driving-Simulator"
 ---
 
-## 개요
+## 💡 한 줄 요약
+HUGSIM은 3D Gaussian Splatting 기반의 물리 제약(다중 평면 지면 모델, 유니사이클 차량 모델)을 결합해 실시간·포토리얼리스틱·클로즈드루프 자율주행 시뮬레이션을 구현하고, 70개 이상의 시퀀스로 구성된 HD-Score 벤치마크로 기존 AD 알고리즘의 클로즈드루프 성능 저하를 정량적으로 드러낸다.
 
+## 📌 개요 및 핵심 기여 (Key Contributions)
 - **저자**: Hongyu Zhou, Longzhong Lin, Jiabao Wang, Yichong Lu, Dongfeng Bai, Bingbing Liu, Yue Wang, Andreas Geiger, Yiyi Liao
-- **발행년도**: 2024 (arXiv:2412.01718)
-- **학회**: CVPR 2024 Extension
-- **주요 내용**: 3D Gaussian Splatting을 기반으로 실시간, 포토리얼리스틱, 클로즈드-루프 자율주행 시뮬레이터 HUGSIM을 제안. 보간 뷰와 외삽 뷰 모두에서 고품질 렌더링을 제공하며, 70개 이상의 시퀀스에 걸친 종합적인 벤치마크를 통해 기존 자율주행 알고리즘 평가 플랫폼으로 활용 가능.
+- **발행년도**: 2024 (arXiv:2412.01718, CVPR 2024 Extension)
+- **주요 기여점**:
+  1. 3DGS 기반 실시간·포토리얼리스틱·클로즈드루프 자율주행 시뮬레이터 HUGSIM 최초 제안
+  2. 다중 평면 지면 모델(Multi-Plane Ground Model)과 유니사이클 기반 차량 재구성으로 외삽(extrapolated) 뷰 품질 향상
+  3. KITTI-360, Waymo, nuScenes, PandaSet에 걸쳐 70개 이상 시퀀스, 400개 이상 시나리오로 구성된 종합 클로즈드루프 벤치마크 구축
+  4. NC·DAC·TTC·COM을 결합한 클로즈드루프 특화 평가 지표 HD-Score 제안
 
-## 목차
+## 🎯 관련 연구 흐름 및 기존 한계 (Related Work & Motivation)
+- **연구 흐름**: 자율주행 알고리즘 평가는 KITTI·nuScenes·Waymo 같은 오픈루프 벤치마크에서 출발해, NAVSIM처럼 오픈루프와 클로즈드루프의 중간 형태를 시도하는 방향으로 발전했다. 한편 장면 재구성 기술은 정적 NeRF/3DGS에서 EmerNeRF·StreetGaussians 같은 동적 장면 확장으로, 그리고 DriveArena·UniSim 같은 초기 클로즈드루프 시뮬레이터 시도로 이어졌다. HUGSIM은 이 두 흐름(동적 장면 재구성 + 클로즈드루프 평가)을 결합한다.
+- **기존 한계점**:
+  1. 대부분의 기존 데이터셋·벤치마크(KITTI, nuScenes, Waymo)는 오픈루프 방식이라 알고리즘의 행동이 미래 관측에 영향을 주지 않아 실제 주행 피드백 루프를 반영하지 못함
+  2. NAVSIM은 클로즈드루프와 오픈루프의 중간 형태를 제공하지만 반응형 시뮬레이터가 없어 새로운 뷰 합성 기능을 갖추지 못함
+  3. DriveArena, UniSim 등 기존 클로즈드루프 시뮬레이터는 HD 맵 없이는 동작하지 않거나, 실시간 렌더링과 포토리얼리스틱 품질을 동시에 달성하지 못함
+- **이 논문의 접근 방식**: 3D Gaussian Splatting으로 정적 배경과 동적 전경(비-네이티브 차량 포함)을 분리 재구성하고, 물리적 제약(지면 모델, 유니사이클 모델)을 추가해 훈련 뷰뿐 아니라 클로즈드루프에서 필수적인 외삽 뷰에서도 안정적인 렌더링 품질을 확보한다.
 
-1. Introduction
-2. Related Work
-3. Urban Scene Reconstruction
-4. Simulation
-5. Experiments
-6. Closed-Loop Benchmark
-7. Conclusion
+## 📑 목차
+- Chapter 1: Introduction
+- Chapter 2: Related Work
+- Chapter 3: Urban Scene Reconstruction
+- Chapter 4: Simulation
+- Chapter 5: Experiments
+- Chapter 6: Closed-Loop Benchmark
+- Chapter 7: Conclusion
 
----
-
-## 1. Introduction
+## 🛠️ Chapter 1: Introduction
 
 **요약**
 
@@ -48,9 +58,7 @@ references:
 - **오픈루프 vs 클로즈드루프**: 오픈루프 평가는 사전 수집된 데이터에서 알고리즘을 테스트하지만, 알고리즘의 행동이 미래 관측에 영향을 주지 않음. 클로즈드루프는 시뮬레이터가 알고리즘의 제어 명령에 실시간으로 반응하여 실제 주행과 유사한 피드백 루프를 형성.
 - **기존 방법의 한계**: NeRF 기반 방법들은 고품질 렌더링을 제공하지만 실시간성이 부족. 게임 엔진 기반 방법들은 실시간성은 있지만 현실감이 떨어짐.
 
----
-
-## 2. Related Work
+## 🛠️ Chapter 2: Related Work
 
 **요약**
 
@@ -73,9 +81,7 @@ DriveArena, UniSim 등이 클로즈드루프 시뮬레이션을 시도했으나,
 
 - **HD-Score**: NAVSIM과 DriveArena에서 영감을 받아 제안한 HUGSIM만의 평가 지표. NC(No Collision), DAC(Drive Area Compliance), TTC(Time to Collision), COM(Comfort)의 복합 점수.
 
----
-
-## 3. Urban Scene Reconstruction
+## 🛠️ Chapter 3: Urban Scene Reconstruction
 
 **요약**
 
@@ -92,6 +98,8 @@ HUGSIM의 장면 재구성 파이프라인은 정적(static) 배경과 동적(dy
 - 구면 조화 함수(Spherical Harmonics, $SH$)로 표현된 색상
 
 색상 렌더링은 볼륨 렌더링 방정식으로 계산된다:
+
+**수식 예제**
 
 $$\pi = \mathbf{C} = \sum_{i \in N} c_i \alpha'_i \prod_{j=1}^{i-1}(1 - \alpha'_j)$$
 
@@ -142,8 +150,6 @@ $$\begin{pmatrix} \dot{x} \\ \dot{y} \\ \dot{\theta} \\ \dot{v} \end{pmatrix} = 
 - 직관적으로: 자동차의 물리적 움직임 특성(앞바퀴 조향으로 인한 회전)을 모델링하여 자연스러운 차량 궤적을 예측
 
 ### 3.3 전체 Gaussian Splatting (Holistic Gaussian Splatting)
-
-**새로운 뷰 합성 (Novel View Synthesis)**
 
 정적 Gaussian과 동적 Gaussian을 결합하여 최종 이미지를 렌더링한다. 의미 레이블(s), 광학 흐름(F), 깊이(D)도 동일한 볼륨 렌더링 방식으로 계산된다:
 
@@ -207,9 +213,7 @@ $$\mathcal{L}_{uni} = \sum_t \|x_{t+1} - x_t - \frac{v_t}{\omega_t}(\sin\theta_{
   - 두 번째 항: z축 방향 이동이 물리 법칙에 부합하는지
   - 세 번째 항: 각도 변화가 각속도와 일치하는지
 
----
-
-## 4. Simulation
+## 🛠️ Chapter 4: Simulation
 
 **요약**
 
@@ -252,7 +256,7 @@ $$S = \begin{pmatrix} x \\ y \\ \theta \\ v \end{pmatrix}, \quad \frac{dS}{dt} =
 
 **일반(Normal) 행동**: IDM(Intelligent Driver Model)을 따르는 차선 추종 행동. HD 맵이 없는 경우 일정 속도로 사전 정의된 방향 주행
 
-**공격적(Aggressive) 행동**: 
+**공격적(Aggressive) 행동**:
 
 $$\min C_{total}(s_{1:T}^{(a)}) = C_{attack}(s_{1:T}^{(a)}) + \lambda C_{collision}(s_{1:T}^{(a)}) \quad (19)$$
 
@@ -278,17 +282,10 @@ $$\text{HD-Score}_t = \left(\prod_{m \in \{NC, DAC\}} score_m\right) \times \fra
 - **$COM$ (Comfort)**: 승차감 - 급격한 가속/감속/조향 페널티
 - 직관적으로: NC와 DAC는 안전의 최소 조건(AND 조건)이며, TTC와 COM은 주행 품질을 나타내는 보완적 지표
 
----
+## 📊 주요 실험 및 결과 (Experiments & Results)
+- **사용 데이터셋 / 벤치마크**: KITTI-360과 Waymo(보간/외삽 뷰 합성 평가), KITTI-360(3D 의미 재구성), KITTI-360·Waymo·nuScenes·PandaSet(70개 이상 시퀀스, 400개 이상 시나리오로 구성된 클로즈드루프 벤치마크). 난이도는 Easy/Medium/Hard/Extreme 4단계
 
-## 5. Experiments
-
-**요약**
-
-HUGSIM은 다섯 가지 측면에서 평가된다: 보간 뷰 합성, 외삽 뷰 합성, 3D 의미 재구성, 3D 시맨틱 재구성, 기하학적 재구성.
-
-### 5.1 새로운 뷰 합성 (보간 뷰)
-
-KITTI-360과 Waymo 데이터셋에서 평가. 주요 지표: PSNR, SSIM, LPIPS.
+- **새로운 뷰 합성 (보간 뷰)**
 
 | 방법 | PSNR↑ | SSIM↑ | LPIPS↓ |
 |------|-------|-------|--------|
@@ -298,100 +295,24 @@ KITTI-360과 Waymo 데이터셋에서 평가. 주요 지표: PSNR, SSIM, LPIPS.
 
 HUGSIM은 NeRF 기반 방법 대비 렌더링 속도 면에서 압도적 우위를 보이며, 품질 면에서도 경쟁력 있는 성능을 달성한다.
 
-### 5.2 새로운 뷰 합성 (외삽 뷰)
+- **새로운 뷰 합성 (외삽 뷰)**: 외삽 뷰는 훈련 데이터에 없는 새로운 시점에서의 렌더링으로, 클로즈드루프 시뮬레이션에서 필수적이다. HUGSIM은 NeuRAD, StreetGaussian 대비 LiDAR 입력 없이도 경쟁력 있는 외삽 성능을 달성하며, 물리적 제약(지면 모델, 유니사이클 모델)이 외삽 뷰 품질을 크게 향상시킨다.
 
-외삽 뷰는 훈련 데이터에 없는 새로운 시점에서의 렌더링으로, 클로즈드루프 시뮬레이션에서 필수적이다.
+- **3D 의미 재구성**: KITTI-360에서 정확도(acc, 예측→LiDAR 최근접 거리), 완전성(comp, LiDAR→예측 최근접 거리), mIoU로 평가
 
-- HUGSIM은 NeuRAD, StreetGaussian 대비 LiDAR 입력 없이도 경쟁력 있는 외삽 성능을 달성
-- 물리적 제약(지면 모델, 유니사이클 모델)이 외삽 뷰 품질을 크게 향상
+- **절제 연구(Ablation Study)**: 유니사이클 모델 최적화가 없으면 렌더링 품질과 3D 추적 정확도 모두 저하됨. $\mathcal{L}_{ground}$가 없으면 외삽 뷰에서 부유하는 Gaussian 아티팩트 발생.
 
-### 5.3 3D 의미 재구성
+- **클로즈드루프 벤치마크 평가**: UniAD가 가장 강력한 성능으로 대부분의 복잡한 시나리오에서 우수, VAD는 중간 수준, LatentTransformer(LTF)는 쉬운 시나리오에서 양호하나 복잡한 상황에서 한계. nuScenes 훈련 모델은 KITTI-360·Waymo로 일반화가 어려우며, HD 맵 없이는 도로 이탈(DAC) 문제가 현저히 증가. 공격적 액터가 있는 Extreme 시나리오에서는 모든 기존 방법이 어려움을 겪음.
 
-KITTI-360에서 3D 의미 포인트 클라우드를 추출하여 평가:
-- **정확도(acc)**: 예측 포인트에서 가장 가까운 LiDAR 포인트까지의 평균 거리
-- **완전성(comp)**: LiDAR 포인트에서 가장 가까운 예측 포인트까지의 평균 거리
-- **mIoU**: 3D 의미 분류 정확도
+- **주요 성과**: 보간 뷰에서 LPIPS 0.092로 최고 품질 달성. NeRF 대비 압도적으로 빠른 실시간 렌더링을 유지하면서도 경쟁력 있는 화질 확보. 클로즈드루프 평가에서 기존 SOTA AD 알고리즘들의 성능 한계를 정량적으로 노출.
 
-### 5.4 절제 연구 (Ablation Study)
+## 💡 결론 및 시사점 (Conclusion & Insights)
+HUGSIM은 3DGS 기반 물리 제약 재구성과 클로즈드루프 평가 프레임워크를 결합하여, 기존 AD 알고리즘들이 클로즈드루프 환경에서 오픈루프 평가 대비 현저히 낮은 성능을 보인다는 사실을 실증적으로 드러낸다. 이는 오픈루프 벤치마크만으로 AD 알고리즘을 평가하는 관행의 한계를 보여주는 중요한 시사점이다. 또한 포토리얼리스틱 시뮬레이션이 HD 맵 없이도 가능함을 보임으로써 실용적인 AD 시스템 개발 경로를 제시하고, 공격적 시나리오 생성을 통해 안전성을 체계적으로 평가할 수 있는 방법론을 제공한다.
 
-**동적 장면 절제**: 노이즈 있는 3D bounding box에서 유니사이클 모델 최적화의 효과를 검증. 최적화 없이는 렌더링 품질과 3D 추적 정확도 모두 저하됨.
-
-**정적 장면 절제**: 노출 모델링과 의미 손실의 효과 분석.
-
-**지면 모델 절제**: $\mathcal{L}_{ground}$가 없으면 외삽 뷰에서 부유하는 Gaussian이 나타나는 아티팩트 발생.
+- **한계점 및 아쉬운 점**:
+  1. 보행자 등 비-차량 동적 객체 처리가 아직 부족하다 (현재 버전은 차량에 집중, 이는 이후 OmniRe 등에서 보완됨).
+  2. 클로즈드루프에서 장거리 주행 시 누적 오차 문제가 존재한다.
+  3. 극단적으로 빠른 속도나 급격한 방향 전환 시 렌더링 품질이 저하되어, 실제 안전 임계 시나리오(급제동, 급회전) 재현에는 아직 한계가 있다.
 
 ---
 
-## 6. Closed-Loop Benchmark
-
-**요약**
-
-HUGSIM 벤치마크는 KITTI-360, Waymo, nuScenes, PandaSet에서 70개 이상의 시퀀스로 구성된다. 난이도는 Easy, Medium, Hard, Extreme의 4단계.
-
-### 6.1 벤치마크 구성
-
-**지원 데이터셋**: KITTI-360 (6 카메라), Waymo (5 카메라), nuScenes (6 카메라)
-
-**시나리오 난이도**:
-- **Easy**: 주로 정적 장면, 간단한 직진 주행
-- **Medium**: 차선 변경, IDM 행동 차량 포함
-- **Hard**: 교차로, 회전, 공격적 액터 포함
-- **Extreme**: 다수의 공격적 액터, 복잡한 교통 상황
-
-### 6.2 평가 결과
-
-평가된 AD 알고리즘:
-- **UniAD**: 가장 강력한 성능, 대부분의 복잡한 시나리오에서 우수
-- **VAD**: 중간 수준 성능
-- **LatentTransformer (LTF)**: 쉬운 시나리오에서 양호하나 복잡한 상황에서 한계
-
-**핵심 발견**:
-1. nuScenes에서 훈련된 모델들은 KITTI-360과 Waymo에서 일반화 어려움 → 다양한 도메인 일반화 연구 필요
-2. HD 맵 없이는 도로 이탈(DAC) 문제가 현저히 증가
-3. 공격적 액터가 있는 Extreme 시나리오에서는 모든 기존 방법이 어려움을 겪음
-
----
-
-## 핵심 개념 정리
-
-| 개념 | 설명 |
-|------|------|
-| **3D Gaussian Splatting (3DGS)** | 장면을 3D Gaussian들의 집합으로 표현, 빠른 렌더링과 고품질 이미지 합성 가능 |
-| **클로즈드루프 시뮬레이션** | 자율주행 알고리즘의 제어 명령이 시뮬레이터에 실시간으로 반영되는 피드백 루프 |
-| **다중 평면 지면 모델** | 경사로 등 복잡한 지형을 처리하기 위해 지역적으로 평평한 여러 평면으로 지면을 모델링 |
-| **유니사이클 모델** | 자동차의 단순화된 물리 모델로, 전진 속도와 조향각으로 움직임을 표현 |
-| **HD-Score** | NC, DAC, TTC, COM을 결합한 자율주행 종합 평가 지표 |
-| **공격적 액터** | 최적화 기반 생성으로 Ego 차량과의 충돌을 시도하는 시나리오 액터 |
-| **구면 조화 함수 (SH)** | 방향에 따른 색상 변화(반사, 하이라이트 등)를 표현하는 수학적 도구 |
-| **볼륨 렌더링** | 3D 공간의 Gaussian들을 누적하여 2D 이미지로 합성하는 방법 |
-| **LQR 제어** | 유한한 비용으로 최적 제어 명령을 계산하는 선형 이차 조정기 |
-| **IDM (Intelligent Driver Model)** | 앞 차량과의 거리와 속도를 기반으로 안전한 차간 거리를 유지하는 차량 추종 모델 |
-
----
-
-## 결론 및 시사점
-
-**주요 기여**
-
-1. **HUGSIM 시스템**: 3DGS 기반 실시간, 포토리얼리스틱, 클로즈드루프 자율주행 시뮬레이터 최초 제안
-2. **물리 기반 재구성**: 다중 평면 지면 모델과 유니사이클 기반 차량 재구성으로 외삽 뷰 품질 향상
-3. **종합 벤치마크**: 70개 이상 시퀀스, 4개 데이터셋, 400개 이상 시나리오로 구성된 AD 평가 플랫폼
-4. **HD-Score**: 클로즈드루프 평가에 특화된 새로운 복합 평가 지표
-
-**실무적 시사점**
-
-- 기존 AD 알고리즘들은 클로즈드루프 환경에서 오픈루프 평가 대비 현저히 낮은 성능을 보임 → 클로즈드루프 평가의 필요성 강조
-- 도메인 일반화(domain generalization) 문제가 여전히 AD 알고리즘의 주요 과제
-- 공격적 시나리오 생성을 통해 AD 알고리즘의 안전성을 체계적으로 평가 가능
-- 포토리얼리스틱 시뮬레이션이 HD 맵 없이도 가능함을 보여줌으로써, 실용적인 AD 시스템 개발 경로 제시
-
-**한계점 및 향후 연구 방향**
-
-- 보행자 등 비-차량 동적 객체(pedestrian) 처리 필요 (현재 버전은 차량에 집중)
-- 클로즈드루프에서 장거리 주행 시 누적 오차 문제 존재
-- 극단적으로 빠른 속도나 급격한 방향 전환 시 렌더링 품질 저하
-
-
----
-
-*관련 논문: [3D Gaussian Splatting](/posts/papers/3d-gaussian-splatting/), [4D Gaussian Splatting](/posts/papers/4d-gaussian-splatting/), [Street Gaussians](/posts/papers/street-gaussians-modeling-dynamic-urban-scenes/), [DrivingGaussian](/posts/papers/driving-gaussian-composite-gaussian-splatting/), [OmniRe](/posts/papers/omnire-omni-urban-scene-reconstruction/), [UniSim](/posts/papers/unisim-neural-closed-loop-sensor-simulator/), [CARLA](/posts/papers/CARLA-An-Open-Urban-Driving-Simulator/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/)*
+*관련 논문: [3D Gaussian Splatting](/posts/papers/3d-gaussian-splatting/), [4D Gaussian Splatting](/posts/papers/4d-gaussian-splatting/), [Street Gaussians](/posts/papers/street-gaussians-modeling-dynamic-urban-scenes/), [DrivingGaussian](/posts/papers/driving-gaussian-composite-gaussian-splatting/), [OmniRe](/posts/papers/omnire-omni-urban-scene-reconstruction/), [CARLA](/posts/papers/CARLA-An-Open-Urban-Driving-Simulator/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/)*

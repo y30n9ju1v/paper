@@ -8,22 +8,34 @@ year: 2020
 references: []
 ---
 
-## 개요
+## 💡 한 줄 요약
+기존 데이터셋보다 15배 이상 지리적으로 다양하고, 약 1200만 개의 3D LiDAR 및 카메라 주석을 포함한 대규모 멀티모달 자율주행 데이터셋 Waymo Open Dataset을 공개했다.
 
+## 📌 개요 및 핵심 기여 (Key Contributions)
 - **저자**: Pei Sun, Henrik Kretzschmar, Xerxes Dotiwalla, Aurélien Chouard, Vijaysai Patnaik, Paul Tsui, James Guo 외 다수 (Waymo LLC, Google LLC)
 - **발행년도**: 2020 (arXiv: 1912.04838v7)
-- **주요 내용**: 자율주행 연구를 위한 대규모 멀티모달 카메라-LiDAR 데이터셋인 Waymo Open Dataset을 소개한다. 기존 데이터셋보다 15배 이상 지리적으로 다양하며, 1150개 장면에 약 1200만 개의 3D LiDAR 주석과 약 1200만 개의 카메라 주석을 포함한다.
+- **주요 기여점**:
+  1. 1150개 장면(각 20초), LiDAR 5대 + 카메라 5대로 구성된 대규모 멀티모달 데이터셋 공개, 약 1200만 개의 3D/2D 주석 제공
+  2. 샌프란시스코·피닉스·마운틴뷰 3개 도시, 76km² 방문 면적으로 기존 최대 데이터셋 대비 15배 이상의 지리적 다양성 확보
+  3. 방향각 정확도를 반영하는 새로운 검출 지표 APH(Average Precision Heading) 제안
+  4. LiDAR-카메라 간 정밀 동기화 및 롤링 셔터 보정 정보를 제공하여 멀티모달 융합 연구 기반 마련
 
-## 목차
+## 🎯 관련 연구 흐름 및 기존 한계 (Related Work & Motivation)
+- **연구 흐름**: 자율주행 벤치마크는 KITTI(22개 장면, 80K 3D 박스, LiDAR 1대)로 표준화되었으나 규모가 작았고, 이후 nuScenes(1000개 장면, 1.4M 3D 박스, 방문 면적 5km², 지도 정보 포함)와 Argoverse(113개 장면, 993K 3D 박스, 상세 HD 맵 제공하지만 LiDAR 1대)가 규모와 정보를 확장하는 방향으로 발전해왔다. Waymo Open Dataset은 이 흐름에서 규모와 지리적 다양성을 한 단계 더 끌어올린 데이터셋이다.
+- **기존 한계점**:
+  1. 규모의 제한 — KITTI는 22개 장면, 80K 3D 박스에 불과해 딥러닝 모델의 일반화 검증에 한계가 있었다.
+  2. 지리적 다양성 부족 — nuScenes, Argoverse 등은 커버하는 지역과 방문 면적이 제한적이어서 학습 도메인과 실제 운영 환경 사이의 일반화 문제가 존재했다.
+  3. 멀티모달 정합성 부족 — 일부 데이터셋은 LiDAR 1대만 사용하거나 지도 정보가 제한적이어서 종합적인 인식 연구에 제약이 있었다.
+- **이 논문의 접근 방식**: 여러 고해상도 카메라와 고품질 LiDAR 스캐너로 수집한 데이터로 구성된 새로운 대규모 데이터셋을 구축하여 규모, 지리적 다양성, 주석 품질을 모두 끌어올린다.
 
+## 📑 목차
 - Chapter 1: Introduction
 - Chapter 2: Related Work
 - Chapter 3: Waymo Open Dataset (센서 사양, 좌표계, 그라운드 트루스 레이블, 센서 데이터, 데이터셋 분석)
 - Chapter 4: Tasks (객체 검출, 객체 추적)
 - Chapter 5: Experiments (베이스라인 3D 검출, 2D 검출, 멀티 객체 추적, 도메인 갭, 데이터셋 크기)
-- Chapter 6: Conclusion
 
-## Chapter 1: Introduction
+## 🛠️ Chapter 1: Introduction
 
 **요약**
 
@@ -35,7 +47,7 @@ references: []
 - **규모**: 약 1200만 개의 3D LiDAR 박스 주석, 약 1200만 개의 카메라 박스 주석, 113k LiDAR 추적 트랙, 250k 카메라 이미지 트랙
 - **지리적 다양성**: 샌프란시스코, 피닉스, 마운틴뷰 3개 도시에서 수집, 기존 최대 카메라+LiDAR 데이터셋 대비 15배 더 다양한 지역 커버리지
 
-## Chapter 2: Related Work
+## 🛠️ Chapter 2: Related Work
 
 **요약**
 
@@ -48,7 +60,7 @@ references: []
 - **Argoverse**: 113개 장면, 993K 3D 박스 — 상세 HD 맵 제공하지만 LiDAR 1대 사용
 - **Waymo Open Dataset**: 1150개 장면, 12M 3D 박스, 방문 면적 76km² — 압도적인 규모와 지리적 다양성
 
-## Chapter 3: Waymo Open Dataset
+## 🛠️ Chapter 3: Waymo Open Dataset
 
 ### 3.1 센서 사양 (Sensor Specifications)
 
@@ -76,7 +88,7 @@ references: []
 - **Sensor frame**: 각 센서별 독립 좌표계, 차량 프레임으로의 변환 행렬(extrinsics) 제공
 - **Image frame**: 각 카메라 이미지의 2D 좌표계
 
-**LiDAR 구형 좌표 변환 수식**
+**수식 예제 — LiDAR 구형 좌표 변환**
 
 $$\text{range} = \sqrt{x^2 + y^2 + z^2}$$
 
@@ -113,7 +125,7 @@ $$\text{inclination} = \text{atan2}(z, \sqrt{x^2 + y^2})$$
 
 LiDAR 데이터는 레인지 이미지 형식으로 인코딩되어 제공된다. 각 LiDAR 포인트는 range, intensity, elongation 및 vehicle pose를 포함한다. 카메라 데이터는 JPEG 압축 이미지로 제공되며, 롤링 셔터 보정 정보가 포함된다.
 
-**카메라-LiDAR 동기화 수식**
+**수식 예제 — 카메라-LiDAR 동기화**
 
 $$\text{sync\_accuracy} = \text{camera\_center\_time} - \text{frame\_start\_time} - \text{camera\_center\_offset} / 360° \times 0.1s$$
 
@@ -141,7 +153,7 @@ $$\text{sync\_accuracy} = \text{camera\_center\_time} - \text{frame\_start\_time
 - **시간대 다양성**: 낮(Day), 밤(Night), 새벽(Dawn) 등 다양한 조명 조건 포함
 - **훈련/검증/테스트 분할**: 훈련 798개, 검증 202개, 테스트 150개 시퀀스
 
-## Chapter 4: Tasks
+## 🛠️ Chapter 4: Tasks
 
 ### 4.1 객체 검출 (Object Detection)
 
@@ -149,7 +161,7 @@ $$\text{sync\_accuracy} = \text{camera\_center\_time} - \text{frame\_start\_time
 
 2D 및 3D 객체 검출 태스크를 정의하며, 새로운 평가 지표인 APH(Average Precision Heading)를 도입한다. 기존 AP는 heading 정보를 반영하지 못하는 한계가 있었다.
 
-**AP 및 APH 수식**
+**수식 예제 — AP 및 APH**
 
 $$\text{AP} = 100 \int_0^1 \max\{p(r') \mid r' \geq r\} \, dr$$
 
@@ -179,7 +191,7 @@ $$\text{APH} = 100 \int_0^1 \max\{h(r') \mid r' \geq r\} \, dr$$
 
 멀티 객체 추적(MOT)은 장면 내 객체들의 identity, 위치, 속성을 시간에 따라 추적하는 태스크이다. MOTA와 MOTP를 최종 평가 지표로 사용한다.
 
-**MOTA 및 MOTP 수식**
+**수식 예제 — MOTA 및 MOTP**
 
 $$\text{MOTA} = 100 - 100 \frac{\sum_t (m_t + \text{fp}_t + \text{mme}_t)}{\sum_t g_t}$$
 
@@ -202,72 +214,25 @@ $$\text{MOTP} = 100 \frac{\sum_{i,t} d_t^i}{\sum_t c_t}$$
 - **mismatch**: ground truth 객체가 이전과 다른 트랙에 매칭되면 1로 계산 — ID 전환 오류 측정
 - **MOTA 선택 기준**: 모든 점수 임계값에서 MOTA를 계산하고 최고값을 최종 지표로 사용
 
-## Chapter 5: Experiments
+## 📊 주요 실험 및 결과 (Experiments & Results)
 
-### 5.1 3D 객체 검출 베이스라인
+- **사용 데이터셋 / 벤치마크**: Waymo Open Dataset (훈련 798, 검증 202, 테스트 150 시퀀스), PointPillars(3D 검출), ResNet-101 기반 Faster R-CNN(2D 검출)
+- **주요 성과**:
+  - **3D 객체 검출 베이스라인**: PointPillars 재구현, 차량 APH 79.1 / 71.0 (LEVEL_1/2), 보행자 APH 56.1 / 51.1 (LEVEL_1/2). Voxel 크기 차량/보행자 0.33m, 그리드 범위 [-85m, 85m](X,Y), [-3m, 3m](Z)
+  - **2D 검출**: ResNet-101 기반 Faster R-CNN, COCO 사전학습 후 파인튜닝
+  - **도메인 갭**: 샌프란시스코(SF)로 학습 후 SF 평가 vs. 피닉스+마운틴뷰(SUB) 평가 시 APH 차이 7.6 발생. 보행자는 SUB에 수가 적어 더 큰 도메인 갭 발생 → 반지도학습/비지도 도메인 적응 연구 기회 제공
+  - **데이터셋 크기 효과**: 10% → 100% 데이터 사용 시 차량 APH 29.7 → 49.4 (LEVEL_2)로 지속적 향상, 대규모 데이터가 성능에 직접 기여함을 실증
 
-**요약**
-
-PointPillars 모델을 재구현하여 3D 객체 검출 베이스라인을 제시한다. 단일 프레임 LiDAR 데이터를 사용하며, 차량과 보행자에 대한 성능을 평가한다.
-
-**핵심 개념**
-
-- **PointPillars**: LiDAR 포인트 클라우드를 Birds Eye View (BEV) 가상 이미지로 변환 후 CNN 처리
-- **Voxel 크기**: 차량/보행자 0.33m, 그리드 범위 [-85m, 85m] (X), [-85m, 85m] (Y), [-3m, 3m] (Z)
-- **베이스라인 성능**: 차량 APH 79.1 / 71.0 (LEVEL_1/2), 보행자 APH 56.1 / 51.1 (LEVEL_1/2)
-- **2D 검출**: ResNet-101 기반 Faster R-CNN, COCO 데이터셋 사전학습 후 파인튜닝
-
-### 5.3 도메인 갭 (Domain Gap)
-
-**요약**
-
-샌프란시스코(SF)와 피닉스+마운틴뷰(SUB)의 데이터를 분리하여 도메인 갭 실험을 수행한다. 데이터셋 간 도메인 갭이 두드러지게 존재함을 확인한다.
-
-**핵심 개념**
-
-- **도메인 갭**: SF 데이터로 학습 후 SF 평가 vs. SUB 데이터 평가 시 APH 차이 7.6 발생
-- **보행자 도메인 갭**: SUB(피닉스+마운틴뷰)에 보행자 수가 적어 SF 대비 큰 차이 발생
-- **반지도학습/비지도학습 기회**: 도메인 갭 해소를 위한 반지도학습, 비지도 도메인 적응 연구 기회 제공
-
-### 5.4 데이터셋 크기 효과 (Dataset Size)
-
-**요약**
-
-훈련 데이터 크기에 따른 성능 변화를 분석한다. 10%~100% 데이터로 학습하며 Validation set에서 평가한다.
-
-**핵심 개념**
-
-- 데이터가 많을수록 꾸준히 성능 향상 — 10% → 100% 사용 시 차량 APH 29.7 → 49.4 (LEVEL_2)
-- 대규모 데이터셋이 자율주행 모델 성능 향상에 직접적으로 기여함을 실증
-
-## 핵심 개념 정리
-
-| 개념 | 설명 |
-|------|------|
-| **LiDAR 레인지 이미지** | LiDAR 포인트를 2D 이미지 형태로 표현, 표준 3D 포인트셋 외 다른 입력 형식 연구 가능 |
-| **APH (Average Precision Heading)** | 방향각 정확도를 가중치로 사용하는 새로운 검출 지표 |
-| **지리적 커버리지 지표** | 150m 가시거리 희석 에고 포즈의 합집합 면적으로 측정 |
-| **도메인 갭** | 도시마다 환경, 보행자 분포 등이 달라 학습-평가 도메인 불일치 발생 |
-| **Rolling Shutter 보정** | 카메라 롤링 셔터 효과를 LiDAR와 정확히 동기화하는 기법 |
-| **7-DOF 3D 바운딩 박스** | 3D 위치(3), 크기(3), 방향각(1)으로 객체를 표현하는 방식 |
-| **MOTA/MOTP** | 다중 객체 추적의 정확도(탐지+ID 유지)와 위치 정밀도를 측정하는 지표 |
-
-## 결론 및 시사점
+## 💡 결론 및 시사점 (Conclusion & Insights)
 
 Waymo Open Dataset은 기존 자율주행 데이터셋의 한계(규모, 지리적 다양성, 멀티모달 정합성)를 극복한 대규모 공개 데이터셋이다.
 
-**주요 기여**
-- 1150개 장면, 20초씩, 10Hz 수집 — 약 1200만 개의 3D/2D 주석
-- 3개 도시(샌프란시스코, 피닉스, 마운틴뷰)에 걸친 76km² 지리적 커버리지
-- APH라는 새로운 평가 지표 도입으로 방향 예측 정확도까지 반영
-- LiDAR-카메라 간 정밀 동기화 및 롤링 셔터 보정 정보 제공
-
-**실무적 시사점**
-- **도메인 적응 연구**: 도시 간 도메인 갭이 확인되어 반지도학습/비지도 도메인 적응 연구의 필요성 제기
-- **데이터 효율**: 데이터 크기와 성능이 비례하여 더 많은 레이블 데이터 확보의 중요성 재확인
-- **센서 퓨전**: LiDAR와 카메라 레이블의 연계로 멀티모달 융합 연구 기반 제공
-- **향후 계획**: 지도 정보, 비레이블 데이터 추가, 행동 예측/계획 등 다양한 태스크 지원 예정
-
+- **주요 기여**: 1150개 장면, 20초씩, 10Hz 수집으로 약 1200만 개의 3D/2D 주석을 확보했고, 3개 도시에 걸친 76km² 지리적 커버리지, APH라는 새로운 평가 지표, LiDAR-카메라 간 정밀 동기화 및 롤링 셔터 보정 정보를 제공한다.
+- **실무적 시사점**: 도시 간 도메인 갭이 확인되어 반지도학습/비지도 도메인 적응 연구의 필요성이 제기되었고, 데이터 크기와 성능이 비례함이 재확인되었다. LiDAR와 카메라 레이블의 연계로 멀티모달 융합 연구 기반이 마련되었으며, 이후 지도 정보·비레이블 데이터·행동 예측/계획 등으로 확장될 계획을 제시했다.
+- **한계점 및 아쉬운 점**:
+  - 공개 당시 지도(HD Map) 정보와 행동 예측/계획 태스크가 빠져 있어, nuScenes·Argoverse 대비 초기 활용 범위가 제한적이었음(이후 Waymo Open Motion Dataset 등으로 보완됨)
+  - 도메인 갭이 확인되었음에도 해결책은 후속 연구 과제로 남겨두었을 뿐, 논문 자체에서 구체적 완화 기법을 제시하지 않음
+  - 3개 도시만 커버하여 "15배 다양성"이라는 주장에도 불구하고 여전히 미국 서부 중심의 환경적 편향이 존재함
 
 ---
 

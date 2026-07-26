@@ -163,16 +163,19 @@
     <button class="filter-btn active" data-cat="all">전체</button>
     <button class="filter-btn" data-cat="deep-learning">Deep Learning</button>
     <button class="filter-btn" data-cat="novel-view-synthesis">Novel View Synthesis</button>
-    <button class="filter-btn" data-cat="generative-models">Generative Models</button>
     <button class="filter-btn" data-cat="perception">Perception</button>
     <button class="filter-btn" data-cat="simulation">Simulation</button>
-    <button class="filter-btn" data-cat="planning">Planning</button>
     <button class="filter-btn" data-cat="dataset">Dataset</button>
     <input class="paper-search" type="text" id="paperSearch" placeholder="논문 검색...">
   </div>
 
   {{ $allPapers := where .Site.RegularPages "Type" "docs" }}
   {{ $allPapers = where $allPapers "File.Path" "ne" "docs/roadmap.md" }}
+  {{ $filtered := slice }}
+  {{ range $allPapers }}
+    {{ if not (in .File.Dir "glossary") }}{{ $filtered = $filtered | append . }}{{ end }}
+  {{ end }}
+  {{ $allPapers = $filtered }}
   <div class="paper-count" id="paperCount">{{ len $allPapers }}편</div>
 
   <table class="paper-table" id="paperTable">
@@ -192,14 +195,10 @@
       {{ $cat = "deep-learning" }}{{ $catLabel = "Deep Learning" }}
       {{ else if in $path "novel-view-synthesis" }}
       {{ $cat = "novel-view-synthesis" }}{{ $catLabel = "Novel View Synthesis" }}
-      {{ else if in $path "generative-models" }}
-      {{ $cat = "generative-models" }}{{ $catLabel = "Generative Models" }}
       {{ else if in $path "perception" }}
       {{ $cat = "perception" }}{{ $catLabel = "Perception" }}
       {{ else if in $path "simulation" }}
       {{ $cat = "simulation" }}{{ $catLabel = "Simulation" }}
-      {{ else if in $path "planning" }}
-      {{ $cat = "planning" }}{{ $catLabel = "Planning" }}
       {{ else if in $path "dataset" }}
       {{ $cat = "dataset" }}{{ $catLabel = "Dataset" }}
       {{ end }}

@@ -4,13 +4,12 @@
 
 {{- range $pages -}}
   {{- $path := .File.Dir -}}
+  {{- if not (in $path "glossary") -}}
   {{- $cat := "" -}}
   {{- if in $path "deep-learning" }}{{- $cat = "deep-learning" -}}
   {{- else if in $path "novel-view-synthesis" }}{{- $cat = "novel-view-synthesis" -}}
-  {{- else if in $path "generative-models" }}{{- $cat = "generative-models" -}}
   {{- else if in $path "perception" }}{{- $cat = "perception" -}}
   {{- else if in $path "simulation" }}{{- $cat = "simulation" -}}
-  {{- else if in $path "planning" }}{{- $cat = "planning" -}}
   {{- else if in $path "dataset" }}{{- $cat = "dataset" -}}
   {{- end -}}
   {{- $slug := .File.ContentBaseName -}}
@@ -20,6 +19,7 @@
   {{- range .Params.references -}}
     {{- $link := dict "source" $slug "target" . -}}
     {{- $links = $links | append $link -}}
+  {{- end -}}
   {{- end -}}
 {{- end -}}
 

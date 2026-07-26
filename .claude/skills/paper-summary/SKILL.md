@@ -44,6 +44,25 @@ parameters:
    - `autonomous-driving/dataset/` — 데이터셋 및 벤치마크 논문
 
    새 카테고리가 필요하면(예: 기존 폴더 어디에도 맞지 않는 논문) 먼저 사용자에게 물어보고 폴더를 만듭니다. 파일명은 항상 소문자 kebab-case 슬러그를 사용합니다(예: `bevformer.md`, `carla-an-open-urban-driving-simulator.md`) — 대문자나 카멜/파스칼 케이스는 쓰지 않습니다.
+- 논문 포스트 작성/수정이 끝나면 `content/docs/glossary/`의 해당 카테고리 용어집도 함께 업데이트합니다 (아래 "Glossary Maintenance" 참고).
+
+## Glossary Maintenance
+
+논문을 새로 추가하거나 기존 논문을 업데이트할 때마다, 그 논문의 **핵심 개념** 섹션에 나온 용어 중 아직 용어집에 없는 것을 해당 카테고리의 용어집 파일에 추가합니다.
+
+- 카테고리 → 용어집 파일 매핑:
+  - `deep-learning/` → `content/docs/glossary/deep-learning.md`
+  - `novel-view-synthesis/` → `content/docs/glossary/novel-view-synthesis.md`
+  - `autonomous-driving/perception/` → `content/docs/glossary/perception.md`
+  - `autonomous-driving/simulation/` → `content/docs/glossary/simulation.md`
+  - `autonomous-driving/dataset/` 등 아직 전용 용어집이 없는 카테고리는, 논문이 3개 이상 쌓이고 용어집이 필요해 보이면 사용자에게 새 용어집 파일을 만들지 물어봅니다.
+- 추가 절차:
+  1. 새 논문의 **핵심 개념** 항목들을 훑어보고, 해당 용어집 파일에 이미 있는 용어(같은 개념의 다른 표기 포함)는 건너뜁니다.
+  2. 새로운 용어는 기존 용어집의 주제별 섹션(`## BEV(Bird's-Eye-View) 공통 개념` 등) 중 가장 잘 맞는 곳에 추가합니다. 맞는 섹션이 없으면 새 `##` 섹션을 만듭니다.
+  3. 정의는 그 논문 파일에 이미 쓴 문장을 재사용하되, 다른 논문에서도 통용되는 일반적인 설명이 되도록 다듬습니다 (특정 논문의 실험 수치보다는 개념 자체의 정의에 집중).
+  4. 용어집 최상단의 "## 기초 개념 (사전지식)" 섹션은 그 분야를 처음 접하는 사람을 위한 배경지식용이므로, 논문에 나온 전문 용어가 아니라 "이걸 몰라도 논문을 못 읽을 정도"인 진짜 사전지식(예: 카메라 포즈, 손실 함수, 바운딩 박스 같은 개념)일 때만 추가합니다.
+  5. 용어집 안의 각 논문 링크 목록(파일 상단 소개 문장)에 새 논문 링크도 추가합니다.
+  6. 다른 용어집 파일이나 논문 포스트를 향한 링크(`/posts/papers/<slug>/`)를 추가했다면, 그 slug의 파일이 실제로 존재하는지 확인합니다.
 
 ## Output format
 

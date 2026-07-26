@@ -6,7 +6,7 @@ categories: ["Papers", "Autonomous Driving"]
 tags: ["Autonomous Driving", "Sensor Fusion", "BEV", "LiDAR", "3D Object Detection"]
 year: 2024
 references:
-  - "BEVFormer"
+  - "bevformer"
   - "centerpoint-center-based-3d-object-detection-and-tracking"
   - "nuscenes-multimodal-dataset-autonomous-driving"
 ---
@@ -162,4 +162,4 @@ BEVFusion은 카메라와 LiDAR를 공유 BEV 공간에서 통합하는 간결�
 
 ---
 
-*관련 논문: [BEVFormer](/posts/papers/BEVFormer/), [BEVDepth](/posts/papers/bevdepth/), [PointPillars](/posts/papers/pointpillars-fast-encoders-object-detection-point-clouds/), [CenterPoint](/posts/papers/centerpoint-center-based-3d-object-detection-and-tracking/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/)*
+*관련 논문: [BEVFormer](/posts/papers/bevformer/), [BEVDepth](/posts/papers/bevdepth/), [PointPillars](/posts/papers/pointpillars-fast-encoders-object-detection-point-clouds/), [CenterPoint](/posts/papers/centerpoint-center-based-3d-object-detection-and-tracking/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/)*

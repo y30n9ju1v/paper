@@ -252,4 +252,4 @@ Transformer는 "Attention is All You Need"라는 제목 그대로, **Attention �
 
 ---
 
-*관련 논문: [ResNet](/posts/papers/resnet-deep-residual-learning-for-image-recognition/), [ViT](/posts/papers/vit-an-image-is-worth-16x16-words/), [DETR](/posts/papers/detr-end-to-end-object-detection-with-transformers/), [BEVFormer](/posts/papers/BEVFormer/)*
+*관련 논문: [ResNet](/posts/papers/resnet-deep-residual-learning-for-image-recognition/), [ViT](/posts/papers/vit-an-image-is-worth-16x16-words/), [DETR](/posts/papers/detr-end-to-end-object-detection-with-transformers/), [BEVFormer](/posts/papers/bevformer/)*

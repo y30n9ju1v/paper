@@ -8,7 +8,7 @@ year: 2024
 references:
   - "3d-gaussian-splatting"
   - "occ3d-large-scale-3d-occupancy-prediction-benchmark"
-  - "BEVFormer"
+  - "bevformer"
 ---
 
 ## 💡 한 줄 요약
@@ -209,4 +209,4 @@ GaussianWorld는 3D Gaussian의 명시적·연속적 장면 표현 특성을 활
 
 ---
 
-*관련 논문: [3D Gaussian Splatting](/posts/papers/3d-gaussian-splatting/), [MonoScene](/posts/papers/monoscene-monocular-3d-semantic-scene-completion/), [TPVFormer](/posts/papers/tpvformer-tri-perspective-view-3d-semantic-occupancy/), [SurroundOcc](/posts/papers/SurroundOcc/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/)*
+*관련 논문: [3D Gaussian Splatting](/posts/papers/3d-gaussian-splatting/), [MonoScene](/posts/papers/monoscene-monocular-3d-semantic-scene-completion/), [TPVFormer](/posts/papers/tpvformer-tri-perspective-view-3d-semantic-occupancy/), [SurroundOcc](/posts/papers/surroundocc/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/)*

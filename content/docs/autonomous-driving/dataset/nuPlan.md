@@ -178,4 +178,4 @@ nuPlan은 자율주행 ML 계획 연구에 필요한 세 가지를 한꺼번에 
 
 ---
 
-*관련 논문: [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/), [CARLA](/posts/papers/CARLA-An-Open-Urban-Driving-Simulator/)*
+*관련 논문: [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/), [CARLA](/posts/papers/carla-an-open-urban-driving-simulator/)*

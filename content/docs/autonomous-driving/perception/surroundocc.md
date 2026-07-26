@@ -6,7 +6,7 @@ categories: ["Papers", "Autonomous Driving", "3D Occupancy"]
 tags: ["3D Occupancy", "Autonomous Driving", "Multi-Camera", "Scene Understanding"]
 year: 2023
 references:
-  - "BEVFormer"
+  - "bevformer"
   - "monoscene-monocular-3d-semantic-scene-completion"
   - "nuscenes-multimodal-dataset-autonomous-driving"
 ---
@@ -196,4 +196,4 @@ SurroundOcc는 멀티카메라 이미지만으로 밀집하고 정확한 3D 시�
 
 ---
 
-*관련 논문: [MonoScene](/posts/papers/monoscene-monocular-3d-semantic-scene-completion/), [TPVFormer](/posts/papers/tpvformer-tri-perspective-view-3d-semantic-occupancy/), [Occ3D](/posts/papers/occ3d-large-scale-3d-occupancy-prediction-benchmark/), [BEVFormer](/posts/papers/BEVFormer/), [GaussianWorld](/posts/papers/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/)*
+*관련 논문: [MonoScene](/posts/papers/monoscene-monocular-3d-semantic-scene-completion/), [TPVFormer](/posts/papers/tpvformer-tri-perspective-view-3d-semantic-occupancy/), [Occ3D](/posts/papers/occ3d-large-scale-3d-occupancy-prediction-benchmark/), [BEVFormer](/posts/papers/bevformer/), [GaussianWorld](/posts/papers/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/)*

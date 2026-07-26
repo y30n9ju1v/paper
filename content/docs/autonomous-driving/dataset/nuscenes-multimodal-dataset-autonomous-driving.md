@@ -209,4 +209,4 @@ nuScenes는 자율주행 연구를 위한 대규모 멀티모달 데이터셋을
 
 ---
 
-*관련 논문: [Waymo Open Dataset](/posts/papers/waymo-open-dataset/), [nuPlan](/posts/papers/nuPlan/), [CARLA](/posts/papers/CARLA-An-Open-Urban-Driving-Simulator/), [BEVFormer](/posts/papers/BEVFormer/)*
+*관련 논문: [Waymo Open Dataset](/posts/papers/waymo-open-dataset/), [nuPlan](/posts/papers/nuPlan/), [CARLA](/posts/papers/carla-an-open-urban-driving-simulator/), [BEVFormer](/posts/papers/bevformer/)*

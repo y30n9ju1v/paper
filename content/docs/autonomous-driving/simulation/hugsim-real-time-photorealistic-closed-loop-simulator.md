@@ -9,7 +9,7 @@ references:
   - "3d-gaussian-splatting"
   - "street-gaussians-modeling-dynamic-urban-scenes"
   - "nuscenes-multimodal-dataset-autonomous-driving"
-  - "CARLA-An-Open-Urban-Driving-Simulator"
+  - "carla-an-open-urban-driving-simulator"
 ---
 
 ## 💡 한 줄 요약
@@ -315,4 +315,4 @@ HUGSIM은 3DGS 기반 물리 제약 재구성과 클로즈드루프 평가 프�
 
 ---
 
-*관련 논문: [3D Gaussian Splatting](/posts/papers/3d-gaussian-splatting/), [4D Gaussian Splatting](/posts/papers/4d-gaussian-splatting/), [Street Gaussians](/posts/papers/street-gaussians-modeling-dynamic-urban-scenes/), [DrivingGaussian](/posts/papers/driving-gaussian-composite-gaussian-splatting/), [OmniRe](/posts/papers/omnire-omni-urban-scene-reconstruction/), [CARLA](/posts/papers/CARLA-An-Open-Urban-Driving-Simulator/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/)*
+*관련 논문: [3D Gaussian Splatting](/posts/papers/3d-gaussian-splatting/), [4D Gaussian Splatting](/posts/papers/4d-gaussian-splatting/), [Street Gaussians](/posts/papers/street-gaussians-modeling-dynamic-urban-scenes/), [DrivingGaussian](/posts/papers/driving-gaussian-composite-gaussian-splatting/), [OmniRe](/posts/papers/omnire-omni-urban-scene-reconstruction/), [CARLA](/posts/papers/carla-an-open-urban-driving-simulator/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/)*

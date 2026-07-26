@@ -37,13 +37,13 @@ parameters:
   `year`는 논문의 실제 발행년도(arXiv 공개 또는 학회 발표 기준)를 정수로 작성합니다 (예: `year: 2017`)
   `references`는 이 논문이 직접 인용하거나 기반으로 하는 논문들의 slug 리스트입니다. slug는 `content/docs/` 아래 파일명(`.md` 제외)을 사용합니다. 블로그에 없는 논문은 제외합니다.
 - 논문 주제에 맞는 카테고리 폴더를 판단하여 `content/docs/<category>/논문-제목.md` 파일을 Hugo 블로그 포스트 형식으로 생성합니다
-   - `deep-learning/` — Transformer, CNN, RL 등 기반 딥러닝 논문
-   - `novel-view-synthesis/` — NeRF, 3DGS 등 뷰 합성 논문
-   - `generative-models/` — Diffusion, GAN, World Model 등 생성 모델 논문
+   - `deep-learning/` — Transformer, CNN 등 인지/재구성 모델이 의존하는 기반 딥러닝 논문
+   - `novel-view-synthesis/` — NeRF, 3DGS 등 범용 뷰 합성/재구성 기술 논문
    - `autonomous-driving/perception/` — BEV, Occupancy, HD Map, 3D Detection 등
-   - `autonomous-driving/simulation/` — 센서 시뮬레이터, 클로즈드 루프 시뮬레이션
-   - `autonomous-driving/planning/` — E2E 자율주행, Planning 논문
+   - `autonomous-driving/simulation/` — 신경 재구성 기반 센서 시뮬레이터, 클로즈드 루프 시뮬레이션, 회귀 테스트 도구
    - `autonomous-driving/dataset/` — 데이터셋 및 벤치마크 논문
+
+   새 카테고리가 필요하면(예: 기존 폴더 어디에도 맞지 않는 논문) 먼저 사용자에게 물어보고 폴더를 만듭니다. 파일명은 항상 소문자 kebab-case 슬러그를 사용합니다(예: `bevformer.md`, `carla-an-open-urban-driving-simulator.md`) — 대문자나 카멜/파스칼 케이스는 쓰지 않습니다.
 
 ## Output format
 

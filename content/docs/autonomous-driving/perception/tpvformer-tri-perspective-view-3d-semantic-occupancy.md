@@ -6,7 +6,7 @@ categories: ["Papers", "Autonomous Driving", "3D Occupancy"]
 tags: ["3D Occupancy", "BEV", "Autonomous Driving", "Transformer", "Semantic Scene Completion", "nuScenes"]
 year: 2023
 references:
-  - "BEVFormer"
+  - "bevformer"
   - "nuscenes-multimodal-dataset-autonomous-driving"
 ---
 
@@ -213,4 +213,4 @@ TPVFormer는 BEV와 Voxel 표현의 장점을 결합한 TPV 표현을 통해, �
 
 ---
 
-*관련 논문: [MonoScene](/posts/papers/monoscene-monocular-3d-semantic-scene-completion/), [BEVFormer](/posts/papers/BEVFormer/), [SurroundOcc](/posts/papers/SurroundOcc/), [Occ3D](/posts/papers/occ3d-large-scale-3d-occupancy-prediction-benchmark/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/)*
+*관련 논문: [MonoScene](/posts/papers/monoscene-monocular-3d-semantic-scene-completion/), [BEVFormer](/posts/papers/bevformer/), [SurroundOcc](/posts/papers/surroundocc/), [Occ3D](/posts/papers/occ3d-large-scale-3d-occupancy-prediction-benchmark/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/)*

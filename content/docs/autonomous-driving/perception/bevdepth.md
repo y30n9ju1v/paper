@@ -7,7 +7,7 @@ tags: ["3D Object Detection", "BEV", "Depth Estimation", "Autonomous Driving"]
 year: 2022
 references:
   - "lift-splat-shoot"
-  - "BEVFormer"
+  - "bevformer"
   - "nuscenes-multimodal-dataset-autonomous-driving"
 ---
 
@@ -267,4 +267,4 @@ BEVDepth는 nuScenes 리더보드에서 카메라 전용 방법 중 1위(60.9% N
 
 ---
 
-*관련 논문: [Lift Splat Shoot](/posts/papers/lift-splat-shoot/), [BEVFormer](/posts/papers/BEVFormer/), [BEVFusion](/posts/papers/bevfusion-multi-task-multi-sensor-fusion/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/)*
+*관련 논문: [Lift Splat Shoot](/posts/papers/lift-splat-shoot/), [BEVFormer](/posts/papers/bevformer/), [BEVFusion](/posts/papers/bevfusion-multi-task-multi-sensor-fusion/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/)*

@@ -160,4 +160,4 @@ Lift-Splat-Shoot은 임의의 카메라 리그로부터 LiDAR 없이 BEV 표현�
 
 ---
 
-*관련 논문: [BEVDepth](/posts/papers/bevdepth/), [BEVFormer](/posts/papers/BEVFormer/), [BEVFusion](/posts/papers/bevfusion-multi-task-multi-sensor-fusion/), [DETR3D](/posts/papers/detr3d-3d-object-detection-multi-view-images/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/)*
+*관련 논문: [BEVDepth](/posts/papers/bevdepth/), [BEVFormer](/posts/papers/bevformer/), [BEVFusion](/posts/papers/bevfusion-multi-task-multi-sensor-fusion/), [DETR3D](/posts/papers/detr3d-3d-object-detection-multi-view-images/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/)*

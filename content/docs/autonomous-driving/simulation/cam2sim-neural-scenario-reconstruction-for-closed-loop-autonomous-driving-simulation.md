@@ -6,7 +6,7 @@ categories: ["Papers", "Autonomous Driving"]
 tags: ["3D Gaussian Splatting", "Autonomous Driving", "Simulation", "CARLA", "Closed-Loop", "Sim-to-Real"]
 year: 2026
 references:
-  - "CARLA-An-Open-Urban-Driving-Simulator"
+  - "carla-an-open-urban-driving-simulator"
   - "3d-gaussian-splatting"
 ---
 
@@ -91,4 +91,4 @@ Key Contributions가 논문 저자의 주장이라면, 여기서는 다 읽고 �
 
 ---
 
-*관련 논문: [CARLA](/posts/papers/CARLA-An-Open-Urban-Driving-Simulator/), [3D Gaussian Splatting](/posts/papers/3d-gaussian-splatting/)*
+*관련 논문: [CARLA](/posts/papers/carla-an-open-urban-driving-simulator/), [3D Gaussian Splatting](/posts/papers/3d-gaussian-splatting/)*

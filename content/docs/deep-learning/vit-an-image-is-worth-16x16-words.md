@@ -160,4 +160,4 @@ ViT는 "이미지도 패치 시퀀스로 처리할 수 있다"는 단순한 아�
 
 ---
 
-*관련 논문: [Attention Is All You Need](/posts/papers/attention-is-all-you-need/), [ResNet](/posts/papers/resnet-deep-residual-learning-for-image-recognition/), [DETR](/posts/papers/detr-end-to-end-object-detection-with-transformers/), [BEVFormer](/posts/papers/BEVFormer/)*
+*관련 논문: [Attention Is All You Need](/posts/papers/attention-is-all-you-need/), [ResNet](/posts/papers/resnet-deep-residual-learning-for-image-recognition/), [DETR](/posts/papers/detr-end-to-end-object-detection-with-transformers/), [BEVFormer](/posts/papers/bevformer/)*

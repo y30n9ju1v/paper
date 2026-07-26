@@ -195,4 +195,4 @@ DETR3D는 depth 추정과 NMS라는 두 가지 병목을 동시에 제거한 멀
 
 ---
 
-*관련 논문: [DETR](/posts/papers/detr-end-to-end-object-detection-with-transformers/), [Attention Is All You Need](/posts/papers/attention-is-all-you-need/), [BEVFormer](/posts/papers/BEVFormer/), [Lift Splat Shoot](/posts/papers/lift-splat-shoot/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/)*
+*관련 논문: [DETR](/posts/papers/detr-end-to-end-object-detection-with-transformers/), [Attention Is All You Need](/posts/papers/attention-is-all-you-need/), [BEVFormer](/posts/papers/bevformer/), [Lift Splat Shoot](/posts/papers/lift-splat-shoot/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/)*

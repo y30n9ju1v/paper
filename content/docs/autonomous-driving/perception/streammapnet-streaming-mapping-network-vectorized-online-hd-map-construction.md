@@ -7,7 +7,7 @@ tags: ["Autonomous Driving", "HD Map", "BEV", "Temporal Fusion", "Transformer", 
 year: 2024
 references:
   - "maptr-structured-modeling-online-vectorized-hd-map-construction"
-  - "BEVFormer"
+  - "bevformer"
 ---
 
 ## 💡 한 줄 요약
@@ -260,4 +260,4 @@ StreamMapNet은 온라인 HD 맵 구성에 **시간 정보**를 효율적으로 
 
 ---
 
-*관련 논문: [VectorMapNet](/posts/papers/vectormapnet-end-to-end-vectorized-hd-map-learning/), [MapTR](/posts/papers/maptr-structured-modeling-online-vectorized-hd-map-construction/), [BEVFormer](/posts/papers/BEVFormer/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/)*
+*관련 논문: [VectorMapNet](/posts/papers/vectormapnet-end-to-end-vectorized-hd-map-learning/), [MapTR](/posts/papers/maptr-structured-modeling-online-vectorized-hd-map-construction/), [BEVFormer](/posts/papers/bevformer/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/)*

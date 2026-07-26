@@ -228,4 +228,4 @@ MapTR은 HD 맵 구축에서 두 가지 핵심 혁신을 달성했습니다: 맵
 
 ---
 
-*관련 논문: [VectorMapNet](/posts/papers/vectormapnet-end-to-end-vectorized-hd-map-learning/), [DETR](/posts/papers/detr-end-to-end-object-detection-with-transformers/), [BEVFormer](/posts/papers/BEVFormer/), [StreamMapNet](/posts/papers/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/)*
+*관련 논문: [VectorMapNet](/posts/papers/vectormapnet-end-to-end-vectorized-hd-map-learning/), [DETR](/posts/papers/detr-end-to-end-object-detection-with-transformers/), [BEVFormer](/posts/papers/bevformer/), [StreamMapNet](/posts/papers/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/)*

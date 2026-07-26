@@ -6,7 +6,7 @@ categories: ["Papers", "Autonomous Driving", "3D Occupancy", "Benchmark & Datase
 tags: ["Autonomous Driving", "3D Occupancy", "LiDAR", "Dataset", "Benchmark"]
 year: 2023
 references:
-  - "BEVFormer"
+  - "bevformer"
   - "nuscenes-multimodal-dataset-autonomous-driving"
   - "waymo-open-dataset"
 ---
@@ -264,4 +264,4 @@ Occ3D는 시각 인식을 위한 대규모 고품질 3D 점유 예측 벤치마�
 
 ---
 
-*관련 논문: [MonoScene](/posts/papers/monoscene-monocular-3d-semantic-scene-completion/), [TPVFormer](/posts/papers/tpvformer-tri-perspective-view-3d-semantic-occupancy/), [SurroundOcc](/posts/papers/SurroundOcc/), [BEVFormer](/posts/papers/BEVFormer/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/), [Waymo Open Dataset](/posts/papers/waymo-open-dataset/)*
+*관련 논문: [MonoScene](/posts/papers/monoscene-monocular-3d-semantic-scene-completion/), [TPVFormer](/posts/papers/tpvformer-tri-perspective-view-3d-semantic-occupancy/), [SurroundOcc](/posts/papers/surroundocc/), [BEVFormer](/posts/papers/bevformer/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/), [Waymo Open Dataset](/posts/papers/waymo-open-dataset/)*

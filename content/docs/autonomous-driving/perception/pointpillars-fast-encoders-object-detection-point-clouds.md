@@ -5,8 +5,6 @@ draft: false
 categories: ["Papers", "Autonomous Driving", "3D Object Detection"]
 tags: ["LiDAR", "Point Cloud", "3D Detection", "BEV", "Real-time"]
 year: 2019
-references:
-  - "pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation"
 ---
 
 ## 개요

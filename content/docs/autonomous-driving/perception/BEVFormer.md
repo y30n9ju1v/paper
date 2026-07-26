@@ -6,7 +6,6 @@ categories: ["Papers", "Autonomous Driving"]
 tags: ["Autonomous Driving", "BEV", "Transformer", "3D Object Detection", "Multi-Camera"]
 year: 2022
 references:
-  - "attention-is-all-you-need"
   - "detr3d-3d-object-detection-multi-view-images"
   - "lift-splat-shoot"
   - "nuscenes-multimodal-dataset-autonomous-driving"

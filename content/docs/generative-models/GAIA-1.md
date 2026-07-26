@@ -7,7 +7,6 @@ tags: ["Autonomous Driving", "World Model", "Generative Model", "Video Generatio
 year: 2023
 references:
   - "denoising-diffusion-probabilistic-models"
-  - "attention-is-all-you-need"
 ---
 
 ## 개요

@@ -7,7 +7,6 @@ tags: ["Autonomous Driving", "End-to-End Planning", "Transformer", "Multi-Task L
 year: 2023
 references:
   - "BEVFormer"
-  - "detr-end-to-end-object-detection-with-transformers"
   - "nuscenes-multimodal-dataset-autonomous-driving"
 ---
 

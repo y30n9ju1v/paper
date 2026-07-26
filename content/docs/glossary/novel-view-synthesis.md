@@ -6,7 +6,7 @@ weight: 20
 categories: ["Glossary"]
 ---
 
-이 폴더의 논문들([NeRF](/posts/papers/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/), [3D Gaussian Splatting](/posts/papers/3d-gaussian-splatting/), [3DGUT](/posts/papers/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/), [3D Gaussian Ray Tracing](/posts/papers/3d-gaussian-ray-tracing/), [4D Gaussian Splatting](/posts/papers/4d-gaussian-splatting/), [Difix3D+](/posts/papers/difix3d-plus/))에서 반복적으로 등장하는 핵심 용어를 정리합니다.
+이 폴더의 논문들([NeRF](/posts/papers/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/), [3D Gaussian Splatting](/posts/papers/3d-gaussian-splatting/), [3DGUT](/posts/papers/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/), [3D Gaussian Ray Tracing](/posts/papers/3d-gaussian-ray-tracing/), [4D Gaussian Splatting](/posts/papers/4d-gaussian-splatting/), [Difix3D+](/posts/papers/difix3d-plus/), [3DGS-QA](/posts/papers/3dgs-qa-perceptual-quality-assessment-of-3d-gaussian-splatting/), [Evaluating Human Perception of NVS](/posts/papers/evaluating-human-perception-of-novel-view-synthesis-gs-nerf-dynamic-scenes/))에서 반복적으로 등장하는 핵심 용어를 정리합니다.
 
 ## 기초 개념 (사전지식)
 
@@ -20,6 +20,8 @@ categories: ["Glossary"]
 - **SfM (Structure-from-Motion) / COLMAP**: 여러 장의 사진만 보고, 각 사진을 찍은 카메라의 포즈와 장면의 대략적인 3D 점 위치를 동시에 역산해내는 고전적인 컴퓨터 비전 기법. NeRF/3DGS 학습 전 단계에서 카메라 포즈를 얻는 데 널리 쓰임 (COLMAP은 이를 구현한 대표적인 오픈소스 도구)
 - **RGB / Depth / Point Cloud**: RGB는 색상만 있는 일반 사진, Depth는 각 픽셀까지의 거리 정보가 추가된 이미지, Point Cloud는 3D 좌표를 가진 점들의 집합(주로 LiDAR나 depth 센서로 얻음) — 이 세 가지가 3D 재구성에서 가장 흔히 쓰이는 입력 형태
 - **실시간(Real-time) 렌더링**: 사람이 끊김을 느끼지 못하는 속도(보통 30fps 이상)로 이미지를 계속 그려내는 것. NeRF가 느렸던 이유, 3DGS가 주목받은 이유가 바로 이 실시간성 여부
+- **상관계수(Correlation Coefficient)의 직관**: 두 값(예: 어떤 지표의 점수와 사람이 매긴 점수)이 "같이 오르고 같이 내리는 정도"를 -1~1 사이의 숫자로 나타낸 것. 1에 가까우면 둘이 거의 같이 움직인다는(=지표가 사람 판단을 잘 예측한다는) 뜻, 0에 가까우면 둘이 서로 무관하다는 뜻. PLCC/SRCC/KRCC 같은 지표 평가 용어들이 모두 이 개념 위에 정의됨
+- **평가자(관찰자, Observer) 기반 실험**: 알고리즘 성능을 사람이 아니라 여러 명의 실제 사람에게 직접 보여주고 점수를 매기게 해서 "정답"으로 삼는 실험 방식. 시력·색각 검사 같은 사전 검증과, 신뢰할 수 없는 응답을 걸러내는 사후 스크리닝을 거치는 경우가 많음
 
 ## 공통 렌더링 개념
 
@@ -62,3 +64,14 @@ categories: ["Glossary"]
 - **PSNR / SSIM**: 픽셀 단위 재구성 정확도(PSNR, dB)와 구조적 유사도(SSIM, 0~1) — 둘 다 높을수록 좋음
 - **LPIPS**: 딥러닝 기반 지각적 유사도 지표 — 사람이 느끼는 화질 차이에 더 가깝고, 낮을수록 좋음
 - **FID (Fréchet Inception Distance)**: 실제 이미지 분포와 생성/재구성 이미지 분포 사이의 유사도 — 낮을수록 좋음
+
+## 지각 품질 평가 방법론 (Perceptual Quality Assessment)
+
+PSNR/SSIM 같은 지표가 "사람 눈에 실제로 실사처럼 보이는가"를 얼마나 잘 대변하는지를 검증하는 별도의 연구 분야에서 쓰이는 용어입니다.
+
+- **주관 품질 평가 (Subjective Quality Assessment)**: 알고리즘이 아니라 사람이 직접 이미지·영상을 보고 점수를 매겨 "정답"으로 삼는 평가 방식. 이렇게 모은 사람의 점수를 기준으로, 자동화된 지표(PSNR 등)가 그 점수를 얼마나 잘 예측하는지를 검증함
+- **MOS (Mean Opinion Score)**: 여러 평가자가 매긴 점수의 평균값. 주관 품질 평가에서 "이 방법이 얼마나 실사처럼 보였는가"를 하나의 숫자로 요약한 것
+- **참조 기반(Full-Reference, FR) vs 무참조(No-Reference, NR) 지표**: 참조 기반은 정답 이미지와 비교해서 점수를 매기는 방식(PSNR, SSIM 등), 무참조는 정답 없이 이미지/장면 자체만 보고 품질을 판단하는 방식 — 실제 서비스 환경은 정답이 없는 경우가 많아 무참조 지표의 실용성이 더 큼
+- **PLCC / SRCC / KRCC**: 어떤 자동화된 지표의 점수가 사람의 MOS와 얼마나 일치하는지를 재는 상관계수들(선형/순위/켄달 순위 상관) — 1에 가까울수록 그 지표가 사람의 판단을 잘 예측한다는 뜻
+- **SAMVIQ (Subjective Assessment Methodology for Video Quality, ITU-T BT.1788)**: 평가자가 모든 영상을 한 번 훑어본 뒤, 자유롭게 되돌아가며 0~100점을 매기는 표준화된 주관 평가 실험 프로토콜
+- **3D 가우시안 원시 데이터 기반 평가**: 렌더링된 2D 이미지를 거치지 않고, 가우시안의 위치·색상 등 원시 파라미터 자체에서 저하 신호를 직접 탐지해 품질을 예측하는 방식 — 렌더링 비용 없이 대량의 재구성 결과를 빠르게 선별(triage)하는 데 유용 ([3DGS-QA](/posts/papers/3dgs-qa-perceptual-quality-assessment-of-3d-gaussian-splatting/))

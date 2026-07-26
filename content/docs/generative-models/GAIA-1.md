@@ -5,8 +5,6 @@ draft: false
 categories: ["Papers", "Autonomous Driving"]
 tags: ["Autonomous Driving", "World Model", "Generative Model", "Video Generation", "Diffusion"]
 year: 2023
-references:
-  - "denoising-diffusion-probabilistic-models"
 ---
 
 ## 개요

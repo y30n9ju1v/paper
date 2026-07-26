@@ -1,12 +1,12 @@
 ---
-title: "시뮬레이션 용어집"
+title: "시뮬레이션 핵심 개념 정리"
 date: 2026-07-26T16:15:00+09:00
 draft: false
 weight: 40
 categories: ["Glossary"]
 ---
 
-`autonomous-driving/simulation/` 폴더의 논문들 — [CARLA](/posts/papers/carla-an-open-urban-driving-simulator/), [LiDARsim](/posts/papers/lidarsim-realistic-lidar-simulation-by-leveraging-the-real-world/), [Street Gaussians](/posts/papers/street-gaussians-modeling-dynamic-urban-scenes/), [DrivingGaussian](/posts/papers/driving-gaussian-composite-gaussian-splatting/), [OmniRe](/posts/papers/omnire-omni-urban-scene-reconstruction/), [HUGSIM](/posts/papers/hugsim-real-time-photorealistic-closed-loop-simulator/), [Instant NuRec](/posts/papers/instant-nurec-feed-forward-3d-gaussian-reconstruction-for-driving-scene-simulation/), [Cam2Sim](/posts/papers/cam2sim-neural-scenario-reconstruction-for-closed-loop-autonomous-driving-simulation/) — 에서 반복적으로 등장하는 핵심 용어를 정리합니다.
+`autonomous-driving/simulation/` 폴더의 논문들 — [CARLA](/posts/papers/carla-an-open-urban-driving-simulator/), [LiDARsim](/posts/papers/lidarsim-realistic-lidar-simulation-by-leveraging-the-real-world/), [Street Gaussians](/posts/papers/street-gaussians-modeling-dynamic-urban-scenes/), [DrivingGaussian](/posts/papers/driving-gaussian-composite-gaussian-splatting/), [OmniRe](/posts/papers/omnire-omni-urban-scene-reconstruction/), [HUGSIM](/posts/papers/hugsim-real-time-photorealistic-closed-loop-simulator/), [Instant NuRec](/posts/papers/instant-nurec-feed-forward-3d-gaussian-reconstruction-for-driving-scene-simulation/), [Cam2Sim](/posts/papers/cam2sim-neural-scenario-reconstruction-for-closed-loop-autonomous-driving-simulation/) — 에서 반복적으로 등장하는 핵심 개념을 정리합니다.
 
 ## 기초 개념 (사전지식)
 

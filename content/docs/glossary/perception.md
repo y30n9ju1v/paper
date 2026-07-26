@@ -1,12 +1,12 @@
 ---
-title: "인지(Perception) 용어집"
+title: "인지(Perception) 핵심 개념 정리"
 date: 2026-07-26T16:10:00+09:00
 draft: false
 weight: 30
 categories: ["Glossary"]
 ---
 
-이 폴더의 인지(perception) 논문들 — BEV 탐지([Lift-Splat-Shoot](/posts/papers/lift-splat-shoot/), [BEVFormer](/posts/papers/bevformer/), [BEVDepth](/posts/papers/bevdepth/), [BEVFusion](/posts/papers/bevfusion-multi-task-multi-sensor-fusion/), [DETR3D](/posts/papers/detr3d-3d-object-detection-multi-view-images/), [CenterPoint](/posts/papers/centerpoint-center-based-3d-object-detection-and-tracking/), [PointPillars](/posts/papers/pointpillars-fast-encoders-object-detection-point-clouds/)), HD 맵([MapTR](/posts/papers/maptr-structured-modeling-online-vectorized-hd-map-construction/), [VectorMapNet](/posts/papers/vectormapnet-end-to-end-vectorized-hd-map-learning/), [StreamMapNet](/posts/papers/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/)), 3D Occupancy([MonoScene](/posts/papers/monoscene-monocular-3d-semantic-scene-completion/), [SurroundOcc](/posts/papers/surroundocc/), [TPVFormer](/posts/papers/tpvformer-tri-perspective-view-3d-semantic-occupancy/), [Occ3D](/posts/papers/occ3d-large-scale-3d-occupancy-prediction-benchmark/), [GaussianWorld](/posts/papers/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/)) — 에서 반복적으로 등장하는 핵심 용어를 정리합니다.
+이 폴더의 인지(perception) 논문들 — BEV 탐지([Lift-Splat-Shoot](/posts/papers/lift-splat-shoot/), [BEVFormer](/posts/papers/bevformer/), [BEVDepth](/posts/papers/bevdepth/), [BEVFusion](/posts/papers/bevfusion-multi-task-multi-sensor-fusion/), [DETR3D](/posts/papers/detr3d-3d-object-detection-multi-view-images/), [CenterPoint](/posts/papers/centerpoint-center-based-3d-object-detection-and-tracking/), [PointPillars](/posts/papers/pointpillars-fast-encoders-object-detection-point-clouds/)), HD 맵([MapTR](/posts/papers/maptr-structured-modeling-online-vectorized-hd-map-construction/), [VectorMapNet](/posts/papers/vectormapnet-end-to-end-vectorized-hd-map-learning/), [StreamMapNet](/posts/papers/streammapnet-streaming-mapping-network-vectorized-online-hd-map-construction/)), 3D Occupancy([MonoScene](/posts/papers/monoscene-monocular-3d-semantic-scene-completion/), [SurroundOcc](/posts/papers/surroundocc/), [TPVFormer](/posts/papers/tpvformer-tri-perspective-view-3d-semantic-occupancy/), [Occ3D](/posts/papers/occ3d-large-scale-3d-occupancy-prediction-benchmark/), [GaussianWorld](/posts/papers/gaussianworld-gaussian-world-model-for-streaming-3d-occupancy-prediction/)) — 에서 반복적으로 등장하는 핵심 개념을 정리합니다.
 
 ## 기초 개념 (사전지식)
 

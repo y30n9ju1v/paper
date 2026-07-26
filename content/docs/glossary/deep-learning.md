@@ -1,12 +1,12 @@
 ---
-title: "딥러닝 기초 용어집"
+title: "딥러닝 기초 개념 정리"
 date: 2026-07-26T16:00:00+09:00
 draft: false
 weight: 10
 categories: ["Glossary"]
 ---
 
-이 폴더의 논문들([Transformer](/posts/papers/attention-is-all-you-need/), [ResNet](/posts/papers/resnet-deep-residual-learning-for-image-recognition/), [ViT](/posts/papers/vit-an-image-is-worth-16x16-words/), [DETR](/posts/papers/detr-end-to-end-object-detection-with-transformers/), [PointNet](/posts/papers/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/), [PointNet++](/posts/papers/pointnet-plus-plus-deep-hierarchical-feature-learning/))에서 반복적으로 등장하는 핵심 용어를 정리합니다.
+이 폴더의 논문들([Transformer](/posts/papers/attention-is-all-you-need/), [ResNet](/posts/papers/resnet-deep-residual-learning-for-image-recognition/), [ViT](/posts/papers/vit-an-image-is-worth-16x16-words/), [DETR](/posts/papers/detr-end-to-end-object-detection-with-transformers/), [PointNet](/posts/papers/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/), [PointNet++](/posts/papers/pointnet-plus-plus-deep-hierarchical-feature-learning/))에서 반복적으로 등장하는 핵심 개념을 정리합니다.
 
 ## 기초 개념 (사전지식)
 

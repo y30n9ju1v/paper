@@ -1,12 +1,12 @@
 ---
-title: "Novel View Synthesis 용어집"
+title: "Novel View Synthesis 핵심 개념 정리"
 date: 2026-07-26T16:05:00+09:00
 draft: false
 weight: 20
 categories: ["Glossary"]
 ---
 
-이 폴더의 논문들([NeRF](/posts/papers/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/), [3D Gaussian Splatting](/posts/papers/3d-gaussian-splatting/), [3DGUT](/posts/papers/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/), [3D Gaussian Ray Tracing](/posts/papers/3d-gaussian-ray-tracing/), [4D Gaussian Splatting](/posts/papers/4d-gaussian-splatting/), [Difix3D+](/posts/papers/difix3d-plus/), [3DGS-QA](/posts/papers/3dgs-qa-perceptual-quality-assessment-of-3d-gaussian-splatting/), [Evaluating Human Perception of NVS](/posts/papers/evaluating-human-perception-of-novel-view-synthesis-gs-nerf-dynamic-scenes/))에서 반복적으로 등장하는 핵심 용어를 정리합니다.
+이 폴더의 논문들([NeRF](/posts/papers/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/), [3D Gaussian Splatting](/posts/papers/3d-gaussian-splatting/), [3DGUT](/posts/papers/3dgut-enabling-distorted-cameras-and-secondary-rays-in-gaussian-splatting/), [3D Gaussian Ray Tracing](/posts/papers/3d-gaussian-ray-tracing/), [4D Gaussian Splatting](/posts/papers/4d-gaussian-splatting/), [Difix3D+](/posts/papers/difix3d-plus/), [3DGS-QA](/posts/papers/3dgs-qa-perceptual-quality-assessment-of-3d-gaussian-splatting/), [Evaluating Human Perception of NVS](/posts/papers/evaluating-human-perception-of-novel-view-synthesis-gs-nerf-dynamic-scenes/))에서 반복적으로 등장하는 핵심 개념을 정리합니다.
 
 ## 기초 개념 (사전지식)
 

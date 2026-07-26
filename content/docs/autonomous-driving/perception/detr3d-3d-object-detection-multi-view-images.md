@@ -8,6 +8,7 @@ description: "카메라 이미지만으로 3D 바운딩 박스를 예측하는 t
 math: true
 year: 2021
 references:
+  - "detr-end-to-end-object-detection-with-transformers"
   - "nuscenes-multimodal-dataset-autonomous-driving"
 ---
 

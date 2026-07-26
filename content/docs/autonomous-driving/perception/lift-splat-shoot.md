@@ -6,6 +6,7 @@ categories: ["Papers", "Autonomous Driving"]
 tags: ["Autonomous Driving", "BEV", "Multi-Camera", "3D Object Detection"]
 year: 2020
 references:
+  - "resnet-deep-residual-learning-for-image-recognition"
   - "nuscenes-multimodal-dataset-autonomous-driving"
 ---
 

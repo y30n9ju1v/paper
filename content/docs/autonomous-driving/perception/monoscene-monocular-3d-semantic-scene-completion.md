@@ -5,6 +5,8 @@ draft: false
 categories: ["Papers", "Autonomous Driving", "3D Scene Understanding"]
 tags: ["Occupancy Prediction", "Semantic Scene Completion", "NeRF", "BEV", "3D Understanding"]
 year: 2022
+references:
+  - "resnet-deep-residual-learning-for-image-recognition"
 ---
 
 ## 개요

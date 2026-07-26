@@ -7,7 +7,6 @@ tags: ["3D Gaussian Splatting", "Autonomous Driving", "Novel View Synthesis", "D
 year: 2025
 references:
   - "3d-gaussian-splatting"
-  - "EmerNeRF"
   - "nuscenes-multimodal-dataset-autonomous-driving"
   - "waymo-open-dataset"
 ---

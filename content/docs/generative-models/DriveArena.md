@@ -8,7 +8,6 @@ year: 2024
 references:
   - "high-resolution-image-synthesis-with-latent-diffusion-models"
   - "DriveDreamer"
-  - "uniad-planning-oriented-autonomous-driving"
 ---
 
 ## 개요

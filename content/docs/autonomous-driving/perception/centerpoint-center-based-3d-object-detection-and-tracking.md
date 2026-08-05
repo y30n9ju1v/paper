@@ -10,138 +10,241 @@ references:
 ---
 
 ## 💡 한 줄 요약
-LiDAR 포인트 클라우드에서 3D 객체를 바운딩 박스 대신 중심점(center point)으로 표현·탐지함으로써 방향 불변성을 확보하고, velocity 예측 기반의 greedy closest-point matching으로 Kalman filter 없이도 SOTA 3D 추적 성능을 달성한다.
+LiDAR 포인트 클라우드에서 3D 객체를 바운딩 박스 대신 중심점(Center Point)으로 표현·탐지함으로써 방향 불변성(Rotation Invariance)을 확보하고, Velocity 헤드 예측 기반의 Greedy Closest-Point Matching 알고리즘으로 1ms 속도의 SOTA 3D 추적(Tracking) 성능을 달성했다.
+
+---
 
 ## 📌 개요 및 핵심 기여 (Key Contributions)
-- **저자**: Tianwei Yin, Xingyi Zhou, Philipp Krähenbühl (UT Austin)
+- **저자**: Tianwei Yin, Xingyi Zhou, Philipp Krähenbühl (University of Texas at Austin)
 - **발행년도**: 2021 (arXiv 2020, CVPR 2021, arXiv:2006.11275)
 - **주요 기여점**:
-  1. 3D 객체 탐지를 keypoint estimation 문제로 재정의하여, 클래스별 heatmap peak로 객체 중심을 예측하는 Center-based 표현 제안
-  2. 중심점 위치에서 sub-voxel offset, height-above-ground, 3D size, rotation, velocity를 회귀하는 통합 헤드 설계
-  3. Velocity Head로 예측한 중심 이동량을 이용해 greedy closest-point matching으로 추적을 단순화, Kalman filter(73ms) 대비 73배 빠른 1ms 추적 달성
-  4. 예측 박스의 5개 지점(4개 면 중심 + 객체 중심) 피처로 confidence를 재보정하는 Two-Stage Refinement와 IoU-guided confidence score 도입
-  5. Waymo·nuScenes 두 벤치마크에서 당시 SOTA 달성, anchor-based 대비 회전된 객체에서 특히 큰 폭의 성능 향상 입증
+  1. **Center-based 3D 객체 표현**: 방향 의존적 Anchor Box 대신 객체의 중심점(Keypoint Peak)을 탐지하는 2D Gaussian Heatmap 구조로 회전된 객체 탐지 정확도 대폭 향상.
+  2. **다중 회귀 헤드 (Multi-Task Regression Heads)**: 중심점으로부터 서브 복셀 오프셋, 바닥 높이, 3D 크기 $(\log w, \log l, \log h)$, 회전각 $(\sin\alpha, \cos\alpha)$, 속도 $(v_x, v_y)$를 동시 회귀.
+  3. **1ms 초고속 3D 추적 (Greedy Closest-Point Matching)**: 예측된 속도 $(v_x, v_y)$로 이전 프레임 위치를 역산하여 Kalman Filter 없이 1ms 만에 3D Multi-Object Tracking(MOT) 수행.
+  4. **Two-Stage Refinement & IoU-guided Confidence**: 3D 박스의 5개 지점(4개 면 중심 + 객체 중심) 피처를 추출하여 3D IoU 기반 Score를 보정.
+
+---
 
 ## 🎯 관련 연구 흐름 및 기존 한계 (Related Work & Motivation)
-- **연구 흐름**: 2D 객체 탐지는 anchor 기반 방법에서 CenterNet 같은 keypoint(중심점) 기반 방법으로 발전했습니다. 3D 탐지 분야에서는 VoxelNet, PointPillars 등이 포인트 클라우드를 voxel/pillar로 인코딩하는 3D 인코더를 발전시켜 왔지만, 탐지 헤드는 여전히 axis-aligned anchor box에 의존하고 있었습니다.
-- **기존 한계점**:
-  1. 기존 3D 탐지기는 axis-aligned 바운딩 박스(anchor)를 사용하여, 차량이 회전하거나 자전거·보행자처럼 세로로 긴 객체를 탐지할 때 anchor가 맞지 않아 성능이 저하됨
-  2. 방향별로 anchor 수가 늘어나고 IoU threshold 튜닝이 필요해 복잡도가 증가하고 false positive가 증가함
-  3. 기존 3D 추적은 Kalman filter + Mahalanobis 거리 등 복잡한 연산이 필요함
-- **이 논문의 접근 방식**: 객체를 3D 바운딩 박스 대신 중심점(heatmap peak)으로 표현하여 방향에 무관한 탐지를 가능하게 하고, 중심점 velocity 예측으로 추적을 greedy closest-point matching으로 단순화합니다.
+
+### 관련 연구 흐름
+1. **Anchor-based 3D Detection (VoxelNet, SECOND, PointPillars)**: BEV 평면상에 축 정렬(Axis-Aligned)된 Anchor Box를 고정 배치하여 탐지.
+2. **CenterPoint**: Anchor의 방향 제약을 완전히 철폐하고 2D CenterNet 아이디어를 3D BEV 공간으로 확장하여 표준 3D Detector 디팩토 스탠다드로 자리잡음.
+
+### 기존 Anchor-based 방법의 한계점
+- **방향 불연속성 (Rotation Dependency)**: 대각선으로 회전된 차량이나 보행자처럼 가로세로 비율이 극단적인 물체에 Anchor Box가 맞지 않아 탐지율 하락.
+- **불필요한 초매개변수 오버헤드**: 회전각마다 Anchor를 중복 배치해야 하므로 연산량 증가 및 IoU 임계값 튜닝 복잡.
+
+---
 
 ## 📑 목차
-- Section 1: Introduction
-- Section 2: Related Work
-- Section 3: Preliminaries (2D CenterNet, 3D Detection 정의)
-- Section 4: CenterPoint (Center Heatmap Head / Regression Heads / Velocity Head와 추적 / Two-Stage CenterPoint)
-- Section 5: Experiments (Main Results / Ablation Studies)
+- Chapter 1: 3D Center Heatmap Target 생성 (Gaussian Rendering)
+- Chapter 2: CenterPoint 다중 회귀 헤드 수식 $(\sin/\cos, \text{Velocity})$
+- Chapter 3: 2단계 3D IoU-guided Score Refinement
+- Chapter 4: 1ms Greedy Closest-Point 3D 추적 알고리즘
+- Chapter 5: 주요 실험 및 결과
+- Chapter 6: 결론 및 시사점
 
-## 🛠️ Section 3: Preliminaries
+---
 
-**요약**
-CenterPoint의 직접적 전신인 2D CenterNet은 이미지 기반 객체 탐지를 키포인트 추정(keypoint estimation) 문제로 재정의합니다. 입력 이미지에서 $K$개 클래스별 heatmap $\hat{Y} \in [0,1]^{w \times h \times K}$을 예측하고, heatmap의 각 local maximum(peak)이 탐지된 객체의 중심이 됩니다. 각 탐지 객체에 대해 크기, 오프셋 등 속성을 중심 위치에서 회귀합니다.
+## 🛠️ Chapter 1: 3D Center Heatmap Target 생성
 
-3D Detection 문제는 포인트 클라우드 $\mathcal{P} = \{(x, y, z, r)_i\}$에서 3D 바운딩 박스 집합 $\mathcal{B} = \{b_k\}$를 예측하는 것으로 정의됩니다. 각 박스 $b = (u, v, d, w, l, h, \alpha)$는 BEV 상의 중심 위치 $(u,v)$, 지면으로부터의 높이 $d$, 크기 $(w,l,h)$, yaw 회전각 $\alpha$로 구성됩니다. 현대 3D 탐지기는 VoxelNet 또는 PointPillars 같은 3D 인코더로 포인트 클라우드를 voxel/pillar로 양자화하여 map-view 피처맵 $\mathbf{M} \in \mathbb{R}^{W \times L \times F}$을 생성합니다.
+### 1. 요약
+GT 3D 바운딩 박스의 중심 $(x_k, y_k)$를 BEV 표면에 투영하고, 박스 크기 $(w_k, l_k)$에 비례하는 2D 가우시안 반경 $\sigma_k$를 이용해 렌더링된 열지도 Target $Y_{u,v,c}$를 구성합니다.
 
-**핵심 개념**
-- **2D CenterNet**: 객체를 keypoint(중심점)로 표현하는 2D 탐지기. CenterPoint의 3D 확장의 기반
-- **$(u,v,d,w,l,h,\alpha)$**: 3D 바운딩 박스를 표현하는 7개 파라미터
-- **VoxelNet / PointPillars**: 포인트 클라우드를 map-view 피처맵으로 변환하는 3D 인코더
+### 2. 수식 및 파이썬 코드 설명
 
-## 🛠️ Section 4: CenterPoint
+$$Y_{u,v,c} = \exp\left(-\frac{(u - x_k)^2 + (v - y_k)^2}{2\sigma_k^2}\right)$$
 
-**요약**
-전체 파이프라인은 3D Backbone(VoxelNet 또는 PointPillars) → Detection Head(Center Heatmap Head, Sub-voxel Offset Head, Height-above-ground Head, 3D Size Head, Rotation Head, Velocity Head) → (선택적) Two-Stage 정제로 구성됩니다.
+$$\sigma_k = \max\Big( f(w_k, l_k), \ \tau \Big) \quad (\tau = 2)$$
 
-**Center Heatmap Head**: 목표는 탐지된 객체의 중심 위치에 heatmap peak를 생성하는 것입니다. 훈련 시, 3D 바운딩 박스 중심점을 BEV에 투영하고 2D Gaussian 커널로 렌더링하여 GT heatmap을 만듭니다. Focal loss로 최적화합니다(heatmap이 매우 희소하므로 배경 억제가 중요).
+```python
+import torch
 
-**Regression Heads**: 각 탐지 객체에 대해 중심점 위치에서 sub-voxel offset($\mathbb{R}^2$), height-above-ground($\mathbb{R}$), 3D size($\mathbb{R}^3$, log-scale), rotation($\mathbb{R}^2$, $\sin/\cos$), velocity($\mathbb{R}^2$)를 회귀합니다. rotation을 $\sin/\cos$로 표현하는 이유는, 각도는 $0°$와 $360°$가 같지만 수치상 멀어서 회귀가 불안정하기 때문입니다. 모든 회귀 출력은 L1 loss로 학습합니다.
+def render_centerpoint_gaussian_heatmap(
+    gt_centers: torch.Tensor, # (N, 2) GT 중심점 좌표 (x, y)
+    gt_sizes: torch.Tensor,   # (N, 2) GT 박스 크기 (w, l)
+    grid_shape: tuple,        # (H, W) BEV 그리드 해상도
+    radius_min: float = 2.0
+) -> torch.Tensor:
+    """
+    CenterPoint 학습을 위한 2D Gaussian Heatmap Target 생성
+    """
+    H, W = grid_shape
+    heatmap = torch.zeros((H, W), dtype=torch.float32)
+    
+    ys = torch.arange(0, H).float().view(H, 1).repeat(1, W)
+    xs = torch.arange(0, W).float().view(1, W).repeat(H, 1)
+    
+    for i in range(len(gt_centers)):
+        cx, cy = gt_centers[i, 0], gt_centers[i, 1]
+        w, l = gt_sizes[i, 0], gt_sizes[i, 1]
+        
+        # 반경 sigma 계산
+        sigma = max(float(torch.sqrt(w * l) / 6.0), radius_min)
+        
+        # Gaussian Kernel 렌더링
+        gaussian = torch.exp(-((xs - cx)**2 + (ys - cy)**2) / (2 * sigma**2))
+        heatmap = torch.maximum(heatmap, gaussian)
+        
+    return heatmap
 
-**Velocity Head와 추적**: velocity $\mathbf{v} \in \mathbb{R}^2$는 현재 프레임과 직전 프레임 사이의 중심점 이동량입니다. 추적 알고리즘(greedy closest-point matching)은 현재 프레임 탐지 결과에서 velocity로 중심을 이전 프레임으로 역투영하고, 이전 프레임 tracklet과 최근접점 거리로 매칭합니다. 매칭 실패 tracklet은 최대 $T=3$ 프레임 유지 후 삭제되며, 추적 시간은 1ms로 Kalman filter(73ms) 대비 73배 빠릅니다. 객체가 점이면 추적도 점 간 거리 매칭으로 충분하며, 박스 IoU 매칭보다 회전·크기에 무관하게 robust합니다.
+# --- 사용 예시 ---
+centers = torch.tensor([[50.0, 50.0], [20.0, 80.0]])
+sizes = torch.tensor([[4.0, 2.0], [1.5, 0.8]])
+hm_gt = render_centerpoint_gaussian_heatmap(centers, sizes, (100, 100))
+print("생성된 GT Heatmap Max:", hm_gt.max().item())
+```
 
-**Two-Stage CenterPoint**: 1단계(one-stage)에서 중심점 위치만으로 속성을 추론하면, 센서가 객체 측면만 보는 경우(자율주행에서 흔한 상황) 중심점 피처가 불충분할 수 있습니다. 2단계 보정에서는 예측된 3D 바운딩 박스의 4개 outward-facing 면 중심점 + 객체 중심점(총 5점)에서 backbone map-view 피처맵을 bilinear interpolation으로 추출하고, 이를 concat하여 MLP를 통과시켜 IoU-guided confidence score와 box refinement를 얻습니다.
+---
 
-**핵심 개념**
-- **Gaussian 렌더링**: GT 중심점 주변에 박스 크기 비례 Gaussian 분포로 supervision 영역 확장. 작은 객체도 안정적 학습
-- **Greedy Closest-Point Matching**: velocity로 역투영한 중심점과 이전 tracklet 중심점 간 최소 거리로 추적. 1ms의 극단적 속도
-- **IoU-guided Score**: 2단계 confidence를 박스-GT IoU로 직접 지도. NMS 없이도 품질 반영 가능
+## 🛠️ Chapter 2: CenterPoint 다중 회귀 헤드 수식
 
-**수식 예제**
+### 1. 요약
+중심점 Heatmap Peak에서 회전각 $\alpha$의 연속성을 보장하기 위해 $\sin\alpha, \cos\alpha$ 회귀를 사용하며, 프레임 간 이동 속도 $(v_x, v_y)$를 동시 예측합니다.
 
-$$\sigma = \max(f(w \cdot l),\ \tau), \quad \tau = 2$$
+### 2. 수식 및 파이썬 코드 설명
 
-**수식 설명**
-- **$w, l$**: 객체의 가로·세로 크기 (BEV)
-- **$f(\cdot)$**: CornerNet의 반경 함수 — 박스 크기에 비례해 Gaussian을 넓게 설정
-- **$\tau = 2$**: 최소 Gaussian 반경 (작은 객체 보호)
-- **직관**: 큰 차량일수록 넓은 supervision 영역 → 학습 안정성 향상
+$$\alpha = \text{atan2}(\sin\alpha, \cos\alpha)$$
 
-**수식 예제**
+$$\hat{\mathbf{v}} = (v_x, v_y) = \frac{\boldsymbol{\mu}_t - \boldsymbol{\mu}_{t-1}}{\Delta t}$$
 
-$$I = \min(1,\ \max(0,\ 2 \times IoU_t - 0.5))$$
+```python
+import torch
 
-$$L_{score} = -I_t \log(\hat{I}_t) - (1-I_t)\log(1-\hat{I}_t)$$
+def decode_centerpoint_rot_and_velocity(
+    sin_cos_pred: torch.Tensor, # (B, 2, H, W) -> sin(alpha), cos(alpha)
+    vel_pred: torch.Tensor      # (B, 2, H, W) -> vx, vy
+) -> tuple:
+    """
+    CenterPoint 회귀 헤드로부터 3D Yaw 회전각 alpha 및 속도 (vx, vy) 디코딩
+    """
+    sin_a = sin_cos_pred[:, 0]
+    cos_a = sin_cos_pred[:, 1]
+    
+    # 1. Yaw angle 복원: alpha = atan2(sin, cos)
+    yaw_angle = torch.atan2(sin_a, cos_a) # (B, H, W)
+    
+    # 2. 속도 벡터
+    vx = vel_pred[:, 0]
+    vy = vel_pred[:, 1]
+    
+    return yaw_angle, vx, vy
 
-**수식 설명**
-- **$IoU_t$**: t번째 제안 박스와 GT 간의 3D IoU
-- **$I_t$**: IoU를 $[0,1]$ 범위로 정규화한 confidence target (IoU = 0.5 → $I$ = 0, IoU = 1.0 → $I$ = 1)
-- **$\hat{I}_t$**: 예측 confidence
-- **직관**: NMS 없이도 confidence score가 박스 품질을 직접 반영하게 학습
+# --- 사용 예시 ---
+sc_pred = torch.tensor([[[[0.7071]], [[0.7071]]]]) # sin(45deg), cos(45deg)
+v_pred = torch.tensor([[[[1.2]], [[-0.5]]]])
+yaw, vx, vy = decode_centerpoint_rot_and_velocity(sc_pred, v_pred)
+print("복원된 Yaw 각도 (deg):", torch.rad2deg(yaw).item())
+```
 
-**수식 예제**
+---
+
+## 🛠️ Chapter 3: 2단계 3D IoU-guided Score Refinement
+
+### 1. 요약
+1단계 중심점 탐지 점수 $\hat{Y}_t$와 2단계 3D IoU-guided 보정 점수 $\hat{I}_t$의 기하평균을 최종 신뢰도 점수 $\hat{Q}_t$로 산출합니다.
+
+### 2. 수식 및 파이썬 코드 설명
+
+$$I_t = \min\Big(1, \ \max(0, \ 2 \times \text{IoU}_t - 0.5)\Big)$$
 
 $$\hat{Q}_t = \sqrt{\hat{Y}_t \cdot \hat{I}_t}$$
 
-**수식 설명**
-- 1단계 heatmap 점수 $\hat{Y}_t$와 2단계 IoU 점수 $\hat{I}_t$의 기하평균으로 최종 confidence를 계산
+```python
+import torch
 
-## 📊 주요 실험 및 결과 (Experiments & Results)
-- **사용 데이터셋 / 벤치마크**: Waymo Open Dataset(3D Detection), nuScenes(3D Detection, 3D Tracking)
+def compute_iou_guided_confidence_score(
+    heatmap_score: torch.Tensor, # (N,) 1단계 Heatmap Peak 점수
+    predicted_iou: torch.Tensor  # (N,) 2단계 예측 3D IoU
+) -> torch.Tensor:
+    """
+    Two-Stage CenterPoint의 최종 confidence score Q_hat = sqrt(Y_hat * I_hat)
+    """
+    # IoU target 정규화 I_t = clamp(2 * IoU - 0.5, 0, 1)
+    i_score = torch.clamp(2.0 * predicted_iou - 0.5, min=0.0, max=1.0)
+    
+    final_score = torch.sqrt(heatmap_score * i_score)
+    return final_score
 
-**Waymo Open Dataset — 3D Detection (test set, Level 2)**
-
-| 방법 | Vehicle mAP | Vehicle mAPH | Ped. mAP | Ped. mAPH |
-|---|---|---|---|---|
-| PointPillars | 55.6 | 55.1 | 45.1 | — |
-| PV-RCNN | 65.1 | 64.7 | — | — |
-| **CenterPoint-Voxel (ours)** | **72.2** | **71.8** | **72.2** | **66.4** |
-
-**nuScenes — 3D Detection (test set)**
-
-| 방법 | mAP | NDS | PKL |
-|---|---|---|---|
-| PointPillars | 40.1 | 55.0 | 1.00 |
-| CBGS (이전 1위) | 52.8 | 63.3 | 0.77 |
-| **CenterPoint (ours)** | **58.0** | **65.5** | **0.69** |
-
-**nuScenes — 3D Tracking (test set)**
-
-| 방법 | AMOTA |
-|---|---|
-| AB3D | 15.1 |
-| Chiu et al. | 55.0 |
-| **CenterPoint (ours)** | **63.8** |
-
-**Ablation: Center-based vs Anchor-based (Waymo validation, Level 2 mAPH)**
-
-| Encoder | 방법 | Vehicle | Pedestrian | 평균 |
-|---|---|---|---|---|
-| VoxelNet | Anchor-based | 66.1 | 54.4 | 60.3 |
-| VoxelNet | **Center-based** | **66.5** | **62.7** | **64.6** |
-| PointPillars | Anchor-based | 64.1 | 50.8 | 57.5 |
-| PointPillars | **Center-based** | **66.5** | **57.4** | **62.0** |
-
-단순히 anchor → center로 표현만 바꿔도 3-4 mAPH 향상됩니다. 회전각별 성능에서는 회전된 객체(30°-45°)에서 center-based가 크게 우세하여 anchor의 방향 의존성 한계를 입증합니다. 2단계 정제는 추가 비용 5-6ms로 1.8 mAPH 향상을 가져옵니다.
-
-## 💡 결론 및 시사점 (Conclusion & Insights)
-CenterPoint는 3D 탐지를 keypoint estimation으로 재정의하여 방향 불변성과 단순한 파이프라인을 확보했습니다. anchor → center 전환만으로 3-4 mAPH 향상을 이끌어냈으며, 회전 객체에서 특히 강한 성능을 보였습니다. 추적을 1ms greedy matching으로 단순화하면서도 SOTA 추적 성능을 달성했고, VoxelNet·PointPillars 어느 backbone과도 호환되는 plug-in head로 설계되었습니다.
-
-- BEVFusion의 LiDAR 브랜치 선행 연구로, BEVFusion은 카메라 BEV + LiDAR BEV를 융합할 때 LiDAR BEV 처리에 CenterPoint 구조를 직접 차용합니다.
-- E2E 계획 논문들이 탐지 결과를 downstream으로 받을 때 CenterPoint를 perception 기준으로 사용하는 경우가 많습니다.
-- LiDAR 기반 3D 탐지의 사실상 표준 baseline으로, 이후 대부분의 비교 논문에서 참조됩니다.
-- **한계점 및 아쉬운 점**: LiDAR 전용이라 카메라 전용 또는 카메라+LiDAR 융합 탐지에는 직접 적용할 수 없습니다. PointPillars 백본 사용 시 보행자처럼 1픽셀 크기의 객체에서는 2단계 정제 효과가 양자화 한계로 제한적입니다. 또한 velocity 예측이 비선형 기동(급회전 등)에서는 부정확할 수 있어, 실제 복잡한 도심 시나리오에서의 추적 신뢰성은 추가 검증이 필요합니다.
+# --- 사용 예시 ---
+y_score = torch.tensor([0.9, 0.8])
+iou_pred = torch.tensor([0.85, 0.4]) # 0.85 IoU -> I=1.0 / 0.4 IoU -> I=0.3
+print("최종 보정 Confidence Score:", compute_iou_guided_confidence_score(y_score, iou_pred))
+```
 
 ---
+
+## 🛠️ Chapter 4: 1ms Greedy Closest-Point 3D 추적 알고리즘
+
+### 1. 요약
+현재 프레임 탐지 객체의 중심 $\boldsymbol{\mu}_t$에서 예측 속도 $\mathbf{v}_t$를 차감하여 이전 위치 $\boldsymbol{\mu}_{t-1}^{pred} = \boldsymbol{\mu}_t - \mathbf{v}_t \Delta t$를 역산하고, 이전 Tracklet과의 L2 거리가 가장 가까운 것끼리 탐욕적(Greedy) 매칭합니다.
+
+```python
+import torch
+
+def greedy_closest_point_3d_tracking(
+    curr_centers: torch.Tensor,  # (N, 2) 현재 프레임 탐지 중심점
+    curr_velocities: torch.Tensor,# (N, 2) 예측 속도 (vx, vy)
+    prev_tracklets: torch.Tensor, # (M, 2) 이전 프레임 Tracklet 위치
+    dt: float = 0.5,             # 프레임 간 시간 간격 (sec)
+    dist_threshold: float = 2.0  # 최대 매칭 거리 임계값 (m)
+) -> dict:
+    """
+    Velocity 기반 1ms Greedy Closest-Point 3D MOT 매칭
+    """
+    # 1. 현재 중심점을 이전 프레임 위치로 역투영: mu_{t-1} = mu_t - v_t * dt
+    pred_prev_centers = curr_centers - curr_velocities * dt # (N, 2)
+    
+    # 2. L2 거리 행렬 계산 (N, M)
+    dist_matrix = torch.cdist(pred_prev_centers, prev_tracklets)
+    
+    # 3. Greedy Matching
+    matched_pairs = []
+    for i in range(len(curr_centers)):
+        min_dist, min_idx = torch.min(dist_matrix[i], dim=0)
+        if min_dist.item() < dist_threshold:
+            matched_pairs.append((i, min_idx.item()))
+            dist_matrix[:, min_idx] = 1e6 # 중복 매칭 방지
+            
+    return {"matches": matched_pairs}
+
+# --- 사용 예시 ---
+curr_c = torch.tensor([[10.0, 10.0], [30.0, 30.0]])
+curr_v = torch.tensor([[2.0, 0.0], [0.0, 1.0]])
+prev_t = torch.tensor([[9.0, 10.0], [50.0, 50.0]])
+print("1ms 추적 매칭 결과:", greedy_closest_point_3d_tracking(curr_c, curr_v, prev_t, dt=0.5))
+```
+
+---
+
+## 📊 주요 실험 및 결과 (Experiments & Results)
+
+### 1. nuScenes & Waymo 3D 탐지/추적 성능 리더보드
+
+| 벤치마크 (Benchmark) | 모델 (Method) | 탐지 성능 (mAP / NDS) ↑ | 추적 성능 (AMOTA) ↑ | 추적 지연시간 |
+|---|---|---|---|---|
+| **Waymo (Level 2)** | PointPillars | 55.6 mAP | - | - |
+| **Waymo (Level 2)** | **CenterPoint-Voxel** | **72.2 mAP (+16.6%)** | - | - |
+| **nuScenes (Test)** | AB3D (Kalman Filter) | - | 15.1 | 73 ms |
+| **nuScenes (Test)** | **CenterPoint (Ours)** | **58.0 mAP / 65.5 NDS** | **63.8 (+8.8%)** | **1 ms (73배 가속)** |
+
+---
+
+## 💡 결론 및 시사점 (Conclusion & Insights)
+
+### 1. 결론
+CenterPoint는 3D 탐지를 2D Gaussian Center Peak 추정 문제로 명쾌하게 전환함으로써 회전 이방성 문제를 해결하고, Velocity 기반 1ms 추적을 완성한 현대 3D Perception의 디팩토 표준 파이프라인입니다.
+
+### 2. 한계점 및 아쉬운 점
+- LiDAR 전용이라 카메라 전용 또는 카메라+LiDAR 융합 탐지에는 직접 적용할 수 없다.
+- PointPillars 백본 사용 시 보행자처럼 1픽셀 크기의 객체에서는 2단계 정제 효과가 양자화 한계로 제한적이다.
+- velocity 예측이 비선형 기동(급회전 등)에서는 부정확할 수 있어, 실제 복잡한 도심 시나리오에서의 추적 신뢰성은 추가 검증이 필요하다.
+
+---
+
+## 참고 자료
+- [CenterPoint 공식 GitHub 저장소](https://github.com/tianweiy/CenterPoint)
+- [CVPR 2021 논문 (arXiv:2006.11275)](https://arxiv.org/abs/2006.11275)
 
 *관련 논문: [PointNet](/posts/papers/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/), [PointPillars](/posts/papers/pointpillars-fast-encoders-object-detection-point-clouds/), [BEVFusion](/posts/papers/bevfusion-multi-task-multi-sensor-fusion/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/), [Waymo Open Dataset](/posts/papers/waymo-open-dataset/)*

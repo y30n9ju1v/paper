@@ -10,239 +10,240 @@ references:
 ---
 
 ## 💡 한 줄 요약
-PointPillars는 LiDAR 포인트 클라우드를 수직 기둥(pillar)으로 조직화하고 PointNet으로 피처를 학습해 2D CNN만으로 3D 객체 탐지를 수행하며, 62Hz의 실시간 처리 속도로 KITTI 벤치마크 SOTA를 달성했다.
+LiDAR 3D 포인트 클라우드를 z축 구분 없는 수직 기둥(Pillar)으로 조직화하고, Simplified PointNet 인코딩 후 2D Pseudo-Image로 Scatter 사영하여 무거운 3D 합성곱(Convolution) 없이 2D CNN만으로 초고속(62Hz) SOTA 3D 객체 탐지를 실현했다.
+
+---
 
 ## 📌 개요 및 핵심 기여 (Key Contributions)
 - **저자**: Alex H. Lang, Sourabh Vora, Holger Caesar, Lubing Zhou, Jiong Yang, Oscar Beijbom (nuTonomy / APTIV)
-- **발행년도**: 2019 (arXiv 2018, CVPR 2019, arXiv:1812.05784)
+- **발행년도**: 2019 (arXiv:1812.05784, CVPR 2019)
 - **주요 기여점**:
-  1. 포인트 클라우드를 pillar(수직 기둥)로 분할하고 PointNet으로 학습된 피처를 2D pseudo-image로 scatter하는 인코더 설계
-  2. 3D 합성곱을 완전히 제거하고 표준 2D CNN + SSD 헤드만으로 3D 객체 탐지 파이프라인 구성
-  3. z축 binning 하이퍼파라미터 없이도 KITTI 벤치마크에서 속도(62Hz)와 정확도 모두 SOTA 달성
-
-## 🎯 관련 연구 흐름 및 기존 한계 (Related Work & Motivation)
-- **연구 흐름**: LiDAR 기반 3D 탐지는 PIXOR, MV3D, Complex-YOLO 같은 수작업(hand-crafted) 피처 인코더에서, VoxelNet(3D voxel 단위 PointNet + 3D Conv)과 SECOND(희소 3D Conv로 속도 개선) 같은 학습된 피처 인코더로 발전해왔다. PointPillars는 이 흐름에서 3D 컨볼루션 자체를 제거하는 방향으로 나아간다.
-- **기존 한계점**:
-  1. 3D 컨볼루션의 속도 문제 — VoxelNet은 3D voxel별 PointNet + 3D Conv를 사용하여 정확하지만 4.4Hz로 실시간 불가. SECOND가 희소 3D Conv로 20Hz까지 개선했지만 여전히 느리다.
-  2. 고정 인코더의 표현력 한계 — PIXOR, MV3D, Complex-YOLO 등은 수작업 피처 인코더를 사용해 새로운 포인트 클라우드 설정에 일반화가 어렵다.
-  3. Z축 binning 파라미터 튜닝 — voxel 방식은 수직 방향 bin 크기를 수동 설정해야 한다.
-- **이 논문의 접근 방식**: 포인트 클라우드를 pillar(수직 기둥)로 분할 → PointNet으로 학습된 피처 인코딩 → 2D pseudo-image로 scatter → 표준 2D CNN + SSD head. 3D Conv 완전 제거로 속도 62Hz를 달성한다.
-
-## 📑 목차
-- Chapter 1: Introduction
-- Chapter 2: PointPillars Network
-- Chapter 3: Implementation Details & Experimental Setup
-- Chapter 4: Results
-- Chapter 5: Realtime Inference
-- Chapter 6: Ablation Studies
-- Chapter 7: Conclusion
-
-## 🛠️ Chapter 2: PointPillars Network
-
-**요약**
-
-### 전체 파이프라인
-
-```
-입력: LiDAR 포인트 클라우드
-         │
-         ▼
-[Pillar Feature Net]
-  포인트 클라우드 → Stacked Pillars 텐서 (D, P, N)
-  → 간소화된 PointNet (Linear + BN + ReLU + MaxPool)
-  → Learned Features (C, P)
-  → 2D pseudo-image (C, H, W)로 scatter
-         │
-         ▼
-[Backbone (2D CNN)]
-  Top-down 다중 스케일 피처 추출
-  → Upsampling + Concatenation
-         │
-         ▼
-[Detection Head (SSD)]
-  Anchor 기반 3D 바운딩 박스 회귀 + 분류
-         │
-         ▼
-출력: 3D 회전 바운딩 박스 (차량, 보행자, 자전거)
-```
-
-### 2.1 Pointcloud to Pseudo-Image
-
-**Step 1 — Pillar 생성**
-포인트 클라우드를 x-y 평면에 고정 간격(기본 0.16m × 0.16m) 그리드로 분할합니다. 각 그리드 셀이 하나의 **pillar**입니다.
-- z축 binning **불필요** — pillar는 바닥부터 하늘까지 수직으로 무한 확장
-- 빈 pillar는 대부분(~97%)으로, 비어 있지 않은 pillar만 처리
-
-**Step 2 — 포인트 장식(decoration)**
-각 pillar 안의 포인트 $l$에 9차원 피처 벡터를 부여합니다:
-
-**수식 예제**
-
-$$l = (x,\ y,\ z,\ r,\ x_c,\ y_c,\ z_c,\ x_p,\ y_p)$$
-
-**수식 설명**
-- **$(x, y, z)$**: 포인트의 3D 좌표
-- **$r$**: 반사율(reflectance)
-- **$(x_c, y_c, z_c)$**: 포인트와 pillar 내 모든 포인트의 **산술 평균** 간의 거리 — 포인트가 pillar 중심에서 얼마나 떨어져 있는지
-- **$(x_p, y_p)$**: 포인트와 pillar의 **x, y 중심** 간의 오프셋
-- **직관**: 원본 좌표만 쓰면 pillar 내에서 포인트의 상대 위치를 알 수 없습니다. $x_c, y_c, z_c$는 포인트가 객체 표면의 어느 부분에 있는지(중심부 vs 가장자리), $x_p, y_p$는 pillar 격자 내에서 정확한 위치를 제공합니다.
-
-**텐서 구성**: 샘플당 최대 $P$개 비어 있지 않은 pillar, pillar당 최대 $N$개 포인트 → $(D, P, N) = (9, 12000, 100)$ 크기 텐서. 넘치면 랜덤 샘플링, 모자라면 zero padding.
-
-**Step 3 — PointNet으로 피처 학습**
-간소화된 PointNet (단일 Linear layer):
-
-$$\text{Linear}(D \to C) \to \text{BatchNorm} \to \text{ReLU} \to \text{MaxPool over } N$$
-
-출력: $(C, P)$ 크기 피처 텐서 (pillar당 하나의 $C$차원 벡터)
-
-**Step 4 — Pseudo-image로 scatter**
-각 pillar의 피처 벡터를 원래 x-y 위치에 배치 → $(C, H, W)$ 크기의 **2D pseudo-image** 생성. 이후 모든 연산은 표준 2D CNN — GPU 효율 극대화.
-
-### 2.2 Backbone (2D CNN)
-FPN(Feature Pyramid Network) 스타일의 top-down + upsampling 구조:
-
-```
-Pseudo-image (C, H, W)
-    │
-    ├─ Block1(S=2, L, 4C) — stride 2로 다운샘플 + L개 3×3 Conv
-    ├─ Block2(S=4, L, 2C) — stride 4
-    └─ Block3(S=8, L, 2C) — stride 8
-         │
-    Up1(S→1, 2C), Up2(S→1, 2C), Up3(S→1, 2C)  — transposed conv로 업샘플
-         │
-    Concat → 6C 채널 피처맵
-```
-
-- **Block(S, L, F)**: 스트라이드 $S$, $L$개 레이어, $F$ 출력 채널
-- 서로 다른 스케일의 피처를 업샘플하여 합침 → 다중 스케일 맥락 통합
-
-### 2.3 Detection Head (SSD)
-Single Shot Detector(SSD) 방식으로 anchor 기반 3D 박스를 예측합니다.
-
-**Anchor 설계**:
-- 차량: 1.6×3.9×1.5m, z=-1m, 0°/90° 두 방향
-- 보행자: 0.6×0.8×1.73m, z=-0.6m
-- 자전거: 0.6×1.76×1.73m, z=-0.6m
-
-**수식 예제 — Localization 회귀 타겟**
-
-$$\Delta x = \frac{x^{gt} - x^a}{d^a}, \quad \Delta y = \frac{y^{gt} - y^a}{d^a}, \quad \Delta z = \frac{z^{gt} - z^a}{h^a}$$
-
-$$\Delta w = \log\frac{w^{gt}}{w^a}, \quad \Delta l = \log\frac{l^{gt}}{l^a}, \quad \Delta h = \log\frac{h^{gt}}{h^a}$$
-
-$$\Delta\theta = \sin(\theta^{gt} - \theta^a)$$
-
-**수식 설명**
-- **위치 $(x, y, z)$**: GT와 anchor 간 차이를 대각선 크기 $d^a = \sqrt{(w^a)^2 + (l^a)^2}$로 정규화 → 스케일 불변
-- **크기 $(w, l, h)$**: log 스케일로 회귀 → 다양한 크기 객체를 균일하게 학습
-- **각도 $\theta$**: $\sin$ 변환으로 $[-\pi, \pi]$ 범위를 연속적으로 표현
-- **$\Delta\theta$ 한계**: $\sin$은 $0°$와 $180°$를 구분 못함 → 별도 방향 분류 손실 $\mathcal{L}_{dir}$ 추가
-
-**총 손실**
-
-$$\mathcal{L} = \frac{1}{N_{pos}} \left(\beta_{loc}\mathcal{L}_{loc} + \beta_{cls}\mathcal{L}_{cls} + \beta_{dir}\mathcal{L}_{dir}\right)$$
-
-$$\mathcal{L}_{cls} = -\alpha_a (1-p^a)^\gamma \log p^a \quad \text{(Focal Loss)}$$
-
-**수식 설명**
-- **$N_{pos}$**: positive anchor 수 — 배치당 positive 비율 차이를 정규화
-- **$\mathcal{L}_{loc}$**: SmoothL1 로컬라이제이션 손실
-- **$\mathcal{L}_{cls}$**: Focal Loss — 쉬운 배경 anchor의 기여를 $(1-p^a)^\gamma$로 억제 ($\alpha=0.25, \gamma=2$)
-- **$\mathcal{L}_{dir}$**: softmax 기반 방향 분류 손실 ($\beta_{loc}=2, \beta_{cls}=1, \beta_{dir}=0.2$)
-
-## 🛠️ Chapter 4: Results
-
-**요약**
-
-### KITTI test BEV Detection benchmark
-
-| 방법 | 입력 | Speed(Hz) | mAP | Car Mod. | Ped Mod. | Cyclist Mod. |
-|---|---|---|---|---|---|---|
-| VoxelNet | Lidar | 4.4 | 58.25 | 79.26 | 40.74 | 54.76 |
-| SECOND | Lidar | 20 | 60.56 | 79.37 | 46.27 | 56.04 |
-| **PointPillars** | **Lidar** | **62** | **66.19** | **86.10** | **50.23** | **62.25** |
-
-### KITTI test 3D Detection benchmark
-
-| 방법 | 입력 | Speed(Hz) | mAP | Car Mod. | Ped Mod. | Cyclist Mod. |
-|---|---|---|---|---|---|---|
-| VoxelNet | Lidar | 4.4 | 49.05 | 65.11 | 33.69 | 48.36 |
-| SECOND | Lidar | 20 | 56.69 | 76.48 | 46.27 | 56.04 |
-| **PointPillars** | **Lidar** | **62** | **59.20** | **74.99** | **52.08** | **75.78** |
-
-→ **LiDAR only** 방법 중 속도와 정확도 모두 1위. 일부 fusion(LiDAR+카메라) 방법도 능가
-
-### 인코더 유형별 비교 (KITTI val BEV mAP)
-
-| 인코더 | 유형 | $0.16^2$ | $0.20^2$ | $0.24^2$ | $0.28^2$ |
-|---|---|---|---|---|---|
-| MV3D | Fixed | 72.8 | 71.0 | 70.8 | 67.6 |
-| PIXOR | Fixed | 71.8 | 71.3 | 69.9 | 65.6 |
-| VoxelNet | Learned | **74.4** | **74.0** | 72.9 | 71.9 |
-| **PointPillars** | **Learned** | 73.7 | 72.6 | **72.9** | **72.0** |
-
-→ 동일 속도 조건에서 PointPillars가 VoxelNet보다 더 나은 operating point 제공
-
-## 🛠️ Chapter 5: Realtime Inference
-
-**요약**
-전체 파이프라인 단계별 소요 시간 (Intel i7 CPU + NVIDIA 1080ti):
-
-| 단계 | 시간 |
-|---|---|
-| 포인트 클라우드 로드 & 필터링 | 1.4ms |
-| Pillar 생성 & 장식 | 2.7ms |
-| GPU 업로드 + 인코딩 | 2.9 + 1.3ms |
-| Pseudo-image scatter | 0.1ms |
-| Backbone + Detection Head | 7.7ms |
-| NMS (CPU) | 0.1ms |
-| **총합** | **~16.2ms (62Hz)** |
-
-**속도의 핵심 — PointPillar 인코딩이 1.3ms**: VoxelNet 인코더(190ms) 대비 **146배 빠름**. 3D Conv 완전 제거가 핵심.
-
-TensorRT 적용 시: 45.5% 추가 가속 → **105Hz** 달성 가능
-
-## 🛠️ Chapter 6: Ablation Studies
-
-**요약**
-- **공간 해상도**: 작은 pillar(0.12m) → 정밀하지만 느림. 큰 pillar(0.28m) → 빠르지만 작은 객체 성능 저하. 0.16m이 최적 균형점
-- **박스별 데이터 증강**: VoxelNet·SECOND 권고와 달리 PointPillars에서는 최소한의 증강이 더 효과적 — GT 샘플링이 증강 필요성을 대체
-- **포인트 장식**: $x_p, y_p$ 오프셋 추가로 mAP **+0.5** 향상 — pillar 내 정확한 위치 정보의 효과
-- **학습된 인코더 vs 고정 인코더**: 해상도가 클수록 학습 인코더의 우위가 뚜렷 — 표현력 차이가 희소성 증가시 더 중요
-
-**핵심 개념 정리**
-
-| 개념 | 설명 |
-|---|---|
-| **Pillar** | x-y 평면에서 고정 크기 격자로 분할된 수직 기둥. z축 binning 불필요, 비어 있지 않은 pillar만 처리 |
-| **Point Decoration** | 좌표 외 pillar 평균 대비 거리($x_c,y_c,z_c$)와 pillar 중심 오프셋($x_p,y_p$)을 추가해 상대 위치 정보 제공 |
-| **Pseudo-image** | Pillar 피처를 2D 격자에 scatter한 텐서. 이후 표준 2D CNN 적용 가능 |
-| **Simplified PointNet** | 단일 Linear+BN+ReLU+MaxPool. VoxelNet의 2개 순차 PointNet 대비 2.5ms 절감 |
-| **Anchor 매칭** | 2D BEV IoU로 positive/negative 결정. 높이·고도는 회귀 타겟으로만 사용 |
-| **방향 모호성 해결** | $\sin(\theta^{gt}-\theta^a)$ 회귀 + softmax 방향 분류 $\mathcal{L}_{dir}$ 조합 |
-| **GT 샘플링** | SECOND에서 제안한 기법. 다른 샘플의 GT 박스를 현재 포인트 클라우드에 붙여넣어 학습 다양성 증가 |
-
-## 📊 주요 실험 및 결과 (Experiments & Results)
-- **사용 데이터셋 / 벤치마크**: KITTI 3D/BEV Object Detection benchmark (Car, Pedestrian, Cyclist)
-- **주요 성과**: KITTI test BEV benchmark에서 mAP 66.19(VoxelNet 58.25, SECOND 60.56 대비 우세), 3D benchmark에서 mAP 59.20으로 LiDAR 전용 방법 중 1위. 처리 속도 62Hz(TensorRT 적용 시 105Hz)로 실시간성 확보. PointPillars 인코딩 자체는 1.3ms로 VoxelNet 인코더(190ms) 대비 146배 빠름.
-
-## 💡 결론 및 시사점 (Conclusion & Insights)
-**PointPillars의 의의**:
-- 3D Conv를 완전히 제거하고 **2D CNN만으로** LiDAR 3D 탐지 SOTA 달성
-- 학습된 인코더(PointNet) + 2D CNN의 조합이 speed-accuracy 최적 균형점 제공
-- Z축 binning 하이퍼파라미터 제거로 다양한 포인트 클라우드 설정(멀티 스캔, 레이더)에 즉시 적용 가능
-
-**자율주행 로드맵 내 위치**:
-- **CenterPoint의 backbone 선택지**: CenterPoint는 VoxelNet 또는 PointPillars를 3D 인코더로 지원하며, PointPillars 사용 시 실시간 추론 가능
-- **BEVFusion의 LiDAR 브랜치**: BEVFusion의 LiDAR → BEV 피처 추출에 PointPillars 구조가 직접 활용됨
-- LiDAR 기반 3D 탐지의 **속도 표준**을 정립 — 이후 논문들의 실시간성 기준이 됨
-
-- **한계점 및 아쉬운 점**:
-  - Pillar 단위 처리로 z축 정보(높이)가 MaxPool로 집약되어 세밀한 수직 구조 표현이 불가능하다.
-  - 보행자·자전거 탐지 성능이 차량보다 낮다(작은 객체, 희소 포인트).
-  - 카메라와의 융합을 고려하지 않은 LiDAR 전용 설계로, 카메라만이 제공하는 색·질감 정보를 활용하지 못한다.
+  1. **3D Convolution 완전 제거**: 무거운 3D 복셀 대신 2D Pillar 수직 기둥 인코더를 제안하여 기존 VoxelNet/SECOND 대비 인코딩 지연시간을 146배 가속 (1.3ms).
+  2. **9차원 포인트 장식 (Point Decoration)**: 단순 3D 좌표 외에 Pillar 내부 산술 평균 좌표 오차 $(x_c, y_c, z_c)$ 및 Pillar 중심 오프셋 $(x_p, y_p)$을 기하학적 임베딩으로 추가.
+  3. **2D Pseudo-Image Scatter 수식**: PointNet으로 압축된 $(C, P)$ Pillar 특징 벡터를 원래 2D BEV 그리드 상의 $(C, H, W)$ 이미지 텐서로 즉시 매핑하여 2D CNN 백본 연결.
 
 ---
+
+## 🎯 관련 연구 흐름 및 기존 한계 (Related Work & Motivation)
+
+### 관련 연구 흐름
+1. **Hand-crafted BEV Feature (PIXOR, Complex-YOLO)**: 수작업 피처로 2D CNN을 구동하나 수직 기하정보 손실 발생.
+2. **Voxel-based 3D Conv (VoxelNet, SECOND)**: 3D 복셀 표현으로 세밀한 기하를 잡으나 3D Conv 연산으로 추론 속도가 4.4Hz~20Hz에 그침.
+3. **PointPillars**: 속도와 정확도의 최적 트레이드오프(62Hz 실시간 처리)를 정립한 LiDAR 3D Perception의 거두.
+
+---
+
+## 📑 목차
+- Chapter 1: 9D Point Feature Decoration (포인트 장식 수식)
+- Chapter 2: Simplified PointNet 및 Pseudo-Image Scatter Pooling
+- Chapter 3: 3D Bounding Box Target Regression & Sine Heading
+- Chapter 4: Multi-Task 손실 함수 (Focal Loss + Direction Loss)
+- Chapter 5: 주요 실험 및 결과
+- Chapter 6: 결론 및 시사점
+
+---
+
+## 🛠️ Chapter 1: 9D Point Feature Decoration
+
+### 1. 요약
+각 LiDAR 포인트 $l_i$에 대해 3D 좌표 $(x, y, z)$, 반사율 $r$, Pillar 내 평균과의 차이 $(x_c, y_c, z_c)$, Pillar Center 오프셋 $(x_p, y_p)$을 9차원 벡터로 풍부하게 장식(Decorate)합니다.
+
+### 2. 수식 및 파이썬 코드 설명
+
+$$l_i = [x, \ y, \ z, \ r, \ x_c, \ y_c, \ z_c, \ x_p, \ y_p]^T \in \mathbb{R}^9$$
+
+$$x_c = x - \bar{x}, \quad y_c = y - \bar{y}, \quad z_c = z - \bar{z}$$
+
+$$x_p = x - x_{\text{pillar}}, \quad y_p = y - y_{\text{pillar}}$$
+
+```python
+import torch
+
+def decorate_point_cloud_into_pillars(
+    points_3d: torch.Tensor, # (N, 4) -> x, y, z, reflectance
+    pillar_size: float = 0.16,
+    max_points_per_pillar: int = 100,
+    max_pillars: int = 12000
+) -> torch.Tensor:
+    """
+    PointPillars: 3D 포인트를 9차원 피처 텐서 (D=9, P, N)로 장식
+    """
+    N_pts, _ = points_3d.shape
+    
+    # 1. Pillar 좌표 인덱스 계산 (x_pillar, y_pillar)
+    pillar_x = torch.floor(points_3d[:, 0] / pillar_size).long()
+    pillar_y = torch.floor(points_3d[:, 1] / pillar_size).long()
+    
+    # 2. Pillar 중심 실측 좌표
+    x_p = points_3d[:, 0] - (pillar_x.float() * pillar_size + pillar_size / 2.0)
+    y_p = points_3d[:, 1] - (pillar_y.float() * pillar_size + pillar_size / 2.0)
+    
+    # 3. Pillar 내 산술 평균 중심 오차 (x_c, y_c, z_c)
+    mean_x = points_3d[:, 0].mean()
+    mean_y = points_3d[:, 1].mean()
+    mean_z = points_3d[:, 2].mean()
+    
+    x_c = points_3d[:, 0] - mean_x
+    y_c = points_3d[:, 1] - mean_y
+    z_c = points_3d[:, 2] - mean_z
+    
+    # 4. 9차원 장식 벡터 결합
+    decorated_pts = torch.stack([
+        points_3d[:, 0], points_3d[:, 1], points_3d[:, 2], points_3d[:, 3],
+        x_c, y_c, z_c, x_p, y_p
+    ], dim=-1) # (N, 9)
+    
+    return decorated_pts
+
+# --- 사용 예시 ---
+pts_raw = torch.randn(1000, 4)
+dec_pts = decorate_point_cloud_into_pillars(pts_raw)
+print("장식된 포인트 9차원 피처 Shape:", dec_pts.shape)
+```
+
+---
+
+## 🛠️ Chapter 2: Simplified PointNet 및 Pseudo-Image Scatter Pooling
+
+### 1. 요약
+$(D=9, P, N)$ 텐서를 1D Conv/Linear $\to$ BN $\to$ ReLU $\to$ MaxPool을 적용해 $(C, P)$ 로 압축한 후, 원래 BEV 그리드 픽셀 위치로 Scatter 사영하여 $(C, H, W)$ 2D Pseudo-Image를 생성합니다.
+
+### 2. 수식 및 파이썬 코드 설명
+
+$$f_{\text{pillar}} = \text{MaxPool}_{N}\Big( \text{ReLU}\left( \text{BN}( \mathbf{W} \cdot l ) \right) \Big) \in \mathbb{R}^{C \times P}$$
+
+$$F_{\text{pseudo-image}} = \text{Scatter}\Big( f_{\text{pillar}}, \ (x_{\text{pillar}}, y_{\text{pillar}}) \Big) \in \mathbb{R}^{C \times H \times W}$$
+
+```python
+import torch
+import torch.nn as nn
+
+class PointPillarEncoder(nn.Module):
+    """
+    Simplified PointNet 인코더 및 2D Pseudo-Image Scatter 모듈
+    """
+    def __init__(self, in_dim: int = 9, out_channels: int = 64):
+        super().__init__()
+        self.linear = nn.Linear(in_dim, out_channels)
+        self.bn = nn.BatchNorm1d(out_channels)
+
+    def forward(self, pillar_tensor: torch.Tensor, pillar_coords: torch.Tensor, grid_shape: tuple) -> torch.Tensor:
+        """
+        pillar_tensor: (P, N, D=9)
+        pillar_coords: (P, 2) -> (x_idx, y_idx)
+        """
+        P, N, D = pillar_tensor.shape
+        H, W = grid_shape
+        
+        # 1. Simplified PointNet
+        x = self.linear(pillar_tensor.view(-1, D))
+        x = self.bn(x).view(P, N, -1)
+        x = torch.relu(x)
+        
+        # MaxPool over N points in each pillar -> (P, C)
+        feat_p, _ = torch.max(x, dim=1)
+        
+        # 2. Scatter to 2D Pseudo-Image (C, H, W)
+        C = feat_p.shape[-1]
+        pseudo_img = torch.zeros((C, H, W), device=pillar_tensor.device)
+        
+        x_idx = pillar_coords[:, 0]
+        y_idx = pillar_coords[:, 1]
+        
+        pseudo_img[:, y_idx, x_idx] = feat_p.T
+        return pseudo_img.unsqueeze(0) # (1, C, H, W)
+
+# --- 사용 예시 ---
+p_tensor = torch.randn(500, 32, 9)
+p_coords = torch.randint(0, 100, (500, 2))
+encoder = PointPillarEncoder()
+print("생성된 2D Pseudo-Image Shape:", encoder(p_tensor, p_coords, (100, 100)).shape)
+```
+
+---
+
+## 🛠️ Chapter 3: 3D Anchor Target Regression & Multi-Task Loss
+
+### 1. 요약
+3D 위치 오차 $(\Delta x, \Delta y, \Delta z)$, 3D 크기 로그 오차 $(\Delta w, \Delta l, \Delta h)$, 각도 $\Delta\theta = \sin(\theta^{gt} - \theta^a)$를 Focal Loss 및 Smooth L1 Loss로 공동 최적화합니다.
+
+### 2. 수식 및 파이썬 코드 설명
+
+$$\Delta x = \frac{x^{gt} - x^a}{d^a}, \quad \Delta y = \frac{y^{gt} - y^a}{d^a}, \quad d^a = \sqrt{(w^a)^2 + (l^a)^2}$$
+
+$$\Delta w = \log \frac{w^{gt}}{w^a}, \quad \Delta l = \log \frac{l^{gt}}{l^a}, \quad \Delta h = \log \frac{h^{gt}}{h^a}, \quad \Delta\theta = \sin(\theta^{gt} - \theta^a)$$
+
+$$\mathcal{L} = \frac{1}{N_{pos}} \left( \beta_{loc} \mathcal{L}_{loc} + \beta_{cls} \mathcal{L}_{cls} + \beta_{dir} \mathcal{L}_{dir} \right)$$
+
+```python
+import torch
+import torch.nn.functional as F
+
+def compute_pointpillars_loss(
+    cls_preds: torch.Tensor, # (N_anchors, Num_classes)
+    box_preds: torch.Tensor, # (N_anchors, 7)
+    dir_preds: torch.Tensor, # (N_anchors, 2)
+    cls_targets: torch.Tensor,
+    box_targets: torch.Tensor,
+    dir_targets: torch.Tensor
+) -> torch.Tensor:
+    """
+    PointPillars Multi-Task Loss (Focal + SmoothL1 + Direction CrossEntropy)
+    """
+    pos_mask = (cls_targets > 0)
+    N_pos = pos_mask.sum().float().clamp(min=1.0)
+    
+    # 1. Focal Loss (Classification)
+    p = torch.sigmoid(cls_preds)
+    focal_weights = 0.25 * torch.pow(1.0 - p, 2.0)
+    loss_cls = F.binary_cross_entropy_with_logits(cls_preds, cls_targets.float(), reduction='none') * focal_weights
+    loss_cls = loss_cls.sum() / N_pos
+    
+    # 2. Smooth L1 Loss (Box Regression)
+    loss_box = F.smooth_l1_loss(box_preds[pos_mask], box_targets[pos_mask], reduction='sum') / N_pos
+    
+    # 3. Direction Loss (Softmax CE)
+    loss_dir = F.cross_entropy(dir_preds[pos_mask], dir_targets[pos_mask], reduction='sum') / N_pos
+    
+    return 1.0 * loss_cls + 2.0 * loss_box + 0.2 * loss_dir
+
+# --- 사용 예시 ---
+c_p, b_p, d_p = torch.randn(100, 1), torch.randn(100, 7), torch.randn(100, 2)
+c_t, b_t, d_t = torch.randint(0, 2, (100, 1)), torch.randn(100, 7), torch.randint(0, 2, (100,))
+print("PointPillars 총 손실:", compute_pointpillars_loss(c_p, b_p, d_p, c_t, b_t, d_t).item())
+```
+
+---
+
+## 📊 주요 실험 및 결과 (Experiments & Results)
+
+### 1. KITTI 3D / BEV 객체 탐지 리더보드 비교
+
+| 알고리즘 (Method) | 입력 모달리티 | 처리 속도 (Hz) ↑ | Car BEV mAP ↑ | Car 3D mAP ↑ |
+|---|---|---|---|---|
+| **VoxelNet** | LiDAR | 4.4 Hz (느림) | 79.26 | 65.11 |
+| **SECOND** | LiDAR | 20.0 Hz | 79.37 | 76.48 |
+| **PointPillars (Ours)** | **LiDAR** | **62.0 Hz (실시간 SOTA)** | **86.10 (+6.73%)** | **74.99** |
+| **PointPillars + TensorRT** | **LiDAR** | **105.0 Hz (초고속)** | **86.10** | **74.99** |
+
+- **결과**: 3D Conv를 탈피한 Pillar 인코더 덕분에 인코딩 시간을 **1.3ms로 146배 가속**하고 **62Hz 실시간 처리** 달성.
+
+---
+
+## 💡 결론 및 시사점 (Conclusion & Insights)
+
+### 1. 결론
+PointPillars는 3D 포인트 클라우드를 2D Pseudo-Image 사영계로 전환하여 무거운 3D Conv 없이 2D CNN만으로 초고속(62Hz) SOTA 3D 객체 탐지를 구현한 자율주행 3D Perception의 기초 필독 논문입니다.
+
+### 2. 한계점 및 아쉬운 점
+- Pillar 단위 처리로 z축 정보(높이)가 MaxPool로 집약되어 세밀한 수직 구조 표현이 불가능하다.
+- 보행자·자전거 탐지 성능이 차량보다 낮다(작은 객체, 희소 포인트).
+- 카메라와의 융합을 고려하지 않은 LiDAR 전용 설계로, 카메라만이 제공하는 색·질감 정보를 활용하지 못한다.
+
+---
+
+## 참고 자료
+- [PointPillars 공식 GitHub 저장소](https://github.com/nutonomy/second.pytorch)
+- [CVPR 2019 논문 (arXiv:1812.05784)](https://arxiv.org/abs/1812.05784)
 
 *관련 논문: [PointNet](/posts/papers/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/), [CenterPoint](/posts/papers/centerpoint-center-based-3d-object-detection-and-tracking/), [BEVFusion](/posts/papers/bevfusion-multi-task-multi-sensor-fusion/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/)*

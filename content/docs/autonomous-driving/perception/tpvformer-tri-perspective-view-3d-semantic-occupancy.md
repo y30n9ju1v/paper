@@ -11,206 +11,207 @@ references:
 ---
 
 ## 💡 한 줄 요약
-BEV의 단일 평면 표현을 세 개의 직교 평면(Tri-Perspective View, TPV)으로 확장하여, RGB 카메라 이미지만으로 3D 공간의 모든 복셀에 대해 시맨틱 점유 예측을 수행하며 LiDAR 기반 방법과 유사한 성능을 달성한다.
-
-## 📌 개요 및 핵심 기여 (Key Contributions)
-- **저자**: Yuanhui Huang, Wenzhao Zheng, Yunpeng Zhang, Jie Zhou, Jiwen Lu (Tsinghua University, PhiGent Robotics)
-- **발행년도**: 2023 (CVPR 2023, arXiv 2302.07817)
-- **주요 기여점**:
-  1. BEV를 Top(HW), Side(DH), Front(WD) 세 직교 평면으로 일반화한 TPV 표현을 제안하여, Voxel 대비 한 차원 낮은 O(HW+DH+WD) 복잡도로 3D 정보를 보존
-  2. TPV 특징을 이미지에서 생성하는 TPVFormer 인코더 설계: Image Cross-Attention(ICA)으로 이미지-TPV 매핑, Cross-View Hybrid-Attention(CVHA)으로 세 평면 간 정보 교환
-  3. 임의 3D 점을 세 평면 투영 특징의 합으로 표현하는 Point Querying과, 평면을 broadcast하여 완전한 voxel 특징을 복원하는 Voxel Feature 두 가지 활용 방식 제시
-  4. 희소 LiDAR 포인트 supervision만으로 학습하고도 추론 시 모든 복셀의 점유·시맨틱을 예측하는 Sparse Supervision 전략 채택
-  5. nuScenes LiDAR 분할에서 카메라만으로 LiDAR SOTA의 약 70% mIoU를 달성하며 BEVFormer 대비 큰 폭 향상
-
-## 🎯 관련 연구 흐름 및 기존 한계 (Related Work & Motivation)
-- **연구 흐름**: 자율주행 3D 인식은 3D 구조를 정밀하게 담는 Voxel 표현에서, 높이를 압축해 효율을 높인 BEV 표현(BEVFormer 등)으로 발전해왔습니다. BEV 기반 방법들이 카메라만으로 3D 인식을 시도했지만 LiDAR 분할 성능과는 여전히 큰 격차가 있었습니다.
-- **기존 한계점**:
-  1. BEV는 3D 공간을 2D 평면으로 압축하면서 z축(높이) 정보를 완전히 버려, 자동차·보행자처럼 높이가 중요한 객체의 정밀한 3D 구조를 표현하기 어려움
-  2. Voxel은 3D 구조를 정밀하게 표현하지만 저장·연산 복잡도가 O(HWD)로 실시간 온보드 적용이 어려움
-  3. 기존 비전 기반 방법들은 LiDAR 분할 성능에서 LiDAR 기반 방법과 큰 격차가 있었음
-- **이 논문의 접근 방식**: 서로 수직인 세 평면(Top HW, Side DH, Front WD)으로 3D 공간을 표현하는 TPV를 제안합니다. 저장·연산 복잡도를 O(HW + DH + WD)로 줄이면서도 임의 해상도의 3D 특징을 생성할 수 있습니다.
-
-## 📑 목차
-- Section 1: Introduction
-- Section 2: Related Work
-- Section 3: Proposed Approach (Generalizing BEV to TPV / TPVFormer / Applications of TPV)
-- Section 4: Experiments
-
-## 🛠️ Section 1: Introduction
-
-**요약**
-자율주행 인식의 핵심 과제는 3D 공간을 얼마나 효율적이고 표현력 있게 나타내느냐입니다. 기존의 두 가지 주요 표현 방식은 각각 한계가 있었습니다.
-
-- **Voxel 표현**: 3D 구조를 정밀하게 담지만, 공간 크기 H×W×D에 비례하는 O(HWD) 연산량이 필요해 실시간 온보드 적용이 어렵습니다.
-- **BEV 표현**: 높이 차원을 압축하여 O(HW)로 효율적이지만, 그 과정에서 z축 정보가 사라져 세밀한 3D 구조 표현이 불가능합니다.
-
-이 논문은 BEV를 세 개의 직교 평면으로 일반화한 **Tri-Perspective View(TPV)** 표현을 제안합니다. TPV는 Top(HW), Side(DH), Front(WD) 세 평면으로 구성되며, 임의의 3D 점은 각 평면에 투영된 세 특징의 합산으로 표현됩니다. 이로써 BEV 수준의 연산 효율성을 유지하면서 Voxel에 가까운 3D 표현력을 확보합니다.
-
-**핵심 개념**
-- **TPV (Tri-Perspective View)**: Top(H×W), Side(D×H), Front(W×D) 세 직교 평면의 집합. 각 평면은 서로 다른 시점에서 장면의 구조 정보를 담는다.
-- **Point Querying**: 3D 공간의 임의 점 (x,y,z)을 세 평면에 투영하여 특징을 조합, 그 점의 시맨틱 레이블을 예측하는 방식.
-- **Voxel Feature**: 각 TPV 평면을 직교 방향으로 broadcast·summation하여 완전한 HWD 규모의 voxel 특징 텐서를 복원하는 방식.
-
-## 🛠️ Section 2: Related Work
-
-**요약**
-BEV 기반 인식(BEVFormer 등)이 주류였으나 z축 정보 손실 문제를 안고 있었고, TPVFormer는 이를 세 평면으로 보완하는 접근을 취합니다. (자세한 related work 세부 서술은 원문 기준 Section 3 이전에 배치되지 않았으나, 핵심 비교 대상은 BEVFormer와 MonoScene입니다.)
-
-## 🛠️ Section 3: Proposed Approach
-
-### 3.1 Generalizing BEV to TPV
-
-**요약**
-BEV는 3D 점 (x,y,z)을 (h,w) 좌표로 투영하며, 같은 (x,y)에 있는 모든 z 값의 점들이 동일한 특징을 공유합니다. TPV는 이 문제를 세 평면으로 해결합니다.
-
-**핵심 개념**
-- **저장·연산 복잡도**: Voxel O(H×W×D), BEV O(H×W), TPV O(H×W + D×H + W×D) — Voxel 대비 한 차원 낮은 복잡도로 모든 축의 정보를 보존
-
-**수식 예제**
-
-$$\mathbf{f}_{x,y,\mathbf{Z}} = \mathbf{b}_{h,w} = \mathcal{S}(\mathbf{B}, \mathcal{P}_{bev}(x,y)) \tag{2}$$
-
-**수식 설명**
-- **$\mathbf{f}_{x,y,\mathbf{Z}}$**: 같은 (x,y) 위치에 있는 모든 z값 점들의 특징 (높이 방향 전체가 동일한 값을 가짐)
-- **$\mathbf{B}$**: BEV 특징 맵 $\mathbb{R}^{H \times W \times C}$
-- **$\mathcal{P}_{bev}(x,y)$**: 3D 좌표를 BEV 좌표 (h,w)로 투영하는 함수
-- **$\mathcal{S}$**: 해당 위치의 특징을 샘플링하는 함수 (bilinear interpolation)
-- **핵심**: z 좌표 정보가 완전히 버려지는 것이 BEV의 근본적 한계
-
-**수식 예제**
-
-$$\mathbf{T} = [\mathbf{T}^{HW}, \mathbf{T}^{DH}, \mathbf{T}^{WD}] \tag{3}$$
-
-$$\mathbf{T}^{HW} \in \mathbb{R}^{H \times W \times C},\quad \mathbf{T}^{DH} \in \mathbb{R}^{D \times H \times C},\quad \mathbf{T}^{WD} \in \mathbb{R}^{W \times D \times C}$$
-
-**수식 설명**
-- **$\mathbf{T}^{HW}$**: 위에서 내려다본 Top 평면 (기존 BEV와 동일한 시점)
-- **$\mathbf{T}^{DH}$**: 옆에서 바라본 Side 평면 (깊이×높이, x축 방향 시점)
-- **$\mathbf{T}^{WD}$**: 앞에서 바라본 Front 평면 (너비×깊이, y축 방향 시점)
-- **H, W, D**: 각각 높이(Height), 너비(Width), 깊이(Depth) 방향 해상도
-- **C**: 특징 차원
-
-**수식 예제**
-
-$$\mathbf{t}_{h,w} = \mathcal{S}(\mathbf{T}^{HW}, \mathcal{P}_{hw}(x,y)), \quad \mathbf{t}_{d,h} = \mathcal{S}(\mathbf{T}^{DH}, \mathcal{P}_{dh}(z,x)), \quad \mathbf{t}_{w,d} = \mathcal{S}(\mathbf{T}^{WD}, \mathcal{P}_{wd}(y,z)) \tag{4}$$
-
-$$\mathbf{f}_{x,y,z} = \mathcal{A}(\mathbf{t}_{h,w}, \mathbf{t}_{d,h}, \mathbf{t}_{w,d}) \tag{5}$$
-
-**수식 설명**
-- **$\mathbf{t}_{h,w}$**: Top 평면에서 (x,y) 투영 좌표로 샘플링한 특징
-- **$\mathbf{t}_{d,h}$**: Side 평면에서 (z,x) 투영 좌표로 샘플링한 특징
-- **$\mathbf{t}_{w,d}$**: Front 평면에서 (y,z) 투영 좌표로 샘플링한 특징
-- **$\mathcal{A}$**: 세 특징을 합산(summation)하는 집약 함수
-- **직관**: 세 시점이 서로 다른 정보를 보완하기 때문에, 합산만으로도 3D 점을 풍부하게 표현할 수 있다
-
-### 3.2 TPVFormer
-
-**요약**
-TPV 특징을 2D 이미지에서 효과적으로 생성하기 위해 **TPVFormer** 인코더를 제안합니다. 핵심 구성 요소는 두 종류의 어텐션 블록입니다.
-
-**전체 구조**
-
-```
-이미지 백본 (ResNet)
-    │
-    ▼ 멀티스케일 이미지 특징
-TPVFormer
-  ├─ HCAB (Hybrid Cross-Attention Block) × N₁
-  │    ├─ ICA: Image Cross-Attention (이미지 → TPV)
-  │    └─ CVHA: Cross-View Hybrid-Attention (TPV 평면 간 상호작용)
-  └─ HAB (Hybrid-Attention Block) × N₂
-       └─ CVHA만 사용 (문맥 정보 정제)
-    │
-    ▼ TPV 특징 T = [T^HW, T^DH, T^WD]
-예측 헤드 (경량 MLP)
-    │
-    ▼ 시맨틱 점유 예측
-```
-
-**핵심 개념**
-- **Image Cross-Attention (ICA)**: TPV 쿼리가 2D 이미지 특징에서 시각 정보를 수집하는 단계. TPV 쿼리의 3D 좌표를 역투영하여 실세계 좌표를 구하고, 이를 카메라 이미지에 투영하여 레퍼런스 포인트를 만든다.
-- **Cross-View Hybrid-Attention (CVHA)**: 세 TPV 평면이 서로 정보를 교환하는 단계.
-
-**수식 예제**
-
-$$(x, y) = \mathcal{P}_{hw}^{-1}(h, w) = \left((h - \frac{H}{2}) \times s,\ (w - \frac{W}{2}) \times s\right) \tag{6}$$
-
-$$\mathbf{Ref}_{h,w}^{world} = (\mathcal{P}_{hw}^{-1}(h,w), \mathbf{Z}) = \{(x,y,z_i)\}_{i=1}^{N_{ref}^{HW}} \tag{7}$$
-
-$$\mathbf{Ref}_{h,w}^{pix} = \mathcal{P}_{pix}(\mathbf{Ref}_{h,w}^{world}) = \mathcal{P}_{pix}(\{(x,y,z_i)\}) \tag{8}$$
-
-$$\text{ICA}(\mathbf{t}_{h,w}, \mathbf{I}) = \frac{1}{|N_{h,w}^{val}|} \sum_{j \in N_{h,w}^{val}} \text{DA}(\mathbf{t}_{h,w}, \mathbf{Ref}_{h,w}^{pix,j}, \mathbf{I}_j) \tag{9}$$
-
-**수식 설명**
-- **$s$**: TPV 그리드 셀 하나가 실세계에서 차지하는 크기(미터)
-- **$\mathbf{Z}$**: z축 방향으로 균일하게 샘플링한 고도값 집합
-- **$N_{ref}^{HW}$**: Top 평면 쿼리당 레퍼런스 포인트 수
-- **$\mathcal{P}_{pix}$**: 실세계 좌표를 카메라 픽셀 좌표로 변환하는 원근 투영
-- **$\text{DA}$**: Deformable Attention — 레퍼런스 포인트 주변에서 오프셋을 예측해 필요한 위치만 샘플링하는 효율적 어텐션
-- **핵심**: 쿼리가 어떤 픽셀을 봐야 하는지를 3D 기하 정보로 초기화하므로, 학습 없이도 올바른 영역을 참조하는 귀납적 편향이 생긴다
-
-**수식 예제**
-
-$$\mathbf{R}_{h,w} = \mathbf{R}_{h,w}^{top} \cup \mathbf{R}_{h,w}^{side} \cup \mathbf{R}_{h,w}^{front} \tag{10}$$
-
-$$\mathbf{R}_{h,w}^{side} = \{(d_i, h)\}_i, \quad \mathbf{R}_{h,w}^{front} = \{(w, d_i)\}_i \tag{11}$$
-
-$$\text{CVHA}(\mathbf{t}_{h,w}) = \text{DA}(\mathbf{t}_{h,w}, \mathbf{R}_{h,w}, \mathbf{T}) \tag{12}$$
-
-**수식 설명**
-- **$\mathbf{R}_{h,w}^{top}$**: Top 평면 내 이웃 포인트 (로컬 문맥)
-- **$\mathbf{R}_{h,w}^{side}$**: Top 쿼리에 수직인 Side 평면의 포인트들 (높이 정보 획득)
-- **$\mathbf{R}_{h,w}^{front}$**: Top 쿼리에 수직인 Front 평면의 포인트들 (깊이-높이 정보 획득)
-- **직관**: Top 평면 쿼리가 자기 평면 이웃 + Side + Front의 보완 정보를 동시에 수집하여 3D 문맥을 이해한다
-
-### 3.3 Applications of TPV
-
-**요약**
-**Point Feature**: 3D 점 (x,y,z)을 세 평면에 투영 후 특징 합산 → 경량 MLP로 시맨틱 레이블 예측
-**Voxel Feature**: 각 TPV 평면을 직교 방향으로 broadcast 후 합산 → 완전한 HWD 복셀 특징 복원
-
-## 📊 주요 실험 및 결과 (Experiments & Results)
-- **사용 데이터셋 / 벤치마크**: Panoptic nuScenes(3D Semantic Occupancy Prediction, 희소 LiDAR 감독), nuScenes test(LiDAR Segmentation, 카메라만 입력), SemanticKITTI(Semantic Scene Completion, 카메라 입력)
-
-**구현 세부사항**
-- Backbone: TPVFormer-Base = ResNet101-DCN (FCOS3D 사전학습), TPVFormer-Small = ResNet-50 (ImageNet)
-- TPV 해상도: Base = 200×200×16, Small = 100×100×8
-- 학습: AdamW, lr=2e-4, 24 epoch, 8× A100
-
-**nuScenes LiDAR 분할 (test set)**
-
-| 방법 | 입력 | mIoU |
-|------|------|------|
-| Cylinder3D++ (SOTA LiDAR) | LiDAR | 77.9 |
-| BEVFormer-Base | Camera | 56.2 |
-| **TPVFormer-Small (ours)** | **Camera** | **59.2** |
-| **TPVFormer-Base (ours)** | **Camera** | **69.4** |
-
-카메라만으로 LiDAR 기반 방법의 약 70% mIoU 수준을 달성. BEVFormer-Base 대비 +12.7% 향상.
-
-**SemanticKITTI SSC (test set)**
-
-| 방법 | SC IoU | SSC mIoU |
-|------|--------|----------|
-| MonoScene | 34.16 | 11.08 |
-| **TPVFormer (ours)** | **34.25** | **11.26** |
-
-파라미터 6.0M vs MonoScene 15.7M, 연산량 128G vs 500G FLOP으로 압도적 효율성.
-
-**Ablation Study 요점**
-- 손실 함수: Voxel 예측 + Point 예측 모두 손실에 사용할 때 최고 성능 (mIoU 64.80). Voxel만: 63.17, Point만: 49.94 — 두 예측이 서로를 정규화하는 효과
-- 해상도 vs 특징 차원: 해상도를 키우는 것이 특징 차원을 키우는 것보다 일관되게 효과적. BEVFormer 200×200 (256dim): 56.21 → TPVFormer 200×200×16 (128dim): **68.86**
-- HCAB vs HAB 비율: HCAB 많을수록 IoU 향상 (시각 정보 중요), HAB 적당히 섞을 때 mIoU 최고
-
-## 💡 결론 및 시사점 (Conclusion & Insights)
-TPVFormer는 BEV와 Voxel 표현의 장점을 결합한 TPV 표현을 통해, 카메라만으로 LiDAR 수준에 근접한 3D 시맨틱 장면 이해를 달성했습니다. BEVFormer의 직접적 후속으로, BEV 단일 평면의 높이 정보 손실을 해결하는 핵심 방향을 제시하며, Occ3D와 함께 3D 점유 예측 분야의 기반 논문으로 자리잡았습니다. 이후 SurroundOcc, OccNet 등의 출발점이 됩니다.
-
-- 합성 데이터로 3D 점유 레이블을 생성할 때, TPV 해상도를 테스트 시 자유롭게 조정할 수 있는 특성이 유용합니다.
-- 카메라 전용 파이프라인으로 LiDAR 없는 회귀 테스트 시나리오에서 3D 장면 이해가 가능해집니다.
-- BEVFormer 인프라를 그대로 재사용할 수 있어 기존 BEV 기반 시스템에 통합하기 쉽습니다.
-- **한계점 및 아쉬운 점**: 여전히 LiDAR SOTA(77.9 mIoU) 대비 약 8.5%p의 격차가 남아 있으며, 희소 LiDAR supervision에 의존하므로 완전히 LiDAR-free한 학습 파이프라인은 아닙니다. 또한 세 평면의 단순 합산(summation)이 항상 최적의 융합 방식인지에 대한 이론적 분석은 제한적입니다.
+BEV의 z축(높이) 정보 손실과 3D Voxel의 $\mathcal{O}(H W D)$ 연산 폭발 한계를 극복하기 위해 3D 공간을 세 직교 평면 **Tri-Perspective View ($\mathbf{T}^{HW}, \mathbf{T}^{DH}, \mathbf{T}^{WD}$)**으로 분해하고, 3D Point를 세 평면 사영 특징의 합산으로 표현하여 카메라만으로 LiDAR 분할 SOTA의 70% 수준인 69.4 mIoU를 달성했다.
 
 ---
+
+## 📌 개요 및 핵심 기여 (Key Contributions)
+- **저자**: Yuanhui Huang, Wenzhao Zheng, Yunpeng Zhang, Jie Zhou, Jiwen Lu (Tsinghua Univ., PhiGent Robotics)
+- **발행년도**: 2023 (arXiv:2302.07817, CVPR 2023)
+- **주요 기여점**:
+  1. **Tri-Perspective View (TPV) 3D 공간 분해**: Top $(H \times W)$, Side $(D \times H)$, Front $(W \times D)$ 세 평면으로 3D 표현을 일반화하여 $\mathcal{O}(HW + DH + WD)$의 효율적 복잡도 달성.
+  2. **Image Cross-Attention (ICA)**: TPV 쿼리를 3D 시선 상의 $N_{ref}$개 픽셀 좌표로 투영하여 2D 멀티뷰 특징 수집.
+  3. **Cross-View Hybrid-Attention (CVHA)**: 직교하는 세 TPV 평면 간에 디포머블 어텐션을 수행하여 높이 및 상호 시공간 문맥 융합.
+  4. **희소 LiDAR 감독 (Sparse Supervision) 및 Voxel-Point Joint Loss**: 훈련 시 희소한 LiDAR 레이블만으로 최적화하되, 추론 시 완전한 3D 밀집 Occupancy 복원.
+
+---
+
+## 🎯 관련 연구 흐름 및 기존 한계 (Related Work & Motivation)
+
+### 관련 연구 흐름
+1. **3D Voxel (MonoScene)**: 3D 복셀 메모리 및 연산량이 $\mathcal{O}(N^3)$으로 폭발하여 고해상도 처리가 어려움.
+2. **BEV (BEVFormer)**: z축 높이 정보를 1개 2D 평면으로 압축하여 차량 위상이나 세로로 긴 장애물 인식 한계.
+3. **TPVFormer**: 세 직교 평면(Top, Side, Front)의 덧셈 집합으로 BEV와 Voxel의 트레이드오프 완벽 해결.
+
+---
+
+## 📑 목차
+- Chapter 1: TPV (Tri-Perspective View) 3D Point Feature Summation
+- Chapter 2: Image Cross-Attention (ICA) 투영 어텐션
+- Chapter 3: Cross-View Hybrid Attention (CVHA) 수식
+- Chapter 4: TPV Broadcast 3D Voxel 복원 & Joint Loss
+- Chapter 5: 주요 실험 및 결과
+- Chapter 6: 결론 및 시사점
+
+---
+
+## 🛠️ Chapter 1: TPV (Tri-Perspective View) 3D Point Feature Summation
+
+### 1. 요약
+3D 좌표 $(x, y, z)$를 Top 평면 $\mathbf{T}^{HW}$, Side 평면 $\mathbf{T}^{DH}$, Front 평면 $\mathbf{T}^{WD}$으로 사영하여 인포메이션을 빌리니어 샘플링한 후 합산하여 점 특징 $\mathbf{f}_{x, y, z}$를 생성합니다.
+
+### 2. 수식 및 파이썬 코드 설명
+
+$$\mathbf{t}_{h,w} = \text{BilinearSample}(\mathbf{T}^{HW}, \mathcal{P}_{hw}(x,y))$$
+
+$$\mathbf{t}_{d,h} = \text{BilinearSample}(\mathbf{T}^{DH}, \mathcal{P}_{dh}(z,x))$$
+
+$$\mathbf{t}_{w,d} = \text{BilinearSample}(\mathbf{T}^{WD}, \mathcal{P}_{wd}(y,z))$$
+
+$$\mathbf{f}_{x,y,z} = \mathbf{t}_{h,w} + \mathbf{t}_{d,h} + \mathbf{t}_{w,d} \in \mathbb{R}^C$$
+
+```python
+import torch
+import torch.nn.functional as F
+
+def sample_tpv_point_features(
+    T_hw: torch.Tensor, # (B, C, H, W) Top Plane Feature
+    T_dh: torch.Tensor, # (B, C, D, H) Side Plane Feature
+    T_wd: torch.Tensor, # (B, C, W, D) Front Plane Feature
+    pts_3d: torch.Tensor # (B, N_points, 3) -> (x, y, z) [normalized in -1 ~ 1]
+) -> torch.Tensor:
+    """
+    3D 점 (x, y, z)을 세 TPV 평면에 각각 사영 후 특징 합산 (Summation)
+    """
+    B, C, H, W = T_hw.shape
+    N_pts = pts_3d.shape[1]
+    
+    # 1. 2D 좌표 분할
+    xy = pts_3d[..., [0, 1]].unsqueeze(2) # (B, N_pts, 1, 2) Top: (x, y)
+    zx = pts_3d[..., [2, 0]].unsqueeze(2) # (B, N_pts, 1, 2) Side: (z, x)
+    yz = pts_3d[..., [1, 2]].unsqueeze(2) # (B, N_pts, 1, 2) Front: (y, z)
+    
+    # 2. Bilinear Grid Sampling
+    t_hw = F.grid_sample(T_hw, xy, mode='bilinear', align_corners=True).squeeze(-1).permute(0, 2, 1) # (B, N_pts, C)
+    t_dh = F.grid_sample(T_dh, zx, mode='bilinear', align_corners=True).squeeze(-1).permute(0, 2, 1)
+    t_wd = F.grid_sample(T_wd, yz, mode='bilinear', align_corners=True).squeeze(-1).permute(0, 2, 1)
+    
+    # 3. Summation
+    f_3d = t_hw + t_dh + t_wd # (B, N_pts, C)
+    return f_3d
+
+# --- 사용 예시 ---
+t_top = torch.randn(1, 128, 100, 100)
+t_side = torch.randn(1, 128, 16, 100)
+t_front = torch.randn(1, 128, 100, 16)
+p3d = torch.rand(1, 500, 3) * 2.0 - 1.0
+print("TPV 점 특징 합산 결과 Shape:", sample_tpv_point_features(t_top, t_side, t_front, p3d).shape)
+```
+
+---
+
+## 🛠️ Chapter 2: Image Cross-Attention (ICA) 투영 수식
+
+### 1. 요약
+Top, Side, Front 평면 쿼리가 3D 공간 상의 수직 광선을 따라 $N_{ref}$개 픽셀로 사영되어 2D 멀티뷰 카메라 특징으로부터 시각 가중치를 흡수합니다.
+
+### 2. 수식 및 파이썬 코드 설명
+
+$$\mathbf{Ref}_{h,w}^{world} = \{(x, y, z_i)\}_{i=1}^{N_{ref}^{HW}}$$
+
+$$\mathbf{Ref}_{h,w}^{pix} = \mathbf{K} \left( \mathbf{R} \cdot \mathbf{Ref}_{h,w}^{world} + \mathbf{t} \right)$$
+
+$$\text{ICA}(\mathbf{t}_{h,w}, \mathbf{I}) = \frac{1}{|N^{val}|} \sum_{j \in N^{val}} \text{DeformAttn}\left( \mathbf{t}_{h,w}, \ \mathbf{Ref}_{h,w}^{pix, j}, \ \mathbf{I}_j \right)$$
+
+```python
+import torch
+
+def generate_tpv_ray_reference_points(
+    tpv_hw_coords: torch.Tensor, # (H, W, 2) Top 평면 (x, y) 좌표
+    z_samples: torch.Tensor      # (N_z,) z축 샘플 고도값들
+) -> torch.Tensor:
+    """
+    Top 평면 쿼리를 위해 z축 방향으로 N_z개 3D Ray Reference Points 확장
+    """
+    H, W, _ = tpv_hw_coords.shape
+    N_z = len(z_samples)
+    
+    xs = tpv_hw_coords[..., 0].unsqueeze(-1).repeat(1, 1, N_z)
+    ys = tpv_hw_coords[..., 1].unsqueeze(-1).repeat(1, 1, N_z)
+    zs = z_samples.view(1, 1, N_z).repeat(H, W, 1)
+    
+    ref_pts_3d = torch.stack([xs, ys, zs], dim=-1) # (H, W, N_z, 3)
+    return ref_pts_3d
+
+# --- 사용 예시 ---
+hw_grid = torch.stack(torch.meshgrid(torch.linspace(-1, 1, 10), torch.linspace(-1, 1, 10), indexing='ij'), dim=-1)
+z_bins = torch.linspace(-2, 2, 8)
+print("생성된 TPV Ray Reference Points Shape:", generate_tpv_ray_reference_points(hw_grid, z_bins).shape)
+```
+
+---
+
+## 🛠️ Chapter 3: TPV Broadcast 3D Voxel 복원 & Joint Loss
+
+### 1. 요약
+세 직교 TPV 평면을 브로드캐스팅(Broadcast)하여 $(H \times W \times D)$ 3D Voxel Tensor를 복원하고, Point Prediction과 Voxel Prediction 손실을 교차 최적화합니다.
+
+### 2. 수식 및 파이썬 코드 설명
+
+$$\mathbf{V}(x, y, z) = \mathbf{T}^{HW}(x, y) + \mathbf{T}^{DH}(z, x) + \mathbf{T}^{WD}(y, z) \in \mathbb{R}^{H \times W \times D \times C}$$
+
+$$\mathcal{L}_{total} = \mathcal{L}_{ce}(\text{PointPred}, \text{GT}_{point}) + \mathcal{L}_{ce}(\text{VoxelPred}, \text{GT}_{voxel})$$
+
+```python
+import torch
+import torch.nn.functional as F
+
+def reconstruct_full_3d_voxel_from_tpv(
+    T_hw: torch.Tensor, # (B, C, H, W)
+    T_dh: torch.Tensor, # (B, C, D, H)
+    T_wd: torch.Tensor  # (B, C, W, D)
+) -> torch.Tensor:
+    """
+    3개 TPV 평면의 Broadcast Summation을 통한 (H, W, D) 3D Voxel Tensor 완전 복원
+    """
+    B, C, H, W = T_hw.shape
+    D = T_dh.shape[2]
+    
+    # Broadcast 준비
+    hw_bcast = T_hw.unsqueeze(-1).repeat(1, 1, 1, 1, D)             # (B, C, H, W, D)
+    dh_bcast = T_dh.permute(0, 1, 3, 2).unsqueeze(3).repeat(1, 1, 1, W, 1) # (B, C, H, W, D)
+    wd_bcast = T_wd.permute(0, 1, 2, 3).unsqueeze(2).repeat(1, 1, H, 1, 1) # (B, C, H, W, D)
+    
+    voxel_tensor = hw_bcast + dh_bcast + wd_bcast
+    return voxel_tensor
+
+# --- 사용 예시 ---
+th = torch.randn(1, 64, 50, 50)
+td = torch.randn(1, 64, 10, 50)
+tw = torch.randn(1, 64, 50, 10)
+print("복원된 3D Voxel Tensor Shape:", reconstruct_full_3d_voxel_from_tpv(th, td, tw).shape)
+```
+
+---
+
+## 📊 주요 실험 및 결과 (Experiments & Results)
+
+### 1. nuScenes LiDAR Semantic Segmentation 벤치마크 (Camera-Only)
+
+| 알고리즘 (Method) | 입력 모달리티 | 3D 공간 표현 | mIoU ↑ |
+|---|---|---|---|
+| **Cylinder3D++** | LiDAR (Super SOTA) | 3D Voxel | 77.9 |
+| **BEVFormer-Base** | Camera | 2D BEV Grid | 56.2 |
+| **TPVFormer-Small (Ours)** | **Camera** | **Tri-Perspective View** | **59.2 (+3.0%)** |
+| **TPVFormer-Base (Ours)** | **Camera** | **Tri-Perspective View** | **69.4 (+13.2%)** |
+
+- **결과**: 세 직교 평면 융합 덕분에 BEVFormer 대비 **mIoU +13.2%p 폭발적 향상**으로 LiDAR 성능의 70% 초과 달성.
+
+---
+
+## 💡 결론 및 시사점 (Conclusion & Insights)
+
+### 1. 결론
+TPVFormer는 BEV의 z축 정보 손실과 3D Voxel의 연산량 폭발 문제를 3개 직교 평면 분해(Tri-Perspective View)로 명쾌하게 극복한 카메라이 기반 3D Occupancy 분야의 세미날 논문입니다.
+
+### 2. 한계점 및 아쉬운 점
+- 여전히 LiDAR SOTA(77.9 mIoU) 대비 약 8.5%p의 격차가 남아 있으며, 희소 LiDAR supervision에 의존하므로 완전히 LiDAR-free한 학습 파이프라인은 아니다.
+- 세 평면의 단순 합산(summation)이 항상 최적의 융합 방식인지에 대한 이론적 분석은 제한적이다.
+
+---
+
+## 참고 자료
+- [TPVFormer 공식 GitHub 저장소](https://github.com/wzzheng/TPVFormer)
+- [CVPR 2023 논문 (arXiv:2302.07817)](https://arxiv.org/abs/2302.07817)
 
 *관련 논문: [MonoScene](/posts/papers/monoscene-monocular-3d-semantic-scene-completion/), [BEVFormer](/posts/papers/bevformer/), [SurroundOcc](/posts/papers/surroundocc/), [Occ3D](/posts/papers/occ3d-large-scale-3d-occupancy-prediction-benchmark/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/)*

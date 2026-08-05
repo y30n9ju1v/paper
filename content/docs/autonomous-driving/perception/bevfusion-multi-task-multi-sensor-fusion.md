@@ -12,154 +12,212 @@ references:
 ---
 
 ## 💡 한 줄 요약
-카메라와 LiDAR 특징을 공유 BEV(Bird's-Eye View) 공간에서 합산하여 기하학적·의미론적 정보를 동시에 보존하고, 40배 가속된 Camera-to-BEV 변환으로 3D 객체 탐지와 BEV 맵 분할을 동시에 수행하는 멀티태스크 멀티센서 융합 프레임워크를 제안한다.
-
-## 📌 개요 및 핵심 기여 (Key Contributions)
-- **저자**: Zhijian Liu, Haotian Tang, Alexander Amini, Xinyu Yang, Huizi Mao, Daniela L. Rus, Song Han
-- **발행년도**: 2024 (arXiv 2022, CVPR 2023)
-- **주요 기여점**:
-  1. 카메라와 LiDAR를 각각 BEV 특징 맵으로 변환한 뒤 채널 축으로 합산하는 공유 BEV 공간(shared BEV space) 융합 구조 제안
-  2. Precomputation(픽셀-셀 매핑 사전 계산)과 Interval Reduction(GPU 커널 기반 구간 합산)으로 Camera-to-BEV 변환 속도를 40배 향상(500ms → 12ms)
-  3. 완전 합성곱 BEV 인코더로 카메라·LiDAR 간 공간적 오정렬(spatial misalignment)을 보정하는 Fully-Convolutional Fusion 설계
-  4. 단일 모델로 3D 객체 탐지와 BEV 맵 분할을 동시에 지원하는 멀티태스크 헤드 구조
-  5. nuScenes 3D 탐지 mAP 70.2 / BEV 분할 62.7 mIoU로 SOTA 달성, 악천후·야간·희소 LiDAR 환경에서 강건성 입증
-
-## 🎯 관련 연구 흐름 및 기존 한계 (Related Work & Motivation)
-- **연구 흐름**: LiDAR 기반 3D 탐지(PointPillars, SECOND, CenterPoint 등)는 정밀하지만 카메라의 색상·텍스처 정보를 활용하지 못했고, 카메라 기반 3D 탐지(BEVDet, BEVDepth, DETR3D 등)는 비용은 저렴하나 깊이 추정 불확실성이 컸습니다. 이후 두 모달리티를 결합하는 멀티센서 융합 연구(PointPainting, MVP, TransFusion 등)가 등장했지만, 주로 포인트 레벨에서 융합하여 카메라의 의미론적 밀도를 충분히 활용하지 못했습니다.
-- **기존 한계점**:
-  1. LiDAR 포인트 클라우드에 카메라 특징을 투영하는 포인트 레벨 융합은, LiDAR 포인트가 희소하기 때문에 카메라의 풍부한 의미론적 밀도(semantic density)를 대부분 버림
-  2. 기존 Camera-to-BEV 변환(LSS 등)은 단일 프레임 처리에 500ms 이상 소요되어 실시간 추론이 불가능
-  3. 기존 방법들은 탐지(geometric) 또는 분할(semantic) 중 하나에만 특화되어 있어 멀티태스크 구조를 지원하지 않음
-- **이 논문의 접근 방식**: 카메라와 LiDAR 특징을 모두 공유 BEV 공간으로 변환한 뒤 합산(concatenation)하여 기하학적·의미론적 정보를 동시에 보존하고, 효율적인 BEV pooling으로 속도 병목을 40배 해소합니다.
-
-## 📑 목차
-- I. Introduction
-- II. Related Work
-- III. Method: Unified BEV Representation (Unified Representation / Efficient Camera-to-BEV Transformation / Fully-Convolutional Fusion / Multi-Task Heads)
-- IV. Experiments (3D Object Detection / BEV Map Segmentation / Ablation Studies)
-- V. Analysis
-
-## 🛠️ I. Introduction
-
-**요약**
-자율주행 차량은 다양한 센서를 통해 환경을 인식합니다. 카메라는 풍부한 의미론적 정보(색상, 텍스처, 차선 등)를 제공하고, LiDAR는 정밀한 3D 기하학 정보(거리, 형상)를 제공합니다. 기존 멀티센서 융합의 주류는 포인트 레벨 융합(point-level fusion)으로, LiDAR 포인트 위에 카메라 특징을 투영합니다. 그러나 LiDAR는 희소하기 때문에 카메라의 픽셀 대부분이 버려지고, 결국 카메라의 의미론적 밀도가 크게 손실됩니다.
-
-BEVFusion은 이에 대한 해답으로 공유 BEV 공간(shared BEV space)을 제안합니다. 카메라와 LiDAR를 각각 BEV 특징 맵으로 변환한 뒤 합산하면, 두 센서의 장점을 동시에 보존할 수 있습니다. 또한 이 구조는 자연스럽게 멀티태스크(탐지 + 분할)로 확장됩니다.
-
-**핵심 개념**
-- **Bird's-Eye View (BEV)**: 위에서 아래를 내려다보는 시점의 2D 표현. 자율주행의 탐지·분할에 적합한 표준 공간
-- **Sensor Fusion**: 여러 센서의 데이터를 합쳐 단일 센서의 한계를 보완하는 기술
-- **Point-level Fusion**: LiDAR 포인트에 카메라 특징을 붙이는 방식. 희소성으로 인해 의미론적 정보가 손실됨
-
-## 🛠️ II. Related Work
-
-**요약**
-관련 연구는 크게 세 흐름으로 나뉩니다.
-
-1. **LiDAR 기반 3D 탐지**: PointPillars, SECOND, CenterPoint 등. 정밀하지만 카메라의 색상·텍스처 정보를 활용하지 못함
-2. **카메라 기반 3D 탐지**: BEVDet, BEVDepth, DETR3D 등. 비용이 저렴하지만 깊이 추정의 불확실성이 큼
-3. **멀티센서 융합**: PointPainting, MVP, TransFusion 등. 주로 포인트 레벨에서 융합하여 카메라의 의미론적 밀도를 충분히 활용하지 못함
-
-**핵심 개념**
-- **Semantic-oriented tasks**: BEV 맵 분할처럼 픽셀 단위 의미론적 이해가 필요한 작업. LiDAR만으로는 수행이 어려움
-- **Geometric-oriented tasks**: 3D 객체 탐지처럼 정확한 위치·형상 추정이 필요한 작업. LiDAR가 핵심
-
-## 🛠️ III. Method: Unified BEV Representation
-
-**요약**
-BEVFusion의 핵심 아이디어는 카메라와 LiDAR를 동일한 BEV 공간으로 변환한 뒤 합산하는 것입니다. 이 섹션에서는 (A) 통합 표현, (B) 효율적 Camera-to-BEV 변환, (C) 완전 합성곱 융합, (D) 멀티태스크 헤드를 설명합니다.
-
-**A. Unified Representation**
-카메라 특징은 원근 뷰(perspective view), LiDAR 특징은 3D 뷰에서 나옵니다. 두 표현 사이에는 근본적인 뷰 불일치(view discrepancy)가 있습니다. BEVFusion은 두 모달리티를 모두 BEV 공간으로 변환하여 이 불일치를 해소합니다.
-
-- 카메라: 멀티뷰 RGB 이미지 → Camera Encoder → Camera-to-BEV 변환 → Camera BEV Features
-- LiDAR: 포인트 클라우드 → LiDAR Encoder → LiDAR Flatten → LiDAR BEV Features
-- 두 BEV 특징을 채널 축으로 이어붙여(concatenate) → Fused BEV Features → BEV Encoder → Task Heads
-
-**B. Efficient Camera-to-BEV Transformation**
-카메라를 BEV로 변환하는 핵심 단계는 LSS(Lift-Splat-Shoot) 방식을 따릅니다. 각 카메라 픽셀의 깊이 분포를 예측하고, 3D 공간으로 올린 뒤 BEV 그리드에 투영합니다. 기존 구현은 단일 프레임에 500ms 이상 걸려 실시간 불가능했습니다.
-
-BEVFusion은 두 가지 최적화로 40배 속도 향상을 달성합니다.
-1. **Precomputation (사전 계산)**: 카메라 내부 행렬과 외부 행렬(intrinsic/extrinsic)로부터 각 픽셀이 BEV 그리드의 어느 셀에 해당하는지를 미리 계산하여 DRAM에 저장합니다. 추론 시에는 이 인덱스 테이블만 조회합니다.
-2. **Interval Reduction (구간 합산 커널)**: BEV pooling은 동일 BEV 셀에 속하는 모든 포인트의 특징을 집계(aggregate)합니다. 기존 prefix sum은 불필요한 중간 계산이 많습니다. BEVFusion은 GPU 스레드를 BEV 셀마다 할당하는 전용 커널을 구현하여, 트리 구조 없이 경계 값만 직접 합산합니다. 이로써 DRAM 접근을 최소화하고 집계 지연을 500ms → 2ms로 단축합니다.
-
-**C. Fully-Convolutional Fusion**
-카메라 BEV 특징과 LiDAR BEV 특징을 채널 축으로 이어붙인 뒤, 완전 합성곱 BEV 인코더(fully-convolutional BEV encoder)로 처리합니다. 이 인코더는 잔여 오정렬(spatial misalignment)을 보정합니다. Camera-to-BEV 변환에서 깊이 추정이 부정확할 수 있어 카메라 BEV 특징이 LiDAR BEV 특징과 살짝 어긋날 수 있는데, 합성곱이 수용 영역(receptive field)으로 이를 흡수합니다.
-
-**D. Multi-Task Heads**
-융합된 BEV 특징 맵 위에 태스크별 헤드를 붙입니다.
-- **3D Object Detection**: CenterPoint 스타일. 클래스별 히트맵으로 중심점 예측 + 회귀 헤드로 크기·회전·속도 예측
-- **BEV Map Segmentation**: CVT 스타일. 클래스별 이진 분할(drivable area, 차선, 횡단보도 등). 겹치는 클래스 허용
-
-**핵심 개념**
-- **View Discrepancy**: 카메라(원근, 픽셀 단위)와 LiDAR(3D, 포인트 단위)의 데이터 공간 차이. 공유 BEV로 해소
-- **Shared BEV Space**: 두 센서의 기하학 정보와 의미론 정보를 모두 담는 통합 2D 표현
-- **LSS (Lift-Splat-Shoot)**: 카메라 이미지의 각 픽셀에 깊이 분포를 부여하고 3D로 올린 뒤 BEV에 투영하는 방법
-- **BEV Pooling**: BEV 셀별로 포인트 특징을 집계하는 연산. 기존에는 느렸으나 BEVFusion이 GPU 최적화로 40배 가속
-- **Precomputation**: 카메라 파라미터가 고정이므로 픽셀-셀 매핑을 미리 계산해 캐시하는 전략
-- **Spatial Misalignment**: 깊이 추정 오차로 카메라 BEV 특징이 LiDAR BEV 특징과 공간적으로 어긋나는 현상
-- **Receptive Field**: 합성곱 레이어가 한 번에 볼 수 있는 입력 영역의 크기. 넓을수록 오정렬 보정 가능
-- **Heatmap Head**: 각 BEV 셀이 객체 중심일 확률을 예측하는 맵. 3D 탐지의 핵심 출력
-- **Binary Segmentation**: 각 BEV 셀이 특정 클래스(예: 주행 가능 영역)에 속하는지 0/1로 분류
-
-**수식 예제**
-
-$$
-F_{\text{BEV}}(u, v) = \text{Aggregate}\left(\{f_i \mid (x_i, y_i) \in \text{cell}(u,v)\}\right)
-$$
-
-**수식 설명**
-- **$F_{\text{BEV}}(u, v)$**: BEV 그리드의 $(u, v)$ 셀에 대응하는 BEV 특징 벡터
-- **$f_i$**: 3D 공간으로 올려진 $i$번째 카메라 특징 포인트
-- **$(x_i, y_i)$**: 해당 포인트의 BEV 평면 좌표
-- **$\text{cell}(u,v)$**: BEV 그리드에서 $(u,v)$ 셀이 커버하는 공간 영역
-- **$\text{Aggregate}$**: 해당 셀 안의 모든 특징을 하나로 합치는 연산 (합산, 평균 등)
-- **직관**: 카메라에서 본 여러 픽셀이 3D 공간에서 같은 위치에 모이면, 그것들을 하나의 BEV 셀 특징으로 압축하는 과정
-
-## 📊 주요 실험 및 결과 (Experiments & Results)
-- **사용 데이터셋 / 벤치마크**: nuScenes와 Waymo 데이터셋에서 3D 탐지와 BEV 분할 성능을 검증
-
-**A. 3D Object Detection (nuScenes)**
-
-| 방법 | 모달리티 | mAP (test) | NDS (test) | MACs (G) | Latency (ms) |
-|---|---|---|---|---|---|
-| PointPainting | C+L | 65.8 | 69.6 | 370.0 | 185.8 |
-| TransFusion | C+L | 67.5 | 71.3 | 485.8 | 156.6 |
-| **BEVFusion (Ours)** | **C+L** | **70.2** | **72.9** | **253.2** | **119.2** |
-
-BEVFusion은 기존 최고 방법 대비 mAP +1.3%, NDS +1.6% 향상을 달성하면서 연산량은 1.9배, 지연은 1.3배 감소시킵니다.
-
-**B. BEV Map Segmentation (nuScenes)**
-
-| 방법 | 모달리티 | Mean IoU |
-|---|---|---|
-| BEVFusion (C only) | C | **56.6** |
-| PointPillars | L | 43.8 |
-| BEVFusion (Ours) | C+L | **62.7** |
-
-카메라 전용 모델에서도 BEVFusion은 기존 최고 대비 13.6% 향상. C+L 융합 시 추가 향상.
-
-**C. Ablation Studies**
-- 카메라 BEV 풀링 최적화: 지연 500ms → 12ms (40배)
-- BEV 인코더: 공간 오정렬 보정에 핵심. 제거 시 성능 급락
-- 모달리티별 기여: 카메라는 의미론, LiDAR는 기하학 기여. 둘 다 필요
-
-**V. Analysis (강건성 분석)**
-- **악천후(비)**: 단일 모달리티 LiDAR 대비 mAP +7.1%, IoU +13.3 향상
-- **야간**: BEVFusion C+L 융합 시 LiDAR 전용 대비 mAP +8.1%, IoU +6.6 향상
-- **작은 객체**: BEVFusion이 LiDAR 전용 및 MVP 대비 크게 우세 (카메라의 의미론 덕분)
-- **먼 거리**: BEVFusion이 기존 방법보다 일관되게 우수
-- **Sparse LiDAR 강건성**: LiDAR 빔 수를 32빔 → 1빔으로 줄였을 때, BEVFusion은 LiDAR 전용 대비 훨씬 덜 떨어짐 (카메라 정보가 희소 LiDAR의 한계를 보완)
-
-## 💡 결론 및 시사점 (Conclusion & Insights)
-BEVFusion은 카메라와 LiDAR를 공유 BEV 공간에서 통합하는 간결하면서도 강력한 프레임워크입니다. 40배 가속된 Camera-to-BEV 변환과 완전 합성곱 융합으로, 단일 모델이 3D 탐지와 BEV 분할을 동시에 SOTA 수준으로 수행합니다.
-
-- 카메라 전용 모델도 BEV 공간으로 올리면 LiDAR와 자연스럽게 융합 가능합니다.
-- Camera-to-BEV의 속도 병목은 전처리 캐싱과 GPU 커널 최적화로 해결 가능하다는 것을 실증했습니다.
-- 악천후·야간 등 단일 센서가 취약한 환경에서 멀티센서 융합의 강건성이 두드러집니다.
-- BEV 공간은 탐지, 분할, 추적, 모션 예측 등 다양한 태스크로 쉽게 확장 가능합니다.
-- **한계점 및 아쉬운 점**: Precomputation은 카메라 파라미터가 고정(정적 캘리브레이션)이라는 가정에 의존하므로, 온라인 재캘리브레이션이 필요한 상황에는 그대로 적용하기 어렵습니다. 또한 단순 채널 concatenation과 합성곱 인코더로 오정렬을 보정하는 방식이, 극단적인 깊이 추정 오류나 센서 고장 상황까지 견고하게 대응하는지는 추가 검증이 필요합니다.
+카메라와 LiDAR 특징을 공유 BEV(Bird's-Eye View) 공간에서 합산(Concat) 및 합성곱(ConvNet)으로 결합하여 기하학적·의미론적 정보를 동시 보존하고, Precomputation과 Interval Reduction으로 Camera-to-BEV 변환 속도를 40배 가속(500ms $\to$ 12ms)하여 nuScenes 3D 탐지(70.2 mAP) 및 맵 분할(62.7 mIoU) SOTA를 달성했다.
 
 ---
+
+## 📌 개요 및 핵심 기여 (Key Contributions)
+- **저자**: Zhijian Liu, Haotian Tang, Alexander Amini, Xinyu Yang, Huizi Mao, Daniela L. Rus, Song Han (MIT, NVIDIA)
+- **발행년도**: 2024 (arXiv 2022, CVPR 2023)
+- **주요 기여점**:
+  1. **공유 BEV 공간 (Shared BEV Space) 통합 융합**: 포인트 기반 융합(Point-level Fusion) 시 발생하는 카메라 의미론적 밀도 손실을 방지하기 위해 카메라와 LiDAR 특징 모두를 2D BEV 그리드로 이산화하여 채널 결합.
+  2. **40배 고속 Camera-to-BEV 변환 (Interval Reduction)**: 카메라 내/외재 파라미터 매핑 테이블 사전 계산(Precomputation)과 커널 기반 구간 합산(Interval Reduction)으로 BEV Pooling 병목을 500ms에서 12ms로 단축.
+  3. **완전 합성곱 융합 (Fully-Convolutional Fusion)**: 카메라 깊이 추정 오차로 인한 공간 오정렬(Spatial Misalignment)을 2D ConvNet의 수용 영역(Receptive Field)으로 상쇄 및 수용.
+  4. **멀티태스크 멀티센서 아키텍처**: 하나의 융합 BEV 인코더로 3D 객체 탐지(CenterPoint Head)와 BEV 맵 분할(Segmentation Head)을 동시 수행.
+
+---
+
+## 🎯 관련 연구 흐름 및 기존 한계 (Related Work & Motivation)
+
+### 관련 연구 흐름
+1. **Point-Level Fusion (PointPainting, MVP)**: LiDAR 포인트 3D 좌표 상에 2D 카메라 클래스 점수를 사영(Paint)하는 방식. LiDAR 포인트의 희소성으로 인해 카메라 픽셀의 90% 이상이 버려짐.
+2. **Feature-Level Fusion (TransFusion)**: Query 어텐션 기반 융합이나, 카메라와 LiDAR의 뷰 좌표 불일치(View Discrepancy)로 맵 분할 등의 의미론적 태스크 할당이 어려움.
+3. **BEVFusion**: 두 모달리티를 모두 표현력이 뛰어난 2D BEV 격자로 가져와 기하(LiDAR)와 의미(Camera)를 완벽 융합.
+
+---
+
+## 📑 목차
+- Chapter 1: 공유 BEV 공간 (Shared BEV Space) 아키텍처
+- Chapter 2: 고속 Camera-to-BEV 변환 (Precomputation & Interval Reduction)
+- Chapter 3: 완전 합성곱 BEV 융합 (Fully-Convolutional Fusion)
+- Chapter 4: 멀티태스크 탐지 및 분할 헤드 수식 (Heatmap Focal Loss)
+- Chapter 5: 주요 실험 및 결과
+- Chapter 6: 결론 및 시사점
+
+---
+
+## 🛠️ Chapter 1: 공유 BEV 공간 아키텍처
+
+### 1. 요약
+멀티뷰 RGB 이미지는 2D 백본 및 LSS Transform을 통해 카메라 BEV 특징 $F_{\text{BEV}}^{cam} \in \mathbb{R}^{C_{c} \times H \times W}$로, LiDAR 포인트 클라우드는 VoxelNet/PointPillars 백본을 통해 LiDAR BEV 특징 $F_{\text{BEV}}^{lidar} \in \mathbb{R}^{C_{l} \times H \times W}$로 각각 변환 후 결합됩니다.
+
+---
+
+## 🛠️ Chapter 2: 고속 Camera-to-BEV 변환 (Interval Reduction)
+
+### 1. 요약
+각 카메라 픽셀 $(u, v)$에 할당된 이산 깊이 분포 $D_i(d, u, v)$와 컨텍스트 특징 $F_i(c, u, v)$의 외적으로 생성된 Frustum 포인트들을 2D BEV 셀 $(x, y)$에 집계할 때, 미리 계산된 Index Table과 GPU 스레드 기반 구간 합산(Interval Reduction) 커널로 지연시간을 12ms로 단축합니다.
+
+### 2. 수식 및 파이썬 코드 설명
+
+$$F_{\text{BEV}}^{cam}(x, y) = \text{Aggregate}\left( \left\{ D_i(d, u, v) \cdot F_i(c, u, v) \ \Big| \ \text{Proj}(u, v, d) \in \text{Cell}(x, y) \right\} \right)$$
+
+```python
+import torch
+
+def efficient_camera_to_bev_pooling(
+    frustum_feats: torch.Tensor, # (N_points, C) 깊이*컨텍스트 Frustum 특징
+    geom_bev_indices: torch.Tensor, # (N_points,) Precomputation으로 구한 BEV 셀 1D 인덱스 (0 ~ H*W-1)
+    bev_shape: tuple             # (H, W) BEV 그리드 크기
+) -> torch.Tensor:
+    """
+    Interval Reduction 원리를 모사한 GPU 고속 Scatter Add BEV Pooling
+    """
+    H, W = bev_shape
+    N_points, C = frustum_feats.shape
+    
+    # 1. 유효한 BEV 인덱스 필터링 (범위 밖 제거)
+    valid_mask = (geom_bev_indices >= 0) & (geom_bev_indices < H * W)
+    valid_feats = frustum_feats[valid_mask]
+    valid_indices = geom_bev_indices[valid_mask]
+    
+    # 2. CUDA index_add_ / scatter_add 기반 구간 합산 (Interval Reduction)
+    bev_flat = torch.zeros((H * W, C), dtype=frustum_feats.dtype, device=frustum_feats.device)
+    bev_flat.index_add_(0, valid_indices, valid_feats)
+    
+    # 3. 2D BEV Feature Map으로 Reshape (C, H, W)
+    bev_feat_map = bev_flat.view(H, W, C).permute(2, 0, 1)
+    return bev_feat_map
+
+# --- 사용 예시 ---
+pts_f = torch.randn(10000, 64)
+bev_idx = torch.randint(0, 100*100, (10000,))
+print("Camera BEV Feature Map Shape:", efficient_camera_to_bev_pooling(pts_f, bev_idx, (100, 100)).shape)
+```
+
+---
+
+## 🛠️ Chapter 3: 완전 합성곱 BEV 융합 (Fully-Convolutional Fusion)
+
+### 1. 요약
+카메라 BEV 특징과 LiDAR BEV 특징을 채널 축으로 Concatenate한 후, 2D ResNet 스타일의 합성곱 백본에 입력하여 카메라 깊이 예측 오차로 발생하는 미세 공간 오정렬(Spatial Misalignment)을 융합 연산으로 흡수합니다.
+
+### 2. 수식 및 파이썬 코드 설명
+
+$$F_{\text{BEV}}^{fused} = \text{ConvNet}\Big( \text{Concat}\big( F_{\text{BEV}}^{cam}, \ F_{\text{BEV}}^{lidar} \big) \Big) \in \mathbb{R}^{C_{out} \times H \times W}$$
+
+```python
+import torch
+import torch.nn as nn
+
+class FullyConvolutionalBEVFusion(nn.Module):
+    """
+    Camera BEV 및 LiDAR BEV 채널 결합 및 공간 오정렬 보정 ConvNet
+    """
+    def __init__(self, cam_channels: int = 80, lidar_channels: int = 128, out_channels: int = 256):
+        super().__init__()
+        in_dim = cam_channels + lidar_channels
+        self.fusion_conv = nn.Sequential(
+            nn.Conv2d(in_dim, out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(),
+            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU()
+        )
+
+    def forward(self, cam_bev: torch.Tensor, lidar_bev: torch.Tensor) -> torch.Tensor:
+        """
+        cam_bev: (B, C_cam, H, W)
+        lidar_bev: (B, C_lidar, H, W)
+        """
+        # 채널 Concatenation
+        fused_input = torch.cat([cam_bev, lidar_bev], dim=1)
+        # 합성곱 보정 인코딩
+        fused_bev = self.fusion_conv(fused_input)
+        return fused_bev
+
+# --- 사용 예시 ---
+c_b = torch.randn(2, 80, 180, 180)
+l_b = torch.randn(2, 128, 180, 180)
+fusion_net = FullyConvolutionalBEVFusion()
+print("최종 융합 BEV Feature Shape:", fusion_net(c_b, l_b).shape)
+```
+
+---
+
+## 🛠️ Chapter 4: CenterPoint 탐지 헤드 및 Focal Loss 수식
+
+### 1. 요약
+융합된 BEV 특징 맵 위에서 3D 바운딩 박스 중심점을 탐지하기 위해 CenterPoint 스타일의 Gaussian Focal Loss를 적용합니다.
+
+### 2. 수식 및 파이썬 코드 설명
+
+$$\mathcal{L}_{heat} = -\frac{1}{N} \sum_{u, v} \begin{cases} (1 - \hat{Y}_{u,v})^\alpha \log(\hat{Y}_{u,v}) & \text{if } Y_{u,v} = 1 \\ (1 - Y_{u,v})^\beta \hat{Y}_{u,v}^\alpha \log(1 - \hat{Y}_{u,v}) & \text{otherwise} \end{cases}$$
+
+- **$\hat{Y}_{u,v}$**: 예측된 중심점 열지도 확률 ($0 \sim 1$)
+- **$Y_{u,v}$**: 가우시안 평활화가 적용된 GT 중심점 열지도 ($0 \sim 1$)
+- **$\alpha=2, \beta=4$**: Penalty-reduced Focal Loss 가중치
+
+```python
+import torch
+
+def gaussian_focal_loss(pred_heatmap: torch.Tensor, gt_heatmap: torch.Tensor, alpha: float = 2.0, beta: float = 4.0) -> torch.Tensor:
+    """
+    3D CenterPoint 탐지 헤드용 Gaussian Focal Loss
+    """
+    pos_inds = gt_heatmap.eq(1.0).float()
+    neg_inds = gt_heatmap.lt(1.0).float()
+    
+    pos_loss = torch.log(pred_heatmap + 1e-6) * torch.pow(1.0 - pred_heatmap, alpha) * pos_inds
+    neg_loss = torch.log(1.0 - pred_heatmap + 1e-6) * torch.pow(pred_heatmap, alpha) * torch.pow(1.0 - gt_heatmap, beta) * neg_inds
+    
+    num_pos = pos_inds.sum()
+    pos_loss = pos_loss.sum()
+    neg_loss = neg_loss.sum()
+    
+    if num_pos == 0:
+        return -neg_loss
+    else:
+        return -(pos_loss + neg_loss) / num_pos
+
+# --- 사용 예시 ---
+p_hm = torch.sigmoid(torch.randn(1, 10, 100, 100))
+g_hm = torch.zeros(1, 10, 100, 100)
+g_hm[0, 2, 50, 50] = 1.0
+print("CenterPoint Focal Loss:", gaussian_focal_loss(p_hm, g_hm).item())
+```
+
+---
+
+## 📊 주요 실험 및 결과 (Experiments & Results)
+
+### 1. nuScenes 3D 객체 탐지 리더보드 비교
+
+| 방법 (Method) | 사용 센서 모달리티 | mAP ↑ | NDS ↑ | 지연시간 (Latency) |
+|---|---|---|---|---|
+| **CenterPoint** | LiDAR Only | 60.3 | 67.3 | 90 ms |
+| **PointPainting** | Camera + LiDAR | 65.8 | 69.6 | 185 ms |
+| **TransFusion** | Camera + LiDAR | 67.5 | 71.3 | 156 ms |
+| **BEVFusion (Ours)** | **Camera + LiDAR** | **70.2** | **72.9** | **119 ms (압도적 SOTA)** |
+
+- **결과**: TransFusion 대비 **mAP +2.7%**, **NDS +1.6%** 성능 향상과 동시에 지연시간을 **119ms로 단축**.
+
+---
+
+## 💡 결론 및 시사점 (Conclusion & Insights)
+
+### 1. 결론
+BEVFusion은 카메라의 풍부한 의미론(Semantic)과 LiDAR의 정확한 3D 기하(Geometry)를 손실 없이 공유 BEV 공간에서 통합하고, 40배 가속된 BEV 풀링을 통해 멀티센서 멀티태스크 융합의 표준을 정립했습니다.
+
+### 2. 한계점 및 아쉬운 점
+- Precomputation은 카메라 파라미터가 고정(정적 캘리브레이션)이라는 가정에 의존하므로, 온라인 재캘리브레이션이 필요한 상황에는 그대로 적용하기 어렵다.
+- 단순 채널 concatenation과 합성곱 인코더로 오정렬을 보정하는 방식이, 극단적인 깊이 추정 오류나 센서 고장 상황까지 견고하게 대응하는지는 추가 검증이 필요하다.
+
+---
+
+## 참고 자료
+- [BEVFusion 공식 GitHub 저장소](https://github.com/mit-han-lab/bevfusion)
+- [CVPR 2023 논문 (arXiv:2205.13542)](https://arxiv.org/abs/2205.13542)
 
 *관련 논문: [BEVFormer](/posts/papers/bevformer/), [BEVDepth](/posts/papers/bevdepth/), [PointPillars](/posts/papers/pointpillars-fast-encoders-object-detection-point-clouds/), [CenterPoint](/posts/papers/centerpoint-center-based-3d-object-detection-and-tracking/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/)*

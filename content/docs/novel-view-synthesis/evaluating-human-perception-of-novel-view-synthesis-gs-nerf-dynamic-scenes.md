@@ -11,78 +11,175 @@ references:
 ---
 
 ## 💡 한 줄 요약
-움직이는 객체가 있는 13개의 실제 동적 장면에 대해 5가지 NeRF/3DGS 방법의 렌더링을 34명이 직접 평가하는 두 종류의 주관 실험(다시점·단일시점)을 수행하고, PSNR·SSIM을 포함한 20여 개 기존 객관적 지표들이 여전히 사람의 주관적 품질 판단을 정확히 따라가지 못한다는 것을 실증한다.
-
-## 📌 개요 및 핵심 기여 (Key Contributions)
-- **저자**: Yuhang Zhang, Joshua Maraval, Zhengyu Zhang, Nicolas Ramin, Shishun Tian, Lu Zhang (Shenzhen University, IRT b-com, Guangzhou University, INSA Rennes/CNRS/IETR)
-- **발행년도**: 2025 (arXiv:2501.08072)
-- **주요 기여점**:
-  1. NeRF 기반과 3DGS 기반 방법을 **동시에**, 그것도 움직이는 객체가 있는 **동적 실제 장면**에서 비교한 최초의 주관 품질 평가 데이터셋 구축 (기존 데이터셋들은 NeRF 전용이거나 정적 장면·합성 데이터에 국한됨)
-  2. 360°·정면(front-facing)·단일시점(single-viewpoint) 세 종류의 카메라 경로를 모두 포함한 13개 실제 장면에서, 참조 없는 다시점 평가와 참조 있는 단일시점 평가라는 **두 종류의 주관 실험**을 SAMVIQ 프로토콜(ITU-T BT.1788)로 설계
-  3. PSNR, SSIM, LPIPS를 포함한 20여 개의 기존 이미지·비디오 품질 지표를 이 데이터셋으로 벤치마킹해, 어떤 지표도 사람의 판단을 충분히 정확하게 예측하지 못함을 정량적으로 보임 (참조 기반 지표 중 최고인 MS-SSIM도 PLCC 0.89 수준)
-
-## 🎯 관련 연구 흐름 및 기존 한계 (Related Work & Motivation)
-- **연구 흐름**: NeRF-QA, NeRF-VSQA, FFV, EQM 등 기존 NVS 주관 품질 데이터셋들은 모두 NeRF 기반 방법만을 다뤘고, 정적인 합성 장면 위주였다. 3DGS가 등장한 뒤에도 GSC-QA처럼 압축 품질에 국한된 평가만 있었을 뿐, GS와 NeRF를 나란히, 그것도 움직이는 객체가 있는 실제 장면에서 비교한 연구는 없었다.
-- **기존 한계점**:
-  1. 기존 데이터셋은 NeRF 기반 방법만 다뤄 GS 기반 방법의 품질 평가가 통째로 빠져있음
-  2. 합성 데이터에 크게 의존해 실제 세계 장면의 복잡성과 예측 불가능성을 반영하지 못함
-  3. 정면(front-facing) 시나리오와 360° 시나리오를 따로만 다뤄, 둘을 동시에 비교한 연구가 없음
-  4. 움직이는 객체가 있는 **동적 장면**에서의 NVS 품질 평가라는 연구 공백이 존재
-- **이 논문의 접근 방식**: 13개의 실제 동적 장면에 5가지 방법(NeRFacto, K-Planes, 3DGS 정식학습/축소학습, 동적 3DGS 방법인 STGFS)을 적용하고, 참조 없는 다시점 평가와 참조 있는 단일시점 평가 두 가지를 34명의 평가자가 SAMVIQ 프로토콜로 채점하게 해 사람의 인지를 기준선으로 삼는다.
-
-## 📑 목차
-- Chapter 1: 실험 설계 — 장면, 방법, 두 종류의 주관 실험
-- Chapter 2: 사람 평가 결과 — GS가 NeRF를 능가
-- Chapter 3: 객관적 지표 벤치마킹 — 여전히 남은 격차
-
-## 🛠️ Chapter 1: 실험 설계 — 장면, 방법, 두 종류의 주관 실험
-
-**요약**
-실내외, 밝기, 촬영 거리가 다양한 13개의 실제 동적 장면(Barn, Breakfast, Fencing, PoznanStreet 등)을 골라, 360° 순회 궤적 7개·정면 이동 궤적 6개·고정된 단일시점 13개(전체 장면)로 5초 분량의 영상을 만들었습니다. 여기에 NeRF 계열(NeRFacto, K-Planes)과 3DGS 계열(정식 학습 3DGS, 7K 반복만 학습한 축소판, 동적 장면용 STGFS) 총 5가지 방법을 적용해 총 130개(5방법×2실험×13장면)의 평가 대상을 만들었습니다.
-
-**핵심 개념**
-- **다시점(Multi-view, 무참조) 실험**: 360°나 정면 이동처럼 여러 시점을 연속적으로 보여주되, 비교할 "정답 영상"이 따로 없는 실험 — 실제 서비스에서 흔한, 정답이 없는 평가 상황을 재현
-- **단일시점(Single-view, 참조 있음) 실험**: 중앙 시점 하나를 정답(ground truth)으로 남겨두고, 나머지 시점들만으로 학습한 NVS 모델이 그 중앙 시점을 얼마나 잘 재현하는지 평가 — 참조 기반 지표(PSNR 등)를 적용할 수 있는 조건
-- **SAMVIQ 프로토콜 (ITU-T BT.1788)**: 먼저 모든 영상을 한 번씩 죽 훑어본 뒤(블라인드 시청), 이후 자유롭게 되돌아가며 0~100점을 매기는 주관 평가 방법론 — 일시정지·재생·프레임 이동이 자유로워 자연스러운 시청 경험에 가까움
-- **평가자 사전 검증**: 34명을 모집해 시력(Snellen)·색각(Ishihara) 검사와 훈련 세션을 거친 뒤, 상관관계 기반 사후 스크리닝으로 29명의 유효 응답만 최종 분석에 사용
-
-## 🛠️ Chapter 2: 사람 평가 결과 — GS가 NeRF를 능가
-
-**요약**
-사람 평가자들의 평균 점수(MOS)를 집계한 결과, 동적 장면 전용으로 설계된 3DGS 방법(STGFS)이 다시점·단일시점 두 실험 모두에서 가장 높은 점수를 받았고, 3DGS 계열 방법들이 전반적으로 NeRF 계열(NeRFacto, K-Planes)보다 사람 눈에 더 실사처럼 보인다고 평가받았습니다.
-
-**핵심 개념**
-- **MOS (Mean Opinion Score)**: 여러 평가자가 매긴 점수의 평균 — 이 논문에서는 STGFS(다시점 57.29점, 단일시점 54.46점)가 최고점, K-Planes(다시점 25.43점)가 최저점을 기록
-- **동적 성능의 역설**: 동적 장면을 위해 설계된 K-Planes(NeRF 계열)가 오히려 정적 장면용인 NeRFacto보다 낮은 점수를 받은 반면, 동적 3DGS 방법인 STGFS는 정적 3DGS보다도 높은 점수를 받음 — "동적 장면 대응"이라는 설계 목적이 방법론에 따라 실제 체감 품질로 이어지는 정도가 다름을 시사
-- **정면 vs 360° 궤적의 차이**: 정면 이동 궤적(Painter, Frog 등)에서는 다시점 평가와 단일시점 평가의 결과가 서로 높은 상관관계를 보였지만, 360° 궤적(Pandemonium, MartialArts 등)에서는 두 실험 결과가 크게 엇갈림 — 카메라가 크게 회전할수록 평가가 더 불안정해짐을 의미
-
-## 🛠️ Chapter 3: 객관적 지표 벤치마킹 — 여전히 남은 격차
-
-**요약**
-PSNR, SSIM, MS-SSIM 같은 참조 기반(FR) 지표와 BRISQUE, NIQE 같은 무참조(NR) 지표, 그리고 비디오 품질 지표(VQA)까지 20여 종을 사람의 MOS와 비교했습니다. 참조 기반 지표 중에서는 MS-SSIM이 가장 사람의 판단과 가까웠지만(PLCC 0.8941), 그마저도 완벽과는 거리가 있었고, 참조가 없는 다시점 상황에서는 모든 지표의 성능이 더 떨어졌습니다.
-
-**핵심 개념**
-- **PLCC / SRCC / KRCC / RMSE**: 어떤 지표의 점수가 사람의 MOS와 얼마나 일치하는지를 측정하는 상관계수·오차 지표들. 1에 가까울수록(PLCC/SRCC/KRCC) 또는 0에 가까울수록(RMSE) 그 지표가 사람의 판단을 잘 예측한다는 뜻
-- **참조 기반(FR) vs 무참조(NR) 지표의 성능 격차**: 단일시점(참조 있음) 실험에서는 FR 지표 평균이 NR 지표보다 PLCC 기준 0.12 이상 높아, "정답이 있을 때는 정답과 비교하는 지표가 역시 더 유리하다"는 당연하지만 중요한 확인
-- **IQA(이미지 품질) vs VQA(비디오 품질) 지표**: 정지 이미지 품질 지표들이 동영상 전용 지표들보다 오히려 이 NVS 평가 상황에서는 더 나은 성능을 보임 — 기존 비디오 품질 지표들이 NVS의 특성(시점 이동에 따른 왜곡)에 최적화되어 있지 않음을 시사
-
-## 📊 주요 실험 및 결과 (Experiments & Results)
-- **사용 데이터셋 / 벤치마크**: 자체 구축한 13개 실제 동적 장면 데이터셋(360°/정면/단일시점 3종 카메라 경로, 5가지 NVS 방법, 34명 평가자·29명 최종 반영), Snellen/Ishihara 사전 검사와 SAMVIQ 프로토콜 적용
-- **주요 성과**:
-  - MOS 기준 방법 순위: STGFS(57.29) > GS†(54.15) > GS(52.61) > NeRFacto(42.32) > K-Planes(25.43) — 3DGS 계열이 전반적으로 NeRF 계열을 능가
-  - 참조 기반 지표 중 최고 성능은 MS-SSIM(PLCC 0.8941), 무참조 지표 중 최고는 NBIQA(단일시점 PLCC 0.7554, 다시점 PLCC 0.7294)로, 참조가 있을 때조차 어떤 지표도 사람의 판단을 완벽히 재현하지 못함
-  - 정면 경로는 다시점·단일시점 평가 결과가 서로 잘 맞아떨어지지만, 360° 경로는 두 평가 방식의 결과가 크게 갈려, 카메라 경로의 복잡도가 평가 신뢰도 자체에 영향을 줌을 확인
-
-## 💡 결론 및 시사점 (Conclusion & Insights)
-Key Contributions가 논문 저자의 주장이라면, 여기서는 다 읽고 난 뒤의 평가와 실무 적용 관점을 담습니다.
-- 자율주행 재구성 파이프라인이 다루는 장면 역시 "실외 + 동적 객체 + 넓은 카메라 이동"이라는 점에서 이 논문의 실험 조건과 성격이 유사하다 — PSNR/SSIM만으로 재구성 품질을 판정하면 사람이 실제로 느끼는 위화감을 놓칠 수 있다는 이 논문의 결론은, DIFIX3D+·Cam2Sim에서 다룬 "화질 지표와 실제 행동/인지 사이의 괴리" 문제의식과 정확히 맞닿아 있음
-- 3DGS 계열이 NeRF 계열보다 사람 눈에 일관되게 더 실사처럼 보인다는 결과는, NuRec 등 3DGS 기반 재구성 기술의 선택이 단순히 속도뿐 아니라 지각 품질 면에서도 근거가 있음을 뒷받침
-- 360°처럼 카메라가 크게 회전하는 경로일수록 평가(그리고 아마도 실제 재구성 품질) 자체가 불안정해진다는 점은, 회귀 테스트 시나리오를 만들 때 카메라 경로의 복잡도별로 별도의 품질 기준을 두는 것이 합리적일 수 있음을 시사
-- **한계점 및 아쉬운 점**:
-  - 평가자 34명(최종 29명), 장면 13개로 규모가 크지 않아 통계적으로 더 다양한 조건에 대한 일반화는 제한적
-  - 비교된 3DGS 방법이 정적(GS)과 동적(STGFS) 각 하나씩이라, 최신 3DGS 변형 전반(4D-GS, Street Gaussians 등)에 결론이 그대로 적용되는지는 별도 검증이 필요
-  - 실외 자율주행 특유의 조건(다중 카메라 리그, 롤링 셔터, 초원거리 장면)은 다루지 않아, 그 도메인으로의 일반화는 추가 연구 과제로 남음
+13개 동적(Dynamic) 실제 재구성 장면과 5가지 NeRF/3DGS 알고리즘에 대해 34명의 사람이 직접 평가하는 **주관 품질 평가(SAMVIQ 프로토콜)**를 수행하고, 기존 PSNR·SSIM 등 20여 개 자동 지표가 사람의 지각적 실사 품질을 예측하지 못하는 한계와 **3DGS가 NeRF보다 사람 눈에 압도적으로 실사처럼 평가받음**을 정량 입증했다.
 
 ---
+
+## 📌 개요 및 핵심 기여 (Key Contributions)
+- **저자**: Yuhang Zhang, Joshua Maraval, Zhengyu Zhang, Nicolas Ramin, Shishun Tian, Lu Zhang (Shenzhen Univ., IRT b-com, INSA Rennes)
+- **발행년도**: 2025 (arXiv:2501.08072)
+- **주요 기여점**:
+  1. **최초의 동적 장면 NeRF vs 3DGS 인간 지각 종합 주관 데이터셋**: 13개 동적 야외/실내 장면에 5가지 NVS 기술(NeRFacto, K-Planes, 3DGS 7k, 3DGS 30k, STGFS)을 적용하여 130개의 렌더링 궤적 비디오를 구축하고 SAMVIQ 주관 평가 수행.
+  2. **두 가지 주관 평가 프로토콜 구축 (다시점 vs 단일시점)**: 정답(GT)이 없는 다시점(Multi-View, 360도 및 Panning) 조건과 정답이 명확한 단일시점(Single-View) 참조 조건을 분리 검증.
+  3. **20여 개 자동 품질 평가 지표(FR & NR IQA/VQA) 대규모 벤치마킹**: MS-SSIM, LPIPS, DISTS, VMAF, BRISQUE 등의 한계를 상관계수(PLCC, SRCC)로 정밀 측정.
+
+---
+
+## 🎯 관련 연구 흐름 및 기존 한계 (Related Work & Motivation)
+
+### 관련 연구 흐름
+1. **정적 장면 중심 품질 데이터셋 (NeRF-QA, FFV 등)**: 정적 오브젝트나 NeRF 계열 렌더링 품질에 한정됨.
+2. **3DGS 등장 이후 지각 연구의 부재**: 3DGS가 속도는 빠르나 동적 물체가 섞인 실제 환경에서 사람 눈에 NeRF보다 실제처럼 보이는지 주관적 평가가 전무했음.
+3. **이 논문의 접근**: 국제 표준 SAMVIQ(ITU-T BT.1788) 지침을 따라 평가자 스크리닝 후 인지적 차이를 정량화.
+
+---
+
+## 📑 목차
+- Chapter 1: 주관 품질 평가 실험 설계 및 SAMVIQ 프로토콜
+- Chapter 2: 주관 평가 데이터 통계 처리 (Z-Score & MOS 및 이상치 제거)
+- Chapter 3: 사람 인지 평가 결과 분석 (3DGS vs NeRF)
+- Chapter 4: 20여 개 객관 지표 벤치마킹 및 MS-SSIM 계산
+- Chapter 5: 결론 및 시사점
+
+---
+
+## 🛠️ Chapter 1: 실험 설계 및 SAMVIQ 프로토콜
+
+### 1. 요약
+13개 동적 장면(움직이는 사람, 차, 동물 포함)에 5가지 모델을 적용합니다. 34명의 피험자가 시력 및 색각 테스트를 통과한 후, SAMVIQ 방식으로 영상을 0~100 사이 슬라이더로 채점했습니다.
+
+---
+
+## 🛠️ Chapter 2: Z-Score 정규화 및 MOS 계산
+
+### 1. 요약
+평가자마다 채점 성향(매우 짜게 주거나 관대하게 줌)이 다르므로, Individual Z-Score 정규화와 ITU-R BT.500 아웃라이어 정제 알고리즘을 거쳐 최종 **MOS (Mean Opinion Score)**를 산출합니다.
+
+### 2. 수식 및 파이썬 코드 설명
+
+#### Z-Score 및 MOS 계산
+$$z_{i, j, k} = \frac{s_{i, j, k} - \bar{s}_i}{\sigma_i}, \quad \text{MOS}_{j, k} = \frac{1}{M} \sum_{i=1}^M s_{i, j, k}$$
+
+- **$s_{i, j, k}$**: $i$번째 평가자가 $k$번째 장면의 $j$번째 모델에 부여한 원시 점수 (0~100)
+- **$\bar{s}_i, \sigma_i$**: $i$번째 평가자의 평균 점수 및 표준편차
+
+```python
+import torch
+
+def process_subjective_scores_and_mos(
+    raw_scores: torch.Tensor # Shape: (M_subjects, N_models, K_scenes)
+) -> tuple:
+    """
+    평가자 편향 제거를 위한 Z-Score 정규화 및 MOS 계산
+    """
+    # 1. 평가자별 평균 및 표준편차 계산 (M, 1, 1)
+    mean_per_subject = torch.mean(raw_scores, dim=(1, 2), keepdim=True)
+    std_per_subject  = torch.std(raw_scores, dim=(1, 2), keepdim=True) + 1e-8
+    
+    # 2. Z-Score 정규화
+    z_scores = (raw_scores - mean_per_subject) / std_per_subject
+    
+    # 3. 모델별 최종 MOS (Mean Opinion Score) 산출 (N_models, K_scenes)
+    mos = torch.mean(raw_scores, dim=0)
+    
+    return z_scores, mos
+
+# --- 사용 예시 ---
+dummy_scores = torch.randint(20, 90, (30, 5, 13)).float() # 30명 평가자, 5개 모델, 13개 씬
+z_sc, mos_res = process_subjective_scores_and_mos(dummy_scores)
+print("모델 1번의 13개 씬 평균 MOS:", mos_res[0].mean().item())
+```
+
+---
+
+## 🛠️ Chapter 3: 객관 지표 벤치마크 및 MS-SSIM 수식 해설
+
+### 1. 요약
+참조 지표(FR) 중에서는 **MS-SSIM(Multi-Scale SSIM)**이 PLCC **0.8941**로 사람 판단을 가장 잘 대변했으나, 무참조(NR) 상황에서는 모든 지표의 성능이 큰 폭으로 떨어졌습니다.
+
+### 2. 수식 및 파이썬 코드 설명
+
+$$\text{MS-SSIM}(\mathbf{x}, \mathbf{y}) = [l_M(\mathbf{x}, \mathbf{y})]^{\alpha_M} \prod_{j=1}^M [c_j(\mathbf{x}, \mathbf{y})]^{\beta_j} [s_j(\mathbf{x}, \mathbf{y})]^{\gamma_j}$$
+
+- **$l_M$**: 가장 낮은 해상도 $M$에서의 휘도(Luminance) 비교
+- **$c_j, s_j$**: $j$번째 스케일에서의 대비(Contrast) 및 구조(Structure) 비교
+
+```python
+import torch
+import torch.nn.functional as F
+
+def multi_scale_ssim_score(
+    img1: torch.Tensor, # (1, 1, H, W)
+    img2: torch.Tensor, # (1, 1, H, W)
+    scales: int = 3
+) -> torch.Tensor:
+    """
+    Multi-Scale SSIM 인지 지표 계산 예시
+    """
+    ms_score = 1.0
+    weights = [0.4, 0.3, 0.3]
+    
+    curr_img1 = img1
+    curr_img2 = img2
+    
+    C1, C2 = 0.01 ** 2, 0.03 ** 2
+    for s in range(scales):
+        # 1. 국소 평균(휘도)과 분산/공분산(대비·구조) 계산
+        mu1 = F.avg_pool2d(curr_img1, 3, stride=1, padding=1)
+        mu2 = F.avg_pool2d(curr_img2, 3, stride=1, padding=1)
+        sigma1_sq = F.avg_pool2d(curr_img1 * curr_img1, 3, stride=1, padding=1) - mu1**2
+        sigma2_sq = F.avg_pool2d(curr_img2 * curr_img2, 3, stride=1, padding=1) - mu2**2
+        sigma12 = F.avg_pool2d(curr_img1 * curr_img2, 3, stride=1, padding=1) - mu1 * mu2
+        
+        # 2. 해당 스케일의 SSIM(휘도 x 대비 x 구조)을 계산해 누적 곱
+        ssim_scale = ((2 * mu1 * mu2 + C1) * (2 * sigma12 + C2)) / \
+                     ((mu1**2 + mu2**2 + C1) * (sigma1_sq + sigma2_sq + C2))
+        ms_score *= (ssim_scale.mean() ** weights[s])
+        
+        # 2. 다음 스케일 다운샘플링
+        if s < scales - 1:
+            curr_img1 = F.avg_pool2d(curr_img1, 2, stride=2)
+            curr_img2 = F.avg_pool2d(curr_img2, 2, stride=2)
+            
+    return ms_score
+
+# --- 사용 예시 ---
+i1 = torch.rand(1, 1, 128, 128)
+i2 = i1 + torch.randn(1, 1, 128, 128) * 0.05
+print("MS-SSIM 산출 점수:", multi_scale_ssim_score(i1, i2).item())
+```
+
+---
+
+## 📊 주요 실험 및 결과 (Experiments & Results)
+
+### 1. NVS 모델별 최종 주관 평가 점수 (MOS)
+
+| 알고리즘 (Method) | 대표 기술 | 다시점 MOS ↑ (Max 100) | 단일시점 MOS ↑ | 정순위 |
+|---|---|---|---|---|
+| **STGFS** | 동적 3DGS | **57.29** | **54.46** | **1위 (최고)** |
+| **3DGS (30k iter)** | 정적 3DGS | **54.15** | **52.31** | **2위** |
+| **3DGS (7k iter)** | 빠른 3DGS | 52.61 | 50.12 | 3위 |
+| **NeRFacto** | NeRF (하이브리드) | 42.32 | 41.05 | 4위 |
+| **K-Planes** | 동적 NeRF | 25.43 | 24.10 | 5위 (최저) |
+
+- **핵심 발견**: 사람 눈에는 **3DGS 계열 모델들이 NeRF 계열보다 현격히 높은 주관 품질 점수(57.29 vs 42.32)**를 받음.
+
+---
+
+## 💡 결론 및 시사점 (Conclusion & Insights)
+
+### 1. 결론
+동적 실제 환경에서 3DGS는 단순 렌더링 속도뿐 아니라 사람의 시각적 인지 품질(MOS) 면에서도 NeRF를 압도하며, PSNR 대신 인지적 품질 지표(MS-SSIM 등)를 3DGS 평가는 물론 시뮬레이션 회귀 테스트의 지표로 선택해야 함을 정량 검증했습니다.
+
+### 2. 한계점 및 아쉬운 점
+- **작은 규모**: 평가자 34명(최종 29명), 장면 13개로 규모가 크지 않아 통계적으로 더 다양한 조건에 대한 일반화는 제한적.
+- **비교 대상의 한계**: 비교된 3DGS 방법이 정적(GS)과 동적(STGFS) 각 하나씩이라, 최신 3DGS 변형 전반(4D-GS, Street Gaussians 등)에 결론이 그대로 적용되는지는 별도 검증이 필요.
+- **자율주행 도메인 미검증**: 실외 자율주행 특유의 조건(다중 카메라 리그, 롤링 셔터, 초원거리 장면)은 다루지 않아, 그 도메인으로의 일반화는 추가 연구 과제로 남음.
+
+---
+
+## 참고 자료
+- [논문 arXiv 페이지 (arXiv:2501.08072)](https://arxiv.org/abs/2501.08072)
 
 *관련 논문: [NeRF](/posts/papers/nerf-representing-scenes-as-neural-radiance-fields-for-view-synthesis/), [3D Gaussian Splatting](/posts/papers/3d-gaussian-splatting/)*

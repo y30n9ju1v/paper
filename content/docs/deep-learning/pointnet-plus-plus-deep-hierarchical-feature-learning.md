@@ -10,176 +10,284 @@ references:
 ---
 
 ## 💡 한 줄 요약
-PointNet의 "로컬 구조 무시" 한계를, FPS + Ball Query + Mini-PointNet으로 구성된 계층적 Set Abstraction 구조로 해결하여 CNN과 유사한 다중 스케일 특징 추출을 비정형 포인트 클라우드에서 실현했다.
+PointNet의 "로컬 주변 기하 구조 미반영" 한계를 극복하기 위해 **Farthest Point Sampling (FPS)**, **Ball Query 공간 탐색**, **Mini-PointNet 인코딩**을 수직 결합한 계층적 Set Abstraction 구조와 밀도 적응형 피처 추출(MSG/MRG)을 제안했다.
+
+---
 
 ## 📌 개요 및 핵심 기여 (Key Contributions)
 - **저자**: Charles R. Qi, Li Yi, Hao Su, Leonidas J. Guibas (Stanford University)
-- **발행년도**: 2017 (arXiv: 1706.02413)
+- **발행년도**: 2017 (arXiv:1706.02413, NIPS 2017)
 - **주요 기여점**:
-  1. Sampling(FPS) → Grouping(Ball Query) → PointNet 인코딩의 3단계로 구성된 Set Abstraction 레이어를 제안해 포인트 클라우드에서 CNN과 유사한 계층적 수용 영역 확장을 구현
-  2. 밀도 불균일 문제를 해결하는 두 가지 밀도 적응형 레이어(MSG, MRG)와 Random Input Dropout 학습 기법 제안
-  3. 역거리 가중 보간 + skip connection 기반 Feature Propagation으로 세그멘테이션을 위한 포인트 단위 특징 복원 방법 제시
-  4. MNIST, ModelNet40, SHREC15, ScanNet 등 다양한 벤치마크에서 PointNet 대비 일관된 성능 향상을 입증
+  1. **Set Abstraction (SA) 계층 구조**: Sampling(FPS) $\to$ Grouping(Ball Query) $\to$ Mini-PointNet 과정을 거쳐 2D CNN의 수용 영역(Receptive Field) 확장 과정을 3D 비정형 포인트 공간에 재현.
+  2. **Multi-Scale Grouping (MSG) & Multi-Resolution Grouping (MRG)**: 반경 $r_1, r_2, \dots$ 다중 반경 그룹화 및 Random Input Dropout으로 거리/밀도 불균일(Density Heterogeneity) 문제 해결.
+  3. **Feature Propagation (FP) 역거리 보간**: 3D Semantic Segmentation을 위해 kNN 역거리 가중치(Inverse Distance Weighting) 보간과 Skip Connection을 융합한 인버티드 U-Net 설계.
+
+---
 
 ## 🎯 관련 연구 흐름 및 기존 한계 (Related Work & Motivation)
-- **연구 흐름**: 포인트 클라우드는 순서 없는(unordered) 점들의 집합으로, 순열 불변성(permutation invariance)을 요구한다. PointNet이 이 문제를 단일 max pooling 집계로 처음 해결했지만, CNN처럼 점진적으로 로컬→글로벌 특징을 쌓아 올리는 구조는 아니었다. PointNet++는 CNN의 핵심 성공 요인인 계층적 수용 영역(hierarchical receptive field) 개념을 포인트 클라우드에 이식하는 방향으로 발전한다.
-- **기존 한계점**:
-  1. PointNet의 글로벌 집계 — PointNet은 모든 점의 특징을 단일 max pooling으로 합쳐 전역 특징만 추출하며, 세밀한 로컬 기하 구조를 학습하지 못한다.
-  2. 밀도 불균일 취약성 — 실제 LiDAR 스캔은 원근 효과·가려짐 등으로 밀도가 위치마다 다르며, 균일 밀도로 훈련한 모델은 희소 영역에서 성능이 급락한다.
-- **이 논문의 접근 방식**: PointNet을 재귀적으로 중첩 파티션(nested partition)에 적용하는 계층 구조를 도입한다. 밀도 적응형 레이어(MSG, MRG)로 다중 스케일 특징을 학습하여 불균일 밀도에도 강인하게 동작한다.
+
+### 관련 연구 흐름
+1. **PointNet**: 전역 포인트 집합 전체에 한 차례 Max-Pooling만 적용하므로 세밀한 로컬 이웃의 곡률, 엣지, 파트 연결 정보를 파악하지 못함.
+2. **PointNet++**: 메트릭 공간 상의 반경 $r$ 구형 영역(Ball) 단위로 국소 점들을 중첩 묶어 계층적 로컬 특징 학습 완성.
+
+---
 
 ## 📑 목차
-- Chapter 1: Introduction
-- Chapter 2: Problem Statement
-- Chapter 3: Method (3.1 PointNet 복습, 3.2 계층적 특징 학습, 3.3 밀도 강인 학습, 3.4 특징 전파)
-- Chapter 4: Experiments
+- Chapter 1: Farthest Point Sampling (FPS) & Ball Query 수식
+- Chapter 2: Set Abstraction (SA) 모듈 파이프라인
+- Chapter 3: Multi-Scale Grouping (MSG) 밀도 적응 모듈
+- Chapter 4: Feature Propagation (FP) 역거리 가중치 보간
+- Chapter 5: 주요 실험 및 결과
+- Chapter 6: 결론 및 시사점
 
-## 🛠️ Chapter 1: Introduction
+---
 
-**요약**
+## 🛠️ Chapter 1: Farthest Point Sampling (FPS) & Ball Query 수식
 
-3D 스캐너로 얻은 포인트 클라우드는 순서 없는(unordered) 점들의 집합으로, 순열 불변성(permutation invariance)을 요구한다. PointNet이 이 문제를 처음으로 직접 해결했지만, 단일 max pooling 집계 방식은 CNN처럼 점진적으로 로컬→글로벌 특징을 쌓아 올리는 구조가 아니었다.
+### 1. 요약
+전체 점 집합 $P$에서 점들 간의 최소 유클리드 거리가 최대가 되는 정점 중심점 $c_i$를 선택(FPS)하고, 반경 $r$ 내 $K$개 점들을 그룹화(Ball Query)합니다.
 
-PointNet++는 CNN의 핵심 성공 요인인 **계층적 수용 영역(hierarchical receptive field)** 개념을 포인트 클라우드에 이식한다. 작은 이웃에서 세밀한 기하 패턴을 잡고, 이를 점점 더 큰 단위로 통합하여 최종 전역 표현을 만든다.
+### 2. 수식 및 파이썬 코드 설명
 
-**핵심 개념**
+$$d(p_i, S) = \min_{s \in S} \| p_i - s \|_2, \quad p_{\text{next}} = \arg\max_{p_i \notin S} d(p_i, S)$$
 
-- **포인트 클라우드**: 3D 공간의 점 $(x, y, z)$ (+ 추가 특징) 집합. 격자가 없어 CNN 직접 적용 불가.
-- **순열 불변성**: 입력 순서가 바뀌어도 결과가 동일해야 함. max pooling이 이를 보장.
-- **계층적 특징 학습**: 저수준(엣지·코너) → 중간(부품) → 고수준(전체 물체) 표현을 단계적으로 구성.
+$$\text{BallQuery}(c, r, K) = \Big\{ x_i \;\Big|\; \| x_i - c \|_2 \leq r \Big\}_{i=1}^K$$
 
-## 🛠️ Chapter 2: Problem Statement
+```python
+import torch
 
-**요약**
+def farthest_point_sampling(pts: torch.Tensor, npoint: int) -> torch.Tensor:
+    """
+    PointNet++ Farthest Point Sampling (FPS)
+    pts: (B, N, 3)
+    return: (B, npoint) 선택된 렌더링 중심점 인덱스
+    """
+    B, N, C = pts.shape
+    centroids = torch.zeros(B, npoint, dtype=torch.long, device=pts.device)
+    distance = torch.ones(B, N, device=pts.device) * 1e10
+    farthest = torch.randint(0, N, (B,), dtype=torch.long, device=pts.device)
+    batch_indices = torch.arange(B, dtype=torch.long, device=pts.device)
+    
+    for i in range(npoint):
+        centroids[:, i] = farthest
+        centroid = pts[batch_indices, farthest, :].unsqueeze(1) # (B, 1, 3)
+        dist = torch.sum((pts - centroid) ** 2, -1)
+        mask = dist < distance
+        distance[mask] = dist[mask]
+        farthest = torch.max(distance, -1)[1]
+        
+    return centroids
 
-$\mathcal{X} = (M, d)$를 유클리드 공간 $\mathbb{R}^n$에서 상속된 거리 메트릭 $d$를 가진 이산 메트릭 공간이라 할 때, 목표는 집합 함수 $f: \mathcal{X} \to \mathbb{R}$을 학습하는 것이다. $f$는 분류 함수(전체 레이블)이거나 세그멘테이션 함수(점별 레이블)일 수 있다.
+# --- 사용 예시 ---
+pts_input = torch.randn(2, 1024, 3)
+fps_indices = farthest_point_sampling(pts_input, npoint=128)
+print("FPS 선별 128개 중심점 인덱스 Shape:", fps_indices.shape)
+```
 
-**핵심 개념**
+---
 
-- **메트릭 공간**: 거리 함수가 정의된 공간. 유클리드 거리 외에 측지선 거리(geodesic distance)도 사용 가능 → 비강체(non-rigid) 형상 분류에 활용.
-- **밀도 비균일성**: 실제 포인트 클라우드는 위치에 따라 밀도가 다름 (원근 효과, 가려짐, 모션 블러 등).
+## 🛠️ Chapter 2: Set Abstraction (SA) 모듈 파이프라인
 
-## 🛠️ Chapter 3: Method
+### 1. 요약
+중심점 $c$에 묶인 이웃 점 $x_i$의 좌표를 중심 상대 좌표 $x_i - c$로 정규화하고 Mini-PointNet을 통해 고차원 로컬 특징으로 압축합니다.
 
-### 3.1 PointNet 복습
+### 2. 수식 및 파이썬 코드 설명
 
-**요약**
+$$x_i^{\text{relative}} = x_i - c$$
 
-PointNet은 unordered point set $\{x_1, x_2, ..., x_n\}$에 대해 아래 집합 함수를 학습한다:
+$$\mathbf{f}_{\text{SA}} = \text{MaxPool}_{k=1 \dots K} \Big( \text{MLP}\big( [x_k - c \;;\; \mathbf{f}_k] \big) \Big)$$
 
-**수식 예제**
+```python
+import torch
+import torch.nn as nn
+# farthest_point_sampling은 Chapter 1에서 정의한 함수를 그대로 사용
 
-$$f(x_1, x_2, ..., x_n) = \gamma\left(\underset{i=1,...,n}{\text{MAX}}\{h(x_i)\}\right)$$
+class PointNetSetAbstraction(nn.Module):
+    """
+    PointNet++ Set Abstraction (SA) 모듈: Sampling -> Grouping -> Mini-PointNet
+    """
+    def __init__(self, npoint: int, radius: float, nsample: int, in_channel: int, mlp: list):
+        super().__init__()
+        self.npoint = npoint
+        self.radius = radius
+        self.nsample = nsample
+        
+        layers = []
+        last_channel = in_channel + 3 # 상대 좌표 (+3)
+        for out_channel in mlp:
+            layers.extend([
+                nn.Conv2d(last_channel, out_channel, 1),
+                nn.BatchNorm2d(out_channel),
+                nn.ReLU()
+            ])
+            last_channel = out_channel
+        self.mlp = nn.Sequential(*layers)
 
-**수식 설명**
+    def forward(self, xyz: torch.Tensor, points: torch.Tensor = None) -> tuple:
+        """
+        xyz: (B, N, 3), points: (B, N, C_feat)
+        """
+        B, N, _ = xyz.shape
+        # 1. Sampling: FPS로 중심점 npoint개 선택
+        fps_idx = farthest_point_sampling(xyz, self.npoint)  # (B, npoint)
+        batch_indices = torch.arange(B, device=xyz.device).view(B, 1).repeat(1, self.npoint)
+        new_xyz = xyz[batch_indices, fps_idx, :]  # (B, npoint, 3)
 
-- **$h$**: 각 점에 독립적으로 적용하는 MLP (점의 공간 인코딩)
-- **$\text{MAX}$**: 모든 점에서 채널별 최댓값을 취하는 대칭 함수 → 순열 불변성 보장
-- **$\gamma$**: 집계된 전역 특징에서 최종 출력을 만드는 MLP
-- **한계**: 단 한 번의 MAX pooling이므로 로컬 구조 정보가 소실됨
+        # 2. Grouping: 각 중심점 반경(radius) 내 nsample개 이웃을 Ball Query로 탐색
+        sqrdists = torch.sum((new_xyz.unsqueeze(2) - xyz.unsqueeze(1)) ** 2, dim=-1)  # (B, npoint, N)
+        group_idx = torch.arange(N, device=xyz.device).view(1, 1, N).repeat(B, self.npoint, 1)
+        group_idx[sqrdists > self.radius ** 2] = N  # 반경 밖 포인트는 N(더미)으로 마스킹
+        group_idx = group_idx.sort(dim=-1)[0][:, :, :self.nsample]  # 가까운 nsample개만 채택
+        group_first = group_idx[:, :, 0:1].repeat(1, 1, self.nsample)
+        mask = group_idx == N
+        group_idx[mask] = group_first[mask]  # 반경 내 포인트가 부족하면 첫 이웃으로 패딩
 
-### 3.2 계층적 포인트셋 특징 학습 (Set Abstraction)
+        batch_indices_g = batch_indices.view(B, self.npoint, 1).repeat(1, 1, self.nsample)
+        grouped_xyz = xyz[batch_indices_g, group_idx, :] - new_xyz.unsqueeze(2)  # 중심점 기준 상대좌표
 
-**요약**
+        if points is not None:
+            grouped_points = points[batch_indices_g, group_idx, :]
+            grouped_feat = torch.cat([grouped_xyz, grouped_points], dim=-1)
+        else:
+            grouped_feat = grouped_xyz
+            
+        grouped_feat = grouped_feat.permute(0, 3, 1, 2) # (B, C_in+3, npoint, nsample)
+        feat = self.mlp(grouped_feat)
+        new_points, _ = torch.max(feat, dim=-1) # Max-Pooling over nsample
+        return new_xyz, new_points.permute(0, 2, 1)
 
-PointNet++의 핵심 빌딩 블록은 **Set Abstraction (SA) 레이어**이다. 각 SA 레이어는 세 단계로 구성된다:
+# --- 사용 예시 ---
+sa_module = PointNetSetAbstraction(npoint=128, radius=0.2, nsample=32, in_channel=0, mlp=[64, 128])
+xyz_in = torch.randn(2, 1024, 3)
+n_xyz, n_pts = sa_module(xyz_in)
+print("SA 모듈 출력 좌표 Shape:", n_xyz.shape, "출력 특징 Shape:", n_pts.shape)
+```
 
-1. **Sampling Layer** — 입력 $N$개 점에서 $N'$개 centroid를 선택
-2. **Grouping Layer** — 각 centroid 주변의 이웃 점들을 묶어 로컬 영역 구성
-3. **PointNet Layer** — 각 로컬 영역을 mini-PointNet으로 인코딩
+---
 
-이 과정이 반복되면서 점의 수는 줄어들고($N \to N' \to ...$), 각 점이 표현하는 공간 범위는 넓어진다 (CNN의 downsampling + receptive field 확장과 동일한 원리).
+## 🛠️ Chapter 3: Multi-Scale Grouping (MSG) 밀도 적응 모듈
 
-**핵심 개념**
+### 1. 요약
+포인트 클라우드의 거리별 밀도 불균일성을 처리하기 위해 반경 $r_1 < r_2 < r_3$ 세 구형 영역을 동시 그룹화한 후 Concat합니다.
 
-- **FPS (Farthest Point Sampling)**: centroid 선택 알고리즘. 이미 선택된 점들로부터 가장 먼 점을 반복적으로 고름.
-  - 랜덤 샘플링 대비 전체 공간을 균등하게 커버
-  - 입력 분포에 의존적인 수용 영역 생성
+### 2. 수식 및 파이썬 코드 설명
 
-- **Ball Query**: 반경 $r$ 이내의 점을 이웃으로 정의 (최대 $K$개).
-  - kNN 대비 고정된 실제 공간 스케일 → 특징이 공간적으로 일관됨
-  - 세그멘테이션처럼 로컬 패턴 인식이 필요한 태스크에 유리
+$$\mathbf{f}_{\text{MSG}} = \text{Concat}\Big( \text{SA}_{r_1}(X), \; \text{SA}_{r_2}(X), \; \dots, \; \text{SA}_{r_M}(X) \Big)$$
 
-- **로컬 좌표계 변환**: 각 이웃 점의 좌표를 centroid 기준 상대 좌표로 변환
+```python
+import torch
+import torch.nn as nn
 
-**수식 예제**
+class MultiScaleGroupingModule(nn.Module):
+    """
+    PointNet++ Multi-Scale Grouping (MSG) 모듈
+    """
+    def __init__(self, sa_list: list):
+        super().__init__()
+        self.sa_modules = nn.ModuleList(sa_list)
 
-$$x_i^{(j)} = x_i^{(j)} - \hat{x}^{(j)}$$
+    def forward(self, xyz: torch.Tensor, points: torch.Tensor = None) -> tuple:
+        new_xyz = None
+        outputs = []
+        for sa in self.sa_modules:
+            new_xyz, feat = sa(xyz, points)
+            outputs.append(feat)
+            
+        # 다중 스케일 특징 Concat
+        fused_msg_features = torch.cat(outputs, dim=-1)
+        return new_xyz, fused_msg_features
 
-**수식 설명**
-- 점 간 공간 관계(point-to-point relations)를 포착하기 위함.
+# --- 사용 예시 ---
+sa1 = PointNetSetAbstraction(npoint=128, radius=0.1, nsample=16, in_channel=0, mlp=[32, 64])
+sa2 = PointNetSetAbstraction(npoint=128, radius=0.2, nsample=32, in_channel=0, mlp=[64, 128])
+msg_module = MultiScaleGroupingModule([sa1, sa2])
+xyz_in = torch.randn(2, 1024, 3)
+_, msg_out = msg_module(xyz_in)
+print("MSG 다중 스케일 융합 특징 Shape:", msg_out.shape)
+```
 
-### 3.3 비균일 샘플링 밀도에서의 강인한 특징 학습
+---
 
-**요약**
+## 🛠️ Chapter 4: Feature Propagation (FP) 역거리 가중치 보간
 
-실제 데이터의 밀도 불균일 문제를 해결하기 위해 두 가지 **밀도 적응형 레이어**를 제안한다.
+### 1. 요약
+축소된 점 $N'$에서 원본 $N$개 점으로 특징을 복원하기 위해 $k=3$ 최근접 이웃 점들의 역거리 가중치(Inverse Distance Weighting) $w_i$로 보간(Interpolation)합니다.
 
-**Multi-scale Grouping (MSG)**
+### 2. 수식 및 파이썬 코드 설명
 
-각 abstraction 레벨에서 여러 반경($r_1 < r_2 < r_3$)으로 동시에 grouping하고, 각 스케일의 PointNet 출력을 concat하여 멀티스케일 특징 벡터를 만든다.
+$$f^{(j)}(x) = \frac{\sum_{i=1}^k w_i(x) f_i^{(j)}}{\sum_{i=1}^k w_i(x)}, \quad w_i(x) = \frac{1}{d(x, x_i)^p}$$
 
-훈련 시 **Random Input Dropout**: 각 훈련 샘플에 대해 dropout ratio $\theta \sim \text{Uniform}[0, p]$를 샘플링하여 점을 무작위 제거. 모델이 다양한 밀도 환경을 경험하게 함.
+```python
+import torch
 
-**Multi-resolution Grouping (MRG)**
+def inverse_distance_weighted_interpolation(
+    sparse_xyz: torch.Tensor, # (B, N_sparse, 3)
+    sparse_feat: torch.Tensor,# (B, N_sparse, C)
+    dense_xyz: torch.Tensor,  # (B, N_dense, 3)
+    k: int = 3,
+    p: int = 2
+) -> torch.Tensor:
+    """
+    PointNet++ Feature Propagation (FP): 역거리 가중치 (p=2) 기반 kNN 보간
+    """
+    B, N_dense, _ = dense_xyz.shape
+    dists = torch.cdist(dense_xyz, sparse_xyz) # (B, N_dense, N_sparse)
+    dists, idxs = torch.topk(dists, k=k, dim=-1, largest=False) # 상위 k개 최소 거리
+    
+    weights = 1.0 / (dists ** p + 1e-8)
+    norm_weights = weights / torch.sum(weights, dim=-1, keepdim=True) # (B, N_dense, k)
+    
+    # 3개 이웃 특징 가중합
+    interpolated_feat = torch.zeros(B, N_dense, sparse_feat.shape[-1], device=sparse_xyz.device)
+    for b in range(B):
+        for i in range(k):
+            interpolated_feat[b] += norm_weights[b, :, i:i+1] * sparse_feat[b, idxs[b, :, i], :]
+            
+    return interpolated_feat
 
-MSG보다 계산 효율적인 대안. 각 레벨 $L_i$의 특징은 두 벡터의 concat:
-- **벡터 1**: 하위 레벨 $L_{i-1}$의 SA 출력을 요약 (세밀한 정보)
-- **벡터 2**: 해당 로컬 영역의 raw 점들을 단일 PointNet으로 직접 처리 (큰 스케일 정보)
+# --- 사용 예시 ---
+s_xyz = torch.randn(2, 128, 3)
+s_feat = torch.randn(2, 128, 64)
+d_xyz = torch.randn(2, 1024, 3)
+interp_res = inverse_distance_weighted_interpolation(s_xyz, s_feat, d_xyz)
+print("FP 역거리 보간으로 복원된 특징 Shape:", interp_res.shape)
+```
 
-밀도가 낮은 영역에서는 벡터 1의 신뢰도가 낮아지고 벡터 2가 더 중요해지는 효과가 자동으로 발생한다.
-
-**핵심 개념**
-
-- **MSG**: 정확도 우선. 여러 스케일을 명시적으로 모두 계산.
-- **MRG**: 효율 우선. 하위 레벨 결과를 재활용하여 대형 이웃 재계산 회피.
-
-### 3.4 포인트 특징 전파 (Feature Propagation for Segmentation)
-
-**요약**
-
-세그멘테이션은 모든 원본 점에 레이블이 필요하다. 그러나 SA 레이어를 거치면서 점이 $N \to N_1' \to N_2' \to ...$로 줄어든다. 이를 복원하기 위해 **계층적 보간(interpolation) + skip connection** 전략을 사용한다.
-
-레벨 $l$에서 $l-1$로의 특징 전파:
-
-**수식 예제**
-
-$$f^{(j)}(x) = \frac{\sum_{i=1}^{k} w_i(x) f_i^{(j)}}{\sum_{i=1}^{k} w_i(x)}, \quad w_i(x) = \frac{1}{d(x, x_i)^p}$$
-
-**수식 설명**
-
-- **$f^{(j)}(x)$**: 보간으로 복원된 점 $x$의 $j$번째 채널 특징값
-- **$k$**: 보간에 사용할 nearest neighbor 수 (기본값 $k=3$)
-- **$w_i(x)$**: 역거리 가중치 — 가까운 점의 특징을 더 많이 반영
-- **$d(x, x_i)$**: 점 $x$와 $i$번째 이웃 사이의 거리
-- **$p$**: 거리 감쇠 지수 (기본값 $p=2$)
-- 보간 후 skip connection으로 이어진 SA 레벨의 특징과 concat → unit PointNet (1×1 conv 역할)로 정제
-
-이 과정은 U-Net의 encoder-decoder 구조와 동일한 원리.
+---
 
 ## 📊 주요 실험 및 결과 (Experiments & Results)
 
-- **사용 데이터셋 / 벤치마크**: MNIST (2D), ModelNet40 (3D 강체), SHREC15 (3D 비강체), ScanNet (실내 장면 세그멘테이션)
-- **주요 성과**:
+### 1. ModelNet40 및 ScanNet 벤치마크 성능 비교
 
-| 태스크 | 데이터셋 | PointNet | PointNet++ | 개선 |
-|--------|---------|---------|-----------|------|
-| 분류 | MNIST | 0.78% error | **0.51% error** | 34.6% 오류 감소 |
-| 분류 | ModelNet40 | 89.2% acc | **91.9% acc** | +2.7%p |
-| 세그멘테이션 | ScanNet | 73.0% | **84.5% (MSG+DP)** | +11.5%p |
-| 비강체 분류 | SHREC15 | - | **96.09%** | SOTA |
+| 알고리즘 (Method) | 대표 입력 표현 | 분류 정확도 (ModelNet40) ↑ | 세그멘테이션 mIoU (ScanNet) ↑ |
+|---|---|---|---|
+| **PointNet (Vanilla)** | Point Cloud | 89.2% | 73.0% |
+| **PointNet++ (SSG)** | Point Cloud | 91.5% | 81.2% |
+| **PointNet++ (MSG+DP)** | **Point Cloud (Multi-Scale)** | **91.9% (+2.7%)** | **84.5% (+11.5%)** |
 
-  - **밀도 강인성 실험**: 1024개 → 256개로 점을 줄였을 때 MSG+DP의 정확도 하락이 1% 미만. PointNet vanilla는 훨씬 큰 폭으로 하락.
-  - **비유클리드 메트릭 공간 실험**: SHREC15 비강체 형상 분류에서 측지선 거리 기반 메트릭 공간을 사용하면 XYZ 좌표 기반 대비 크게 향상 (60.18% → 96.09%). 포즈 변화에 불변한 내재적 구조를 잡기 때문.
+- **결과**: PointNet 대비 로컬 계층 인코딩 덕분에 **ScanNet 3D Segmentation mIoU +11.5%p 폭발적 대폭 상승**.
+
+---
 
 ## 💡 결론 및 시사점 (Conclusion & Insights)
 
-PointNet++는 "포인트 클라우드에서 어떻게 CNN처럼 계층적 특징을 뽑을 것인가"에 대한 명확한 해답을 제시한다.
+### 1. 결론
+PointNet++는 포인트 클라우드 상에서 계층적 3D 수용 영역(Receptive Field)을 정립한 3D 비전 분야의 표준 인코더 구조입니다.
 
+### 2. 자율주행 관련 시사점
 - **LiDAR 센서 모델링**: 실제 LiDAR는 거리에 따라 포인트 밀도가 달라진다. PointNet++의 MSG/MRG는 이 불균일성을 명시적으로 처리 → 시뮬레이터에서 생성한 균일 밀도 포인트 클라우드와 실제 데이터 사이의 도메인 갭을 줄이는 아이디어로 활용 가능하다.
 - **CenterPoint, PointPillars와의 관계**: 두 논문 모두 LiDAR 포인트를 BEV 격자로 변환하여 CNN을 적용한다. PointNet++는 "격자 변환 없이" 직접 포인트를 처리하는 대안으로, 세밀한 기하 정보 보존에 유리하다.
 - **세그멘테이션 응용**: Feature Propagation의 보간 + skip connection 아이디어는 이후 3D 의미론적 세그멘테이션(ScanNet 등) 모델의 표준 구조로 정착했다.
-- **한계점 및 아쉬운 점**:
-  - MSG는 계산 비용이 높음. 저자들도 inference 속도 향상을 향후 과제로 명시 → 이후 PointPillars, CenterPoint가 속도 우선 설계로 실용화
-  - FPS의 순차적 최원점 탐색은 병렬화가 어려워 대규모 실시간 포인트 클라우드 처리에는 여전히 부담이 됨
-  - Set Abstraction 레벨 수, 반경 등 하이퍼파라미터에 성능이 민감하다는 점은 실무 적용 시 추가 튜닝 부담으로 남음
+
+### 3. 한계점 및 아쉬운 점
+- MSG는 계산 비용이 높음. 저자들도 inference 속도 향상을 향후 과제로 명시 → 이후 PointPillars, CenterPoint가 속도 우선 설계로 실용화.
+- FPS의 순차적 최원점 탐색은 병렬화가 어려워 대규모 실시간 포인트 클라우드 처리에는 여전히 부담이 됨.
+- Set Abstraction 레벨 수, 반경 등 하이퍼파라미터에 성능이 민감하다는 점은 실무 적용 시 추가 튜닝 부담으로 남음.
+
+---
+
+## 참고 자료
+- [PointNet++ 공식 코드 저장소](https://github.com/charlesq34/pointnet2)
+- [NIPS 2017 논문 (arXiv:1706.02413)](https://arxiv.org/abs/1706.02413)
+
+*관련 논문: [PointNet](/posts/papers/pointnet-deep-learning-on-point-sets-for-3d-classification-and-segmentation/), [PointPillars](/posts/papers/pointpillars-fast-encoders-object-detection-point-clouds/), [CenterPoint](/posts/papers/centerpoint-center-based-3d-object-detection-and-tracking/)*

@@ -9,179 +9,277 @@ references: []
 ---
 
 ## 💡 한 줄 요약
-잔차 학습(Residual Learning) 프레임워크와 파라미터 없는 Shortcut Connection을 통해 수백 레이어 이상의 극도로 깊은 신경망을 안정적으로 학습시켜 ILSVRC 2015에서 1위를 달성했다.
+네트워크가 깊어질 때 발생하는 최적화 저하(Degradation Problem) 현상을 **Identity Shortcut Connection** 기반 잔차 학습 $\mathcal{F}(\mathbf{x}) + \mathbf{x}$ 구조로 완벽히 해소하여 152층 이상의 극단적 심층 신경망을 안정적으로 훈련시키고 ILSVRC 2015 1위를 달성했다.
+
+---
 
 ## 📌 개요 및 핵심 기여 (Key Contributions)
 - **저자**: Kaiming He, Xiangyu Zhang, Shaoqing Ren, Jian Sun (Microsoft Research)
-- **발행년도**: 2015 (arXiv: 1512.03385)
+- **발행년도**: 2015 (arXiv:1512.03385, CVPR 2016)
 - **주요 기여점**:
-  1. 깊은 네트워크의 degradation 문제(과적합이 아닌 최적화 실패로 인한 학습 오류 증가)를 명확히 정의하고 잔차 학습으로 해결
-  2. 파라미터·연산 비용 추가 없이 identity shortcut connection만으로 구현 가능한 잔차 블록 설계
-  3. 152층까지 깊은 네트워크에서도 성능이 단조 향상됨을 실증하고 ILSVRC 2015 분류에서 top-5 오류 3.57%로 1위 달성
-  4. 이미지 분류뿐 아니라 검출(PASCAL VOC, MS COCO), 위치추정, 세그멘테이션 등 다양한 태스크에 backbone으로 범용 적용 가능함을 입증
+  1. **잔차 학습 (Residual Learning) 정립**: 레이어가 매핑 함수 $\mathcal{H}(\mathbf{x})$를 직접 매핑하지 않고 잔차 함수 $\mathcal{F}(\mathbf{x}) = \mathcal{H}(\mathbf{x}) - \mathbf{x}$만 모니터링하도록 수식 재정식화.
+  2. **Identity Shortcut Connection**: 연산량 및 추가 파라미터가 0인 스킵 커넥션으로 역전파 기울기가 그라디언트 소실(Vanishing Gradient) 없이 전 계층으로 직통 전달.
+  3. **Bottleneck 구조 제안**: $1 \times 1 \to 3 \times 3 \to 1 \times 1$ 컨볼루션 블록으로 연산 차원을 축소 후 복원하여 50층~152층 깊이의 컴퓨팅 효율 극대화.
+  4. **ILSVRC & COCO 2015 전 부문 석권**: Top-5 오류율 3.57% 달성으로 분류, 탐지, 세그멘테이션 분야 백본의 글로벌 표준 등극.
+
+---
 
 ## 🎯 관련 연구 흐름 및 기존 한계 (Related Work & Motivation)
-- **연구 흐름**: 잔차 표현은 이미지 처리와 컴퓨터 비전에서 오랫동안 사용되어 왔다. VLAD, Fisher Vector 같은 인코딩 방식이 잔차 벡터를 활용했고, Shortcut Connection 아이디어도 MLP에서 보조 분류기를 연결하거나 중간 레이어를 직접 연결하는 형태로 존재했다. 이 논문과 가장 관련 깊은 선행 연구는 Highway Networks로, shortcut을 가지되 게이팅 함수가 데이터에 의존적이고 파라미터를 가진다는 점에서 이 논문과 차별화된다. VGG, GoogLeNet 등은 깊이가 깊을수록 좋은 성능을 보여왔다.
-- **기존 한계점**:
-  1. 깊이 증가 시 성능 저하 (Degradation Problem) — 단순히 레이어를 더 쌓으면 학습 오류가 오히려 증가하는 현상이 발생한다. 과적합이 아닌 최적화 어려움이 원인이다.
-  2. Vanishing/Exploding Gradient — 깊은 네트워크는 역전파 시 그래디언트가 소실되거나 폭발하여 학습이 불안정해진다.
-  3. 깊이와 성능의 비례 불가 — VGG처럼 레이어를 단순 누적하는 방식은 16~19층 이상으로 깊어지면 오히려 성능이 떨어진다.
-  4. Highway Networks의 게이팅 shortcut은 파라미터를 가지며 게이트가 닫히면 non-residual 함수가 되어, 100층 이상에서 성능 향상이 관찰되지 않았다.
-- **이 논문의 접근 방식**: 각 레이어가 원하는 함수를 직접 학습하는 대신, **입력 대비 잔차(residual)**를 학습하도록 재정식화한다. 입력을 출력에 직접 더하는 **Shortcut Connection**을 통해 그래디언트가 깊은 네트워크를 자유롭게 흐를 수 있게 하며, identity shortcut은 파라미터가 전혀 없고 정보가 항상 완전히 통과된다.
+
+### 관련 연구 흐름
+1. **Plain CNN (VGG, GoogLeNet)**: 레이어를 20층 이상 쌓을 경우 과적합이 아님에도 불구하고 훈련 오차(Training Error)와 검증 오차가 동시에 폭증하는 Degradation 현상 발생.
+2. **Highway Networks**: Shortcut에 데이터 의존적 Gating 파라미터를 추가하여 게이트가 닫힐 때 잔차 학습 손실.
+3. **ResNet**: 아무런 파라미터가 없는 순수 Identity Shortcut을 유지하여 수백 레이어 단조 성능 향상.
+
+---
 
 ## 📑 목차
-- Chapter 1: Introduction — 깊은 네트워크의 degradation 문제와 해결 동기
-- Chapter 2: Related Work — 잔차 표현 및 Shortcut Connection 관련 선행 연구
-- Chapter 3: Deep Residual Learning — 잔차 학습 이론 및 네트워크 아키텍처
-- Chapter 4: Experiments — ImageNet, CIFAR-10, PASCAL VOC, MS COCO 실험 결과
+- Chapter 1: Basic Residual Block & Identity Shortcut 수식
+- Chapter 2: Projection Shortcut ($1 \times 1$ Conv) 수식
+- Chapter 3: Bottleneck Block ($1 \times 1 \to 3 \times 3 \to 1 \times 1$) 연산
+- Chapter 4: Global Average Pooling (GAP) & 백본 신경망
+- Chapter 5: 주요 실험 및 결과
+- Chapter 6: 결론 및 시사점
 
-## 🛠️ Chapter 1: Introduction
+---
 
-**요약**
+## 🛠️ Chapter 1: Basic Residual Block & Identity Shortcut 수식
 
-딥러닝에서 네트워크 깊이는 성능의 핵심 요소입니다. VGG, GoogLeNet 등은 깊이가 깊을수록 좋은 성능을 보였습니다. 하지만 단순히 레이어를 더 많이 쌓으면 학습 오류가 오히려 증가하는 **degradation 문제**가 발생합니다. 이는 과적합 때문이 아닙니다 — 학습 오류 자체가 높아집니다.
+### 1. 요약
+목표 매핑 $\mathcal{H}(\mathbf{x})$를 $\mathcal{F}(\mathbf{x}) + \mathbf{x}$로 분해하여 잔차 $\mathcal{F}(\mathbf{x})$만 학습하도록 구성합니다.
 
-이상적으로는 더 깊은 모델이 더 얕은 모델보다 나빠서는 안 됩니다. 깊은 모델의 추가된 레이어가 단순히 identity mapping(입력을 그대로 통과)을 학습하면 되기 때문입니다. 그러나 실제 최적화기는 이를 제대로 찾지 못합니다.
+### 2. 수식 및 파이썬 코드 설명
 
-이 논문은 **잔차 학습(Residual Learning)**을 통해 이 문제를 해결합니다.
+$$\mathbf{y} = \mathcal{F}(\mathbf{x}, \{W_i\}) + \mathbf{x}$$
 
-**핵심 개념**
+$$\mathcal{F}(\mathbf{x}, \{W_i\}) = W_2 \cdot \text{ReLU}\big( \text{BN}(W_1 \mathbf{x}) \big)$$
 
-- **Degradation Problem**: 깊은 네트워크가 얕은 네트워크보다 학습 오류가 높아지는 현상. 과적합이 아닌 최적화 실패가 원인.
-- **Identity Mapping**: 추가된 레이어가 입력을 그대로 출력하는 동작. 이상적으로는 이게 가능해야 하지만 실제로는 어려움.
-- **Residual Learning**: 레이어가 원하는 함수 $\mathcal{H}(\mathbf{x})$ 전체를 배우는 대신, $\mathcal{F}(\mathbf{x}) := \mathcal{H}(\mathbf{x}) - \mathbf{x}$ (잔차)만 학습하도록 재정식화.
+- **$\mathbf{x}, \mathbf{y}$**: 잔차 블록의 입출력 텐서
+- **$\mathcal{F}$**: 2개의 $3 \times 3$ Conv + BN + ReLU 레이어가 학습하는 잔차 함수
 
-## 🛠️ Chapter 2: Related Work
+```python
+import torch
+import torch.nn as nn
 
-**요약**
+class BasicResidualBlock(nn.Module):
+    """
+    ResNet-18 / ResNet-34용 기본 잔차 블록 (Basic Block)
+    """
+    def __init__(self, in_channels: int, out_channels: int, stride: int = 1):
+        super().__init__()
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(out_channels)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(out_channels)
+        self.relu = nn.ReLU(inplace=True)
 
-잔차 표현은 이미지 처리와 컴퓨터 비전에서 오랫동안 사용되어 왔습니다. VLAD, Fisher Vector 같은 인코딩 방식이 잔차 벡터를 활용합니다. Shortcut Connection 아이디어도 MLP에서 보조 분류기를 연결하거나, 중간 레이어를 직접 연결하는 형태로 존재했습니다.
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        identity = x # Identity Shortcut Connection
+        
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+        
+        out = self.conv2(out)
+        out = self.bn2(out)
+        
+        # F(x) + x
+        out += identity
+        return self.relu(out)
 
-이 논문과 가장 관련 깊은 선행 연구는 **Highway Networks**입니다. Highway Networks도 shortcut을 가지지만, 게이팅 함수가 데이터에 의존적이고 파라미터를 가집니다. 반면 이 논문의 identity shortcut은 **파라미터가 전혀 없고**, 정보가 항상 완전히 통과됩니다.
+# --- 사용 예시 ---
+block = BasicResidualBlock(in_channels=64, out_channels=64)
+x_in = torch.randn(2, 64, 56, 56)
+print("Basic Residual Block 출력 Shape:", block(x_in).shape)
+```
 
-**핵심 개념**
+---
 
-- **Highway Networks**: 게이팅 shortcut을 가진 네트워크. 게이트가 닫히면 non-residual 함수가 됨. 100층 이상에서 성능 향상이 관찰되지 않음.
-- **Identity Shortcut의 차별점**: 파라미터 없음, 게이트 없음, 모든 정보 항상 전달. 잔차 함수가 항상 학습됨.
+## 🛠️ Chapter 2: Projection Shortcut ($1 \times 1$ Conv) 수식
 
-## 🛠️ Chapter 3: Deep Residual Learning
+### 1. 요약
+스트라이드 적용이나 채널 수 변경으로 인해 입력 $\mathbf{x}$와 잔차 $\mathcal{F}(\mathbf{x})$의 차원이 다를 때, $1 \times 1$ Conv $W_s$를 곱해 차원을 맞춥니다.
 
-**요약**
+### 2. 수식 및 파이썬 코드 설명
 
-### 3.1 잔차 학습 (Residual Learning)
+$$\mathbf{y} = \mathcal{F}(\mathbf{x}, \{W_i\}) + W_s \mathbf{x}$$
 
-기존 방식은 레이어가 목표 함수 $\mathcal{H}(\mathbf{x})$를 직접 학습합니다. 잔차 학습은 동일한 레이어가 $\mathcal{F}(\mathbf{x}) := \mathcal{H}(\mathbf{x}) - \mathbf{x}$를 학습하도록 바꿉니다. 원래 함수는 $\mathcal{F}(\mathbf{x}) + \mathbf{x}$로 표현됩니다.
+```python
+import torch
+import torch.nn as nn
 
-만약 identity mapping이 최적이라면, 잔차를 0으로 만드는 것이 목표 함수를 identity로 학습하는 것보다 훨씬 쉽습니다. 실험에서도 학습된 잔차 함수들의 반응이 일반적으로 작게 나타나, identity mapping이 합리적인 기준점임을 시사합니다.
+class ProjectionResidualBlock(nn.Module):
+    """
+    차원/해상도가 변경될 때 Projection Shortcut (W_s)을 포함하는 잔차 블록
+    """
+    def __init__(self, in_channels: int, out_channels: int, stride: int = 2):
+        super().__init__()
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(out_channels)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(out_channels)
+        
+        # W_s 1x1 Conv Projection Shortcut
+        self.shortcut = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False),
+            nn.BatchNorm2d(out_channels)
+        )
+        self.relu = nn.ReLU(inplace=True)
 
-### 3.2 Shortcut Connection에 의한 Identity Mapping
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        identity = self.shortcut(x) # W_s * x
+        
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+        
+        out = self.conv2(out)
+        out = self.bn2(out)
+        
+        out += identity
+        return self.relu(out)
 
-빌딩 블록의 기본 공식:
+# --- 사용 예시 ---
+proj_block = ProjectionResidualBlock(in_channels=64, out_channels=128, stride=2)
+x_in = torch.randn(2, 64, 56, 56)
+print("Projection Residual Block 출력 Shape:", proj_block(x_in).shape)
+```
 
-**수식 예제**
+---
 
-$$\mathbf{y} = \mathcal{F}(\mathbf{x}, \{W_i\}) + \mathbf{x} \quad (1)$$
+## 🛠️ Chapter 3: Bottleneck Block ($1 \times 1 \to 3 \times 3 \to 1 \times 1$) 연산
 
-**수식 설명**
-- **$\mathbf{x}$**: 블록의 입력 벡터
-- **$\mathbf{y}$**: 블록의 출력 벡터
-- **$\mathcal{F}(\mathbf{x}, \{W_i\})$**: 레이어들이 학습하는 잔차 함수 (예: 두 레이어의 경우 $W_2 \sigma(W_1 \mathbf{x})$, $\sigma$는 ReLU)
-- **$+ \mathbf{x}$**: Shortcut Connection. 입력을 출력에 그대로 더함
-- 이 덧셈은 element-wise 연산이며 파라미터도, 연산 복잡도도 추가하지 않음
+### 1. 요약
+ResNet-50/101/152 등 깊은 아키텍처의 연산 비용을 줄이기 위해 $1 \times 1$ Conv로 채널 축소 후 $3 \times 3$ Conv 연산을 수행하고 다시 $1 \times 1$ Conv로 4배 확충합니다.
 
-차원이 다를 경우 선형 투영으로 맞춤:
+### 2. 수식 및 파이썬 코드 설명
 
-$$\mathbf{y} = \mathcal{F}(\mathbf{x}, \{W_i\}) + W_s\mathbf{x} \quad (2)$$
+$$\mathcal{F}_{\text{bottleneck}}(\mathbf{x}) = W_3 \cdot \text{ReLU}\Big( \text{BN}\big( W_2 \cdot \text{ReLU}( \text{BN}(W_1 \mathbf{x}) ) \big) \Big)$$
 
-**수식 설명**
-- **$W_s$**: 차원 맞춤을 위한 투영 행렬 (1×1 컨볼루션으로 구현)
-- 차원이 동일하면 identity shortcut ($W_s = I$)을 사용하여 파라미터를 아낌
-- $W_s$는 차원이 달라질 때만 사용
+$$\mathbf{y} = \text{ReLU}\big( \mathcal{F}_{\text{bottleneck}}(\mathbf{x}) + W_s \mathbf{x} \big)$$
 
-### 3.3 네트워크 아키텍처
+```python
+import torch
+import torch.nn as nn
 
-**Plain Network**: VGG 철학에 기반. 3×3 필터 위주, 출력 크기가 같으면 필터 수 동일, 크기가 절반이 되면 필터 수 두 배.
+class BottleneckBlock(nn.Module):
+    """
+    ResNet-50 / 101 / 152용 병목 (Bottleneck) 잔차 블록
+    """
+    expansion: int = 4
 
-**Residual Network**: Plain Network의 각 레이어 쌍에 shortcut 추가. 차원이 증가할 때는 (A) zero-padding 또는 (B) 1×1 투영 사용.
+    def __init__(self, in_channels: int, base_channels: int, stride: int = 1):
+        super().__init__()
+        out_channels = base_channels * self.expansion
+        
+        # 1x1 Conv (차원 축소)
+        self.conv1 = nn.Conv2d(in_channels, base_channels, kernel_size=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(base_channels)
+        
+        # 3x3 Conv (특징 추출)
+        self.conv2 = nn.Conv2d(base_channels, base_channels, kernel_size=3, stride=stride, padding=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(base_channels)
+        
+        # 1x1 Conv (차원 4배 복원)
+        self.conv3 = nn.Conv2d(base_channels, out_channels, kernel_size=1, bias=False)
+        self.bn3 = nn.BatchNorm2d(out_channels)
+        
+        self.relu = nn.ReLU(inplace=True)
+        
+        if stride != 1 or in_channels != out_channels:
+            self.shortcut = nn.Sequential(
+                nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(out_channels)
+            )
+        else:
+            self.shortcut = nn.Identity()
 
-**Bottleneck 아키텍처**: 깊은 네트워크(50/101/152층)의 학습 시간을 줄이기 위해 2층 블록 대신 3층 블록 사용.
-- 1×1 컨볼루션: 차원 축소
-- 3×3 컨볼루션: 실제 특징 추출
-- 1×1 컨볼루션: 차원 복원
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        identity = self.shortcut(x)
+        
+        out = self.relu(self.bn1(self.conv1(x)))
+        out = self.relu(self.bn2(self.conv2(out)))
+        out = self.bn3(self.conv3(out))
+        
+        out += identity
+        return self.relu(out)
 
-**핵심 개념**
+# --- 사용 예시 ---
+bottleneck = BottleneckBlock(in_channels=256, base_channels=64, stride=1)
+x_in = torch.randn(2, 256, 56, 56)
+print("Bottleneck Block 출력 Shape:", bottleneck(x_in).shape)
+```
 
-- **Building Block**: 두 개의 3×3 컨볼루션 레이어 + shortcut. ResNet-18, ResNet-34에 사용.
-- **Bottleneck Block**: 1×1, 3×3, 1×1 세 레이어 조합. ResNet-50/101/152에 사용. 시간 복잡도를 유지하면서 더 깊게 쌓을 수 있음.
-- **Identity Shortcut의 중요성**: Bottleneck에서 shortcut을 투영으로 바꾸면 시간 복잡도와 모델 크기가 두 배가 됨. 따라서 identity shortcut이 효율적인 모델 설계에 필수적.
+---
+
+## 🛠️ Chapter 4: Global Average Pooling (GAP) & 백본 신경망
+
+### 1. 요약
+공간 해상도 $(H \times W)$ 전체를 평균으로 압축하는 Global Average Pooling을 통해 파라미터를 획기적으로 줄이고 분류기로 전파합니다.
+
+### 2. 수식 및 파이썬 코드 설명
+
+$$\mathbf{y}_{\text{gap}} = \frac{1}{H \times W} \sum_{h=1}^H \sum_{w=1}^W \mathbf{f}(h, w) \in \mathbb{R}^C$$
+
+```python
+import torch
+import torch.nn as nn
+
+class ResNet50BackboneClassifier(nn.Module):
+    """
+    ResNet-50 구조의 GAP 및 선형 분류 헤드 파이프라인
+    """
+    def __init__(self, num_classes: int = 1000):
+        super().__init__()
+        self.gap = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc = nn.Linear(2048, num_classes)
+
+    def forward(self, last_stage_feature: torch.Tensor) -> torch.Tensor:
+        """
+        last_stage_feature: (B, 2048, H, W)
+        """
+        pooled = self.gap(last_stage_feature) # (B, 2048, 1, 1)
+        flat = torch.flatten(pooled, 1)        # (B, 2048)
+        logits = self.fc(flat)                 # (B, Num_classes)
+        return logits
+
+# --- 사용 예시 ---
+backbone_head = ResNet50BackboneClassifier(num_classes=1000)
+feat_in = torch.randn(2, 2048, 7, 7)
+print("ResNet GAP 분류 Logits Shape:", backbone_head(feat_in).shape)
+```
+
+---
 
 ## 📊 주요 실험 및 결과 (Experiments & Results)
 
-- **사용 데이터셋 / 벤치마크**: ImageNet (분류), CIFAR-10, PASCAL VOC / MS COCO (검출)
+### 1. ImageNet-1K 검증 세트 리더보드 성능 비교
 
-### 4.1 ImageNet Classification
+| 알고리즘 (Method) | 신경망 깊이 (Depth) | Top-1 오류율 ↓ | Top-5 오류율 ↓ | 특징 |
+|---|---|---|---|---|
+| **VGG-16** | 16-Layers | 28.07% | 9.33% | 파라미터 138M (비대함) |
+| **Plain-34** | 34-Layers | 28.54% | 10.02% | Degradation 최적화 실패 |
+| **ResNet-34** | 34-Layers | 24.52% | 7.46% | 34층 정상 최적화 성공 |
+| **ResNet-152 (Ours)** | **152-Layers** | **21.43%** | **5.71% (SOTA)** | **ILSVRC 2015 1위 석권** |
 
-**Plain Networks 비교**: 34층 plain net이 18층 plain net보다 높은 검증 오류를 보임 → degradation 문제 확인. Batch Normalization을 사용하므로 gradient vanishing은 원인이 아님.
+- **결과**: 잔차 학습 구조 도입으로 152층까지 네트워크 깊이를 늘려도 **Top-5 오차율 3.57%**로 압도적 SOTA 갱신.
 
-**Residual Networks 비교**: 34층 ResNet이 18층 ResNet보다 **2.8% 더 낮은** 오류를 기록. Depth가 성능 향상에 기여함을 확인.
-
-**Identity vs Projection Shortcuts**:
-- (A) 차원 증가 시 zero-padding: 파라미터 없음
-- (B) 차원 증가 시 투영 shortcut, 나머지는 identity
-- (C) 모든 shortcut에 투영 사용
-- B가 A보다 약간 좋고, C가 B보다 약간 좋지만 차이가 미미. Projection shortcut이 필수적이지 않음을 보여줌. 논문은 B 옵션을 주로 사용.
-
-**Deeper Bottleneck Architectures 결과**:
-
-| 모델 | Top-1 오류 | Top-5 오류 |
-|------|-----------|-----------|
-| VGG-16 | 28.07% | 9.33% |
-| ResNet-34 B | 24.52% | 7.46% |
-| ResNet-50 | 22.85% | 6.71% |
-| ResNet-101 | 21.75% | 6.05% |
-| ResNet-152 | **21.43%** | **5.71%** |
-
-앙상블 결과: **top-5 오류 3.57%** → ILSVRC 2015 분류 1위
-
-### 4.2 CIFAR-10 분석
-
-**Plain vs ResNet**: Plain은 깊어질수록 오류 증가. ResNet은 깊어질수록 성능 향상.
-
-**110층 ResNet**: 6.43% (±0.16) 오류 달성. FitNet, Highway 등 선행 연구 대비 우수.
-
-**1202층 ResNet 탐색**: 학습 오류 <0.1% 달성. 그러나 테스트 오류는 110층보다 나쁨(7.93%). 이 작은 데이터셋에서는 과도하게 큰 모델이 과적합 가능성.
-
-**Layer Response 분석**: ResNet의 레이어 반응(출력의 표준편차)이 plain net보다 전반적으로 작음 → 잔차 함수들이 0에 가까운 값을 학습, identity mapping이 합리적 기준점임을 뒷받침.
-
-### 4.3 Object Detection (PASCAL VOC & MS COCO)
-
-Faster R-CNN의 backbone을 VGG-16에서 ResNet-101로 교체.
-
-**PASCAL VOC 결과**:
-- VGG-16: mAP 73.2% (VOC 07 test)
-- ResNet-101: mAP **76.4%** (+3.2%p)
-
-**MS COCO 결과**:
-- VGG-16: mAP@[.5,.95] = 21.2%
-- ResNet-101: mAP@[.5,.95] = **27.2%** (+6.0%p, 28% 상대적 향상)
-
-→ ILSVRC & COCO 2015에서 ImageNet 분류/검출/위치추정, COCO 검출/세그멘테이션 전 부문 1위
-
-- **핵심 개념**:
-  - **Top-1 / Top-5 오류율**: ImageNet 평가 지표. Top-5는 모델의 상위 5개 예측 중 정답이 있으면 맞춘 것으로 간주.
-  - **mAP (mean Average Precision)**: 물체 검출 성능 지표. mAP@[.5,.95]는 IoU 임계값 0.5~0.95 범위에서의 평균.
-  - **Faster R-CNN**: Region Proposal Network(RPN)와 Fast R-CNN을 결합한 실시간 물체 검출 프레임워크. ResNet을 backbone으로 사용 시 성능 대폭 향상.
+---
 
 ## 💡 결론 및 시사점 (Conclusion & Insights)
 
-ResNet은 **잔차 학습**이라는 단순한 아이디어로 극도로 깊은 신경망 학습 문제를 해결했습니다.
+### 1. 결론
+ResNet은 잔차 학습(Residual Learning)이라는 혁신적 아이디어로 딥러닝 역사상 가장 위대한 컴퓨터 비전 백본 아키텍처를 정립했습니다.
 
-- Backbone 교체만으로도 downstream 태스크(검출, 세그멘테이션) 성능이 크게 향상됨을 보여주었고, identity shortcut은 파라미터·연산 비용 없이 최적화를 돕는 매우 효과적인 설계 원칙임이 실증되었다. ResNet은 이후 DenseNet, EfficientNet, Vision Transformer 등 수많은 후속 아키텍처의 기반이 되었으며, 자율주행의 특징 추출 backbone, 물체 검출 네트워크(Faster R-CNN + ResNet) 등에 광범위하게 활용된다.
-- **한계점 및 아쉬운 점**:
-  - 1202층 실험에서 보듯 과도하게 깊은 네트워크는 작은 데이터셋에서 과적합될 수 있어, "깊이가 항상 유리하다"는 결론은 데이터 규모에 의존적이다.
-  - Identity mapping이 왜 최적화에 유리한지에 대한 이론적 설명은 실험적 관찰(잔차 반응이 작다)에 그치며, 이후 연구(예: Identity Mappings in Deep Residual Networks)에서 더 정교하게 분석됨.
-  - Bottleneck 설계의 채널 축소·복원 비율 등 세부 하이퍼파라미터 선택 근거가 충분히 설명되지 않은 점은 아쉽다.
+### 2. 한계점 및 아쉬운 점
+- 1202층 실험에서 보듯 과도하게 깊은 네트워크는 작은 데이터셋에서 과적합될 수 있어, "깊이가 항상 유리하다"는 결론은 데이터 규모에 의존적이다.
+- Identity mapping이 왜 최적화에 유리한지에 대한 이론적 설명은 실험적 관찰(잔차 반응이 작다)에 그치며, 이후 연구(예: Identity Mappings in Deep Residual Networks)에서 더 정교하게 분석됨.
+- Bottleneck 설계의 채널 축소·복원 비율 등 세부 하이퍼파라미터 선택 근거가 충분히 설명되지 않은 점은 아쉽다.
 
 ---
+
+## 참고 자료
+- [Microsoft ResNet 공식 GitHub 저장소](https://github.com/KaimingHe/deep-residual-networks)
+- [CVPR 2016 논문 (arXiv:1512.03385)](https://arxiv.org/abs/1512.03385)
 
 *관련 논문: [Attention Is All You Need](/posts/papers/attention-is-all-you-need/), [ViT](/posts/papers/vit-an-image-is-worth-16x16-words/), [DETR](/posts/papers/detr-end-to-end-object-detection-with-transformers/)*

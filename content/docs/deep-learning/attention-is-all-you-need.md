@@ -9,230 +9,277 @@ references: []
 ---
 
 ## 💡 한 줄 요약
-RNN과 CNN을 완전히 제거하고 Attention 메커니즘만으로 구성된 Transformer를 제안하여, 기계 번역에서 더 적은 학습 비용으로 SOTA를 달성하고 이후 모든 Transformer 기반 모델의 원류가 되었다.
+RNN과 CNN을 완전히 제거하고 오직 Attention 메커니즘만으로 인코더-디코더를 구성한 **Transformer**를 제안하여, 기계 번역에서 계산 복잡도 $\mathcal{O}(1)$ 경로 길이와 완전한 병렬성을 달성하고 현대 모든 대형 모델의 원류가 되었다.
+
+---
 
 ## 📌 개요 및 핵심 기여 (Key Contributions)
-- **저자**: Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Łukasz Kaiser, Illia Polosukhin (Google Brain / Google Research)
-- **발행년도**: 2017 (NeurIPS 2017, arXiv: 1706.03762)
+- **저자**: Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Łukasz Kaiser, Illia Polosukhin (Google Brain, Google Research, Univ. of Toronto)
+- **발행년도**: 2017 (arXiv:1706.03762, NeurIPS 2017)
 - **주요 기여점**:
-  1. Recurrence와 Convolution을 완전히 제거하고 Self-Attention만으로 시퀀스 변환을 수행하는 최초의 아키텍처 Transformer 제안
-  2. Scaled Dot-Product Attention과 Multi-Head Attention을 결합해 임의의 두 위치 간 경로 길이를 O(1)로 단축
-  3. Sinusoidal Positional Encoding으로 순서 정보를 학습 없이 주입, 학습보다 긴 시퀀스에도 외삽 가능
-  4. WMT 2014 영어-독일어/영어-프랑스어 번역에서 이전 SOTA 대비 적은 학습 비용으로 더 높은 BLEU 달성
+  1. **Self-Attention 중심 아키텍처**: 순차적 Recurrence(RNN) 및 신관 수용 영역의 Convolution(CNN)을 제거하고, 시퀀스 내 위치 간 관련성을 일시에 파악하는 Self-Attention 구조 정립.
+  2. **Scaled Dot-Product & Multi-Head Attention**: $Q, K, V$ 행렬 내적을 $\sqrt{d_k}$로 스케일링하고, $h$개 헤드로 분할하여 다양한 관점의 기하학적·의미론적 관련성을 병렬 추출.
+  3. **Sinusoidal Positional Encoding**: 삼각함수 파장을 이용해 순서 정보(Position)를 파라미터 추가 없이 임베딩에 주입하여 길이에 구애받지 않는 외삽(Extrapolation) 허용.
+  4. **Warmup Learning Rate Schedule**: 모델 차원에 역제곱근으로 비례하는 동적 스케줄링으로 기울기 폭주/소실 방지.
+
+---
 
 ## 🎯 관련 연구 흐름 및 기존 한계 (Related Work & Motivation)
-- **연구 흐름**: 2017년 당시 기계 번역의 SOTA는 LSTM/GRU 기반 Encoder-Decoder였다. 입력 시퀀스를 순서대로 읽어 hidden state를 만들고 디코더가 출력을 생성하는 방식이며, Attention은 이 구조의 장거리 의존성 희석 문제를 완화하기 위한 보조 장치로 이미 사용되고 있었다. 한편 ConvS2S 등 CNN 기반 seq2seq 모델도 병렬화를 위해 제안되었으나 멀리 떨어진 위치 간 관계 파악을 위해 레이어를 깊게 쌓아야 했다.
-- **기존 한계점**:
-  1. RNN의 순차 처리 — RNN/LSTM은 시간 순서대로 hidden state를 계산해야 하므로 병렬화가 불가능하고, 긴 시퀀스일수록 학습 속도가 느리며 앞 정보가 뒤로 갈수록 희석되는 장거리 의존성(long-range dependency) 문제가 발생한다.
-  2. CNN의 제한된 수용 영역 — CNN은 병렬화는 가능하나 멀리 떨어진 위치 간 관계를 파악하려면 레이어를 깊게 쌓아야 한다(ConvS2S: O(log_k(n)) 경로 길이).
-  3. Attention의 보조적 사용 — 기존 모델들은 RNN과 Attention을 함께 사용했고, Attention은 보조 메커니즘에 불과했다.
-- **이 논문의 접근 방식**: Recurrence와 Convolution을 완전히 제거하고, **Self-Attention만으로** 입출력의 전역적 의존성을 모델링한다. 임의의 두 위치 간 경로 길이를 O(1)로 단축하고 완전한 병렬 학습을 실현한다.
+
+### 관련 연구 흐름
+1. **RNN/LSTM 기반 Seq2Seq**: 시퀀스를 1개 토큰씩 순차 처리해야 하므로 GPU 병렬화가 불가능하고, 장거리 의존성(Long-range Dependency) 정보가 희석됨.
+2. **CNN 기반 Seq2Seq (ConvS2S)**: 병렬 처리는 가능하나 멀리 떨어진 토큰 간 관계를 묶기 위해 $\mathcal{O}(\log_k n)$의 깊은 레이어 스택 필요.
+3. **Transformer**: 임의의 두 토큰 간 최대 경로 길이를 $\mathcal{O}(1)$로 단축하고 완전한 병렬 처리를 완성.
+
+---
 
 ## 📑 목차
-- Chapter 1-2: Introduction & Background
-- Chapter 3: Model Architecture — Encoder/Decoder, Attention, FFN, Positional Encoding
-- Chapter 4: Why Self-Attention
-- Chapter 5: Training
-- Chapter 6: Results
-- Chapter 7: Conclusion
+- Chapter 1: Scaled Dot-Product Attention 수식 해설
+- Chapter 2: Multi-Head Attention (MHA) 병렬 구조
+- Chapter 3: Position-wise Feed-Forward Networks (FFN)
+- Chapter 4: Sinusoidal Positional Encoding 위치 인코딩
+- Chapter 5: Warmup Learning Rate Scheduler 수식
+- Chapter 6: 주요 실험 및 결과
+- Chapter 7: 결론 및 시사점
 
-## 🛠️ Chapter 1-2: Introduction & Background
+---
 
-**요약**
+## 🛠️ Chapter 1: Scaled Dot-Product Attention 수식 해설
 
-2017년 당시 기계 번역의 SOTA는 LSTM/GRU 기반 Encoder-Decoder였다. 이 모델들은 입력 시퀀스를 순서대로 읽어 hidden state를 만들고 디코더에서 출력을 생성한다. 문제는 본질적으로 순차적이라 병렬화가 어렵고, 긴 문장에서 초반 토큰의 정보가 점점 희석된다는 것이다.
+### 1. 요약
+Query($Q$)와 Key($K$)의 내적값에 $\frac{1}{\sqrt{d_k}}$ 스케일을 곱해 Softmax 확률을 산출한 뒤 Value($V$)를 가중합합니다.
 
-Attention 메커니즘은 이 희석 문제를 완화하기 위해 이미 사용되고 있었지만, 항상 RNN과 함께 쓰였다. Transformer는 **"RNN 없이 Attention만으로도 충분하다"** 는 아이디어에서 출발한다.
+### 2. 수식 및 파이썬 코드 설명
 
-**핵심 개념**
+$$\text{Attention}(Q, K, V) = \text{Softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right) V$$
 
-- **Sequence Transduction**: 입력 시퀀스를 출력 시퀀스로 변환하는 문제 (번역, 요약, 파싱 등)
-- **Self-Attention (Intra-Attention)**: 같은 시퀀스 내의 서로 다른 위치 간 관계를 계산하는 Attention. "나"라는 단어가 문장 내 다른 어떤 단어와 관련이 깊은지 파악
-- **장거리 의존성 문제**: 예: "The animal didn't cross the street because **it** was too tired" — "it"이 "animal"을 가리킨다는 것을 파악하려면 멀리 떨어진 토큰 간 직접 연결이 필요
+- **$Q \in \mathbb{R}^{N \times d_k}, K \in \mathbb{R}^{M \times d_k}, V \in \mathbb{R}^{M \times d_v}$**: Query, Key, Value 행렬
+- **$\sqrt{d_k}$**: $d_k$ 차원이 커질 때 내적값이 커져 Softmax 기울기가 소실(Gradient Vanishing)되는 현상을 방지하는 스케일링 인자
 
-## 🛠️ Chapter 3: Model Architecture
+```python
+import torch
+import torch.nn.functional as F
 
-### 3.1 Encoder and Decoder Stacks
+def scaled_dot_product_attention(
+    Q: torch.Tensor, # (B, N, d_k)
+    K: torch.Tensor, # (B, M, d_k)
+    V: torch.Tensor, # (B, M, d_v)
+    mask: torch.Tensor = None # (B, N, M) 마스크 (옵션)
+) -> tuple:
+    """
+    Scaled Dot-Product Attention 수식 구현
+    Attention(Q, K, V) = Softmax( Q @ K^T / sqrt(d_k) ) @ V
+    """
+    d_k = Q.size(-1)
+    
+    # 1. Q @ K^T / sqrt(d_k)
+    scores = torch.matmul(Q, K.transpose(-2, -1)) / (d_k ** 0.5)
+    
+    # 2. Masking 처리 (미래 토큰 가리기 등)
+    if mask is not None:
+        scores = scores.masked_fill(mask == 0, -1e9)
+        
+    # 3. Softmax 확률 산출
+    attn_weights = F.softmax(scores, dim=-1) # (B, N, M)
+    
+    # 4. Value 가중합
+    output = torch.matmul(attn_weights, V) # (B, N, d_v)
+    return output, attn_weights
 
-**요약**
+# --- 사용 예시 ---
+q_in = torch.randn(2, 10, 64) # Batch=2, Seq_len=10, d_k=64
+k_in = torch.randn(2, 10, 64)
+v_in = torch.randn(2, 10, 64)
+out_attn, weights = scaled_dot_product_attention(q_in, k_in, v_in)
+print("Attention 출력 Shape:", out_attn.shape, "가중치 Shape:", weights.shape)
+```
 
-Transformer는 **Encoder 스택**과 **Decoder 스택**으로 구성된다. 둘 다 $N=6$개의 동일한 레이어를 쌓는다.
+---
 
-- **Encoder 레이어**: ① Multi-Head Self-Attention → ② Position-wise Feed-Forward Network. 각 서브레이어 후 잔차 연결(Residual Connection)과 Layer Normalization 적용
-- **Decoder 레이어**: ① Masked Multi-Head Self-Attention → ② Multi-Head Cross-Attention (Encoder 출력 참조) → ③ Position-wise FFN. 마스킹은 미래 위치를 보지 못하도록 해 자동회귀(auto-regressive) 특성 보장
+## 🛠️ Chapter 2: Multi-Head Attention (MHA) 병렬 구조
 
-**핵심 개념**
+### 1. 요약
+단일 Attention 연산 대신, $d_{\text{model}}$ 차원을 $h$개 헤드로 분할($d_k = d_{\text{model}} / h$)하여 병렬 계산한 후 결과를 사영(Concat & Project)합니다.
 
-- **Residual Connection**: $\text{LayerNorm}(x + \text{Sublayer}(x))$ — 깊은 네트워크에서 gradient 소실 방지, ResNet에서 유래
-- **Layer Normalization**: 각 레이어 출력을 정규화해 학습 안정화
-- **Auto-Regressive**: 디코더가 출력을 한 토큰씩 생성할 때 이전에 생성한 토큰만 참조하도록 제한
-- **$d_\text{model} = 512$**: 모든 서브레이어와 임베딩의 출력 차원
+### 2. 수식 및 파이썬 코드 설명
 
-### 3.2 Scaled Dot-Product Attention
+$$\text{MultiHead}(Q, K, V) = \text{Concat}(\text{head}_1, \dots, \text{head}_h) W^O$$
 
-**요약**
+$$\text{head}_i = \text{Attention}(Q W_i^Q, K W_i^K, V W_i^V)$$
 
-Transformer의 핵심 연산이다. Query(Q), Key(K), Value(V) 세 행렬을 입력받아 가중합(weighted sum)을 출력한다. 단순히 말하면: "Query가 어떤 Key와 유사한지 계산하고, 그 유사도에 비례해 Value를 가져온다."
+```python
+import torch
+import torch.nn as nn
 
-**수식 예제**
+class MultiHeadAttention(nn.Module):
+    """
+    Multi-Head Attention (MHA) 모듈
+    """
+    def __init__(self, d_model: int = 512, num_heads: int = 8):
+        super().__init__()
+        self.d_model = d_model
+        self.num_heads = num_heads
+        self.d_k = d_model // num_heads
+        
+        self.W_q = nn.Linear(d_model, d_model)
+        self.W_k = nn.Linear(d_model, d_model)
+        self.W_v = nn.Linear(d_model, d_model)
+        self.W_o = nn.Linear(d_model, d_model)
 
-$$\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right) V$$
+    def forward(self, Q: torch.Tensor, K: torch.Tensor, V: torch.Tensor, mask: torch.Tensor = None) -> torch.Tensor:
+        B, N, _ = Q.shape
+        M = K.shape[1]
+        
+        # 1. 선형 사영 후 h개 헤드로 분할 (B, h, N, d_k)
+        q_heads = self.W_q(Q).view(B, N, self.num_heads, self.d_k).transpose(1, 2)
+        k_heads = self.W_k(K).view(B, M, self.num_heads, self.d_k).transpose(1, 2)
+        v_heads = self.W_v(V).view(B, M, self.num_heads, self.d_k).transpose(1, 2)
+        
+        # 2. Scaled Dot-Product Attention 병렬 계산
+        scores = torch.matmul(q_heads, k_heads.transpose(-2, -1)) / (self.d_k ** 0.5)
+        if mask is not None:
+            scores = scores.masked_fill(mask == 0, -1e9)
+        attn_weights = torch.softmax(scores, dim=-1)
+        attn_out = torch.matmul(attn_weights, v_heads) # (B, h, N, d_k)
+        
+        # 3. Concat & Output Projection
+        concat_out = attn_out.transpose(1, 2).contiguous().view(B, N, self.d_model)
+        return self.W_o(concat_out)
 
-**수식 설명**
+# --- 사용 예시 ---
+mha = MultiHeadAttention(d_model=512, num_heads=8)
+x_in = torch.randn(2, 10, 512)
+print("Multi-Head Attention 결과 Shape:", mha(x_in, x_in, x_in).shape)
+```
 
-- **$Q \in \mathbb{R}^{n \times d_k}$** (Query): "나는 무엇을 찾고 싶은가?" — 각 위치의 질문 벡터
-- **$K \in \mathbb{R}^{m \times d_k}$** (Key): "나는 어떤 정보를 가지고 있는가?" — 각 위치의 식별자 벡터
-- **$V \in \mathbb{R}^{m \times d_v}$** (Value): "실제로 전달할 내용은 무엇인가?" — 각 위치의 실제 정보 벡터
-- **$QK^T$**: Q와 K의 내적(dot product) — 두 벡터가 얼마나 비슷한지 수치화. 값이 클수록 관련성 높음
-- **$\frac{1}{\sqrt{d_k}}$**: 스케일링 인수 — $d_k$가 커질수록 내적값이 커져 softmax gradient가 0에 가까워지는 문제를 방지. 분산을 1로 유지
-  - 예: $d_k = 64$이면 $\sqrt{64} = 8$로 나눔
-- **$\text{softmax}(\cdot)$**: 유사도를 확률(합=1)로 변환 → 어느 위치에 얼마나 집중할지 결정
-- **$\cdot V$**: 확률 가중치로 Value를 가중합 → 관련성 높은 위치의 정보를 더 많이 가져옴
-- **직관 예시**: "나는(Q) → 동물(K)과 유사 → 동물의 정보(V)를 가져와 'it = animal' 파악"
+---
 
-### 3.3 Multi-Head Attention
+## 🛠️ Chapter 3: Position-wise Feed-Forward Networks (FFN)
 
-**요약**
+### 1. 요약
+각 위치별로 독립적 적용되는 2층 Fully-Connected 네트워크로, 중간 차원 $d_{ff} = 2048$로 확충 후 다시 $d_{\text{model}} = 512$로 축소합니다.
 
-단일 Attention 대신 $h$개의 Attention을 병렬로 수행하고 결과를 합친다. 각 head는 서로 다른 관점에서 관계를 학습한다. 예: head 1은 문법적 관계, head 2는 의미적 관계 등.
+### 2. 수식 및 파이썬 코드 설명
 
-**수식 예제**
+$$\text{FFN}(x) = \max(0, x W_1 + b_1) W_2 + b_2$$
 
-$$\text{MultiHead}(Q, K, V) = \text{Concat}(\text{head}_1, ..., \text{head}_h) W^O$$
+```python
+import torch
+import torch.nn as nn
 
-$$\text{where} \quad \text{head}_i = \text{Attention}(Q W_i^Q,\ K W_i^K,\ V W_i^V)$$
+class PositionwiseFeedForward(nn.Module):
+    """
+    Position-wise Feed-Forward Network (FFN)
+    """
+    def __init__(self, d_model: int = 512, d_ff: int = 2048):
+        super().__init__()
+        self.fc1 = nn.Linear(d_model, d_ff)
+        self.fc2 = nn.Linear(d_ff, d_model)
 
-**수식 설명**
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.fc2(torch.relu(self.fc1(x)))
 
-- **$h = 8$**: 8개의 독립적인 Attention head를 병렬로 수행
-- **$W_i^Q \in \mathbb{R}^{d_\text{model} \times d_k}$**: i번째 head의 Query 투영 행렬 (학습 파라미터)
-- **$W_i^K \in \mathbb{R}^{d_\text{model} \times d_k}$**: i번째 head의 Key 투영 행렬
-- **$W_i^V \in \mathbb{R}^{d_\text{model} \times d_v}$**: i번째 head의 Value 투영 행렬
-- **$d_k = d_v = d_\text{model}/h = 64$**: 각 head의 차원. 전체 차원을 head 수로 나눠 총 계산량을 단일 head와 동일하게 유지
-- **$\text{Concat}(\cdot)$**: 8개 head의 출력($\mathbb{R}^{n \times 64}$ 각각)을 이어 붙여 $\mathbb{R}^{n \times 512}$로 만듦
-- **$W^O \in \mathbb{R}^{hd_v \times d_\text{model}}$**: 최종 선형 투영 — 합쳐진 출력을 원래 차원으로 변환
-- **직관**: "8명의 전문가가 각자 다른 관점으로 같은 문장을 분석하고, 그 결과를 취합한다"
+# --- 사용 예시 ---
+ffn = PositionwiseFeedForward()
+x_dummy = torch.randn(2, 10, 512)
+print("FFN 출력 Shape:", ffn(x_dummy).shape)
+```
 
-**3가지 Attention 사용 방식**
+---
 
-| 사용 위치 | Q 출처 | K, V 출처 | 역할 |
-|-----------|--------|-----------|------|
-| Encoder Self-Attention | 이전 Encoder 레이어 | 이전 Encoder 레이어 | 입력 시퀀스 내 위치 간 관계 파악 |
-| Decoder Masked Self-Attention | 이전 Decoder 레이어 | 이전 Decoder 레이어 | 생성된 출력 내 관계 파악 (미래 마스킹) |
-| Decoder Cross-Attention | 이전 Decoder 레이어 | Encoder 최종 출력 | 입력과 출력의 관계 파악 (번역의 핵심) |
+## 🛠️ Chapter 4: Sinusoidal Positional Encoding 위치 인코딩
 
-### 3.4 Position-wise Feed-Forward Networks
+### 1. 요약
+시퀀스의 토큰 위치 $pos$와 차원 $i$에 따라 주기(주파수)가 다른 사인/코사인 곡선을 조합하여 고유한 위치 임베딩을 구성합니다.
 
-**요약**
+### 2. 수식 및 파이썬 코드 설명
 
-각 Attention 서브레이어 다음에 오는 완전 연결 네트워크. 각 위치마다 **독립적으로, 동일하게** 적용된다 (위치 간 파라미터 공유). Attention이 "어디를 볼지" 결정한다면, FFN은 "본 정보로 무엇을 계산할지" 담당한다.
+$$PE_{(pos, 2i)} = \sin\left(\frac{pos}{10000^{2i/d_{\text{model}}}}\right)$$
 
-**수식 예제**
+$$PE_{(pos, 2i+1)} = \cos\left(\frac{pos}{10000^{2i/d_{\text{model}}}}\right)$$
 
-$$\text{FFN}(x) = \max(0, xW_1 + b_1)W_2 + b_2$$
+```python
+import torch
+import torch.nn as nn
 
-**수식 설명**
+class SinusoidalPositionalEncoding(nn.Module):
+    """
+    Sinusoidal Positional Encoding 위치 인코딩 텐서 생성
+    """
+    def __init__(self, d_model: int = 512, max_len: int = 5000):
+        super().__init__()
+        pe = torch.zeros(max_len, d_model)
+        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-torch.log(torch.tensor(10000.0)) / d_model))
+        
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        self.register_buffer('pe', pe.unsqueeze(0)) # (1, max_len, d_model)
 
-- **$x \in \mathbb{R}^{d_\text{model}}$**: 각 위치의 입력 벡터 ($d_\text{model} = 512$)
-- **$W_1 \in \mathbb{R}^{512 \times 2048}$, $b_1$**: 첫 번째 선형 변환 파라미터 — 512 → 2048로 확장
-- **$\max(0, \cdot)$**: ReLU 활성화 함수 — 음수를 0으로 만들어 비선형성 추가
-- **$W_2 \in \mathbb{R}^{2048 \times 512}$, $b_2$**: 두 번째 선형 변환 — 2048 → 512로 다시 축소
-- **$d_{ff} = 2048$**: 내부 레이어의 차원, $d_\text{model}$의 4배
-- **직관**: "Attention으로 관련 정보를 모은 뒤, FFN이 그 정보를 변환·처리하는 작업 공간 역할"
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        x: (B, N, d_model)
+        """
+        return x + self.pe[:, :x.size(1)]
 
-### 3.5 Positional Encoding
+# --- 사용 예시 ---
+pe_module = SinusoidalPositionalEncoding()
+embeddings = torch.zeros(1, 20, 512)
+print("Positional Encoding 주입 후 Shape:", pe_module(embeddings).shape)
+```
 
-**요약**
+---
 
-Transformer는 RNN과 달리 순서 정보가 없다. 입력 토큰의 위치 정보를 주입하기 위해 **Positional Encoding**을 임베딩에 더한다. 사인·코사인 함수를 사용해 각 위치마다 고유한 패턴을 만든다.
+## 🛠️ Chapter 5: Warmup Learning Rate Scheduler 수식
 
-**수식 예제**
+### 1. 요약
+학습 초기 $warmup\_steps=4000$ 동안 학습률을 선형 증가시키고, 이후 step의 역제곱근에 비례해 감소시킵니다.
 
-$$PE_{(pos, 2i)} = \sin\left(\frac{pos}{10000^{2i/d_\text{model}}}\right)$$
+### 2. 수식 및 파이썬 코드 설명
 
-$$PE_{(pos, 2i+1)} = \cos\left(\frac{pos}{10000^{2i/d_\text{model}}}\right)$$
+$$lrate = d_{\text{model}}^{-0.5} \cdot \min\left( step\_num^{-0.5}, \ step\_num \cdot warmup\_steps^{-1.5} \right)$$
 
-**수식 설명**
+```python
+import torch
 
-- **$pos$**: 시퀀스 내 토큰의 위치 (0, 1, 2, ...)
-- **$i$**: 임베딩 차원의 인덱스 (0, 1, ..., $d_\text{model}/2 - 1$)
-- **$2i$**: 짝수 차원 → sin 함수 사용
-- **$2i+1$**: 홀수 차원 → cos 함수 사용
-- **$10000^{2i/d_\text{model}}$**: 차원마다 다른 주파수를 사용해 각 위치가 고유한 인코딩을 갖도록 함. $i$가 클수록 주파수가 낮아짐(파장이 길어짐)
-- **장점**: 학습 없이 고정값, 훈련보다 긴 시퀀스에도 외삽(extrapolation) 가능
-- **직관**: "음악의 음계처럼, 여러 주파수의 파동을 겹쳐 각 위치를 고유하게 표현한다. 위치 1과 2는 비슷한 패턴이지만 미세하게 다르고, 멀리 떨어진 위치일수록 패턴 차이가 커진다"
+def compute_transformer_lr(step_num: int, d_model: int = 512, warmup_steps: int = 4000) -> float:
+    """
+    Transformer 동적 Warmup Learning Rate 스케줄러
+    """
+    step_num = max(1, step_num)
+    arg1 = step_num ** -0.5
+    arg2 = step_num * (warmup_steps ** -1.5)
+    return (d_model ** -0.5) * min(arg1, arg2)
 
-## 🛠️ Chapter 4: Why Self-Attention
+# --- 사용 예시 ---
+print("Step 1000 학습률:", compute_transformer_lr(1000))
+print("Step 4000 (최대) 학습률:", compute_transformer_lr(4000))
+print("Step 20000 학습률:", compute_transformer_lr(20000))
+```
 
-**요약**
-
-Self-Attention이 Recurrent, Convolutional 레이어보다 왜 우수한지 세 가지 기준으로 비교한다.
-
-| 레이어 타입 | 레이어당 복잡도 | 순차 연산 수 | 최대 경로 길이 |
-|------------|---------------|------------|-------------|
-| **Self-Attention** | $O(n^2 \cdot d)$ | $O(1)$ | $O(1)$ |
-| Recurrent | $O(n \cdot d^2)$ | $O(n)$ | $O(n)$ |
-| Convolutional | $O(k \cdot n \cdot d^2)$ | $O(1)$ | $O(\log_k(n))$ |
-| Self-Attention (restricted) | $O(r \cdot n \cdot d)$ | $O(1)$ | $O(n/r)$ |
-
-*$n$: 시퀀스 길이, $d$: 표현 차원, $k$: 커널 크기, $r$: 제한된 어텐션 범위*
-
-**핵심 개념**
-
-- **순차 연산 O(1)**: Self-Attention은 모든 위치를 한 번에 병렬 계산 → GPU 활용도 극대화
-- **최대 경로 길이 O(1)**: 임의의 두 위치가 단 한 번의 Attention으로 직접 연결 → 장거리 의존성 학습 용이
-- **트레이드오프**: Self-Attention은 $O(n^2)$ 복잡도로, 시퀀스가 길면(n이 크면) 비용이 큼. 이 문제는 이후 Longformer, FlashAttention 등으로 해결
-
-## 🛠️ Chapter 5: Training
-
-**요약**
-
-WMT 2014 영어-독일어(4.5M 문장), 영어-프랑스어(36M 문장) 데이터셋으로 학습. 8개 NVIDIA P100 GPU 사용.
-
-**핵심 개념**
-
-- **Adam Optimizer**: $\beta_1 = 0.9$, $\beta_2 = 0.98$, $\epsilon = 10^{-9}$
-- **Warmup Learning Rate Schedule**: 처음 4000 스텝 동안 선형 증가, 이후 step의 역제곱근에 비례해 감소
-
-**수식 예제**
-
-$$lrate = d_\text{model}^{-0.5} \cdot \min(step\_num^{-0.5},\ step\_num \cdot warmup\_steps^{-1.5})$$
-
-**수식 설명**
-
-- **$d_\text{model}^{-0.5}$**: 모델 차원이 클수록 학습률을 낮춤 (큰 모델의 불안정성 방지)
-- **$step\_num^{-0.5}$**: 학습이 진행될수록 학습률 감소 (수렴 안정화)
-- **$step\_num \cdot warmup\_steps^{-1.5}$**: 초반 warmup 동안 학습률 선형 증가
-- **$\min(\cdot)$**: 두 값 중 작은 것 선택 — warmup 구간(작은 step)에서는 두 번째 항, 이후에는 첫 번째 항이 지배
-- **$warmup\_steps = 4000$**: 약 4000 스텝까지 워밍업
-- **직관**: "처음에는 천천히 학습 속도를 높이다가, 어느 시점부터 점점 줄여 안정적으로 수렴한다"
-
-**정규화 기법**
-- **Residual Dropout** ($P_{drop} = 0.1$): 각 서브레이어 출력에 Dropout 적용
-- **Label Smoothing** ($\epsilon_{ls} = 0.1$): 정답 레이블을 100% 확신하지 않고 10% 불확실성 부여 → 과적합 방지, BLEU 향상
+---
 
 ## 📊 주요 실험 및 결과 (Experiments & Results)
 
-- **사용 데이터셋 / 벤치마크**: WMT 2014 영어-독일어(EN-DE), 영어-프랑스어(EN-FR) 기계 번역, 영어 구문 분석(constituency parsing)
-- **주요 성과**:
+### 1. WMT 2014 기계 번역 벤치마크 비교
 
-| 모델 | EN-DE BLEU | EN-FR BLEU | Training Cost (FLOPs) |
-|------|-----------|-----------|----------------------|
-| ConvS2S | 25.16 | 40.46 | $9.6 \times 10^{18}$ |
-| GNMT + RL (Ensemble) | 26.30 | 41.16 | $1.8 \times 10^{20}$ |
-| **Transformer (base)** | **27.3** | **38.1** | **$3.3 \times 10^{18}$** |
-| **Transformer (big)** | **28.4** | **41.8** | **$2.3 \times 10^{19}$** |
+| 모델 (Method) | EN-DE (BLEU) ↑ | EN-FR (BLEU) ↑ | 학습 연산량 (FLOPs) ↓ |
+|---|---|---|---|
+| **ConvS2S** | 25.16 | 40.46 | $9.6 \times 10^{18}$ |
+| **GNMT + RL** | 26.30 | 41.16 | $1.8 \times 10^{20}$ |
+| **Transformer-base** | 27.30 | 38.10 | **$3.3 \times 10^{18}$ (초저비용)** |
+| **Transformer-big** | **28.40 (+2.1)** | **41.80 (+0.64)** | **$2.3 \times 10^{19}$** |
 
-  - EN-DE: 이전 SOTA 대비 **+2 BLEU** 향상, 훈련 비용은 기존 모델의 수십 분의 1
-  - EN-FR: 단일 모델 기준 새로운 SOTA (BLEU 41.0), 훈련 비용 1/4
-  - **영어 구문 분석(constituency parsing)**: 언어 과제에서도 강한 일반화 성능 확인
-  - **아키텍처 ablation (Table 3 핵심)**: Head 수 1개보다 8개가 0.9 BLEU 향상하지만 32개로 너무 많아도 성능 저하. $d_k$ 크기 축소 시 성능 저하 → attention 유사도 계산의 정밀도가 중요. Dropout이 과적합 방지에 핵심적.
+- **결과**: 기존 RNN/CNN SOTA 대비 **BLEU 점수 +2.1 점 향상**과 동시에 **학습 연산 비용을 수십 분의 1로 절감**.
+
+---
 
 ## 💡 결론 및 시사점 (Conclusion & Insights)
 
-Transformer는 "Attention is All You Need"라는 제목 그대로, **Attention 하나로 RNN과 CNN을 대체**할 수 있음을 증명했다. 장거리 의존성을 O(1) 경로로 처리하고, 완전한 병렬 학습을 가능하게 해 현대 딥러닝의 패러다임을 바꾸었다.
+### 1. 결론
+Transformer는 "Attention Is All You Need"라는 명제하에 순차적 계산 연결을 탈피하고 모든 AI 신경망 패러다임을 Self-Attention 기반으로 전환한 가장 파괴적인 세미날 논문입니다.
 
-**현재 논문 목록과의 연결:**
+### 2. 자율주행 분야에서의 활용
 
 | 후속 논문 | Transformer 활용 방식 |
 |----------|----------------------|
@@ -244,12 +291,17 @@ Transformer는 "Attention is All You Need"라는 제목 그대로, **Attention �
 | **MagicDrive** | BEV 맵·3D 박스를 Cross-Attention으로 이미지 생성에 조건화 |
 | **VAD** | 벡터화 장면 표현을 Transformer로 처리해 경량 계획 수행 |
 
-- **자율주행 합성 데이터 관점**: BEV 인식부터 World Model까지 전 파이프라인이 Transformer 기반이므로, 이 논문의 Self-Attention / Cross-Attention / Positional Encoding 개념을 정확히 이해하는 것이 이후 논문 해석의 필수 전제 조건이다.
-- **한계점 및 아쉬운 점**:
-  - $O(n^2)$ 복잡도로 인해 매우 긴 시퀀스(고해상도 이미지, 긴 문서)에는 그대로 적용하기 어려움 — 이후 Longformer, Linformer, FlashAttention 등이 이를 해결
-  - Sinusoidal Positional Encoding은 고정값이라 유연성이 떨어지며, 이후 연구들은 학습 가능한 위치 임베딩이나 RoPE 등으로 대체
-  - 논문 자체는 번역 태스크에 집중되어 있어, 비전·멀티모달 등으로의 일반화 가능성은 후속 연구(ViT, DETR 등)에서 비로소 검증됨
+BEV 인식부터 World Model까지 전 파이프라인이 Transformer 기반이므로, 이 논문의 Self-Attention / Cross-Attention / Positional Encoding 개념을 정확히 이해하는 것이 이후 논문 해석의 필수 전제 조건이다.
+
+### 3. 한계점 및 아쉬운 점
+- $O(n^2)$ 복잡도로 인해 매우 긴 시퀀스(고해상도 이미지, 긴 문서)에는 그대로 적용하기 어려움 — 이후 Longformer, Linformer, FlashAttention 등이 이를 해결.
+- Sinusoidal Positional Encoding은 고정값이라 유연성이 떨어지며, 이후 연구들은 학습 가능한 위치 임베딩이나 RoPE 등으로 대체.
+- 논문 자체는 번역 태스크에 집중되어 있어, 비전·멀티모달 등으로의 일반화 가능성은 후속 연구(ViT, DETR 등)에서 비로소 검증됨.
 
 ---
+
+## 참고 자료
+- [Google Research Transformer GitHub](https://github.com/tensorflow/tensor2tensor)
+- [NeurIPS 2017 논문 (arXiv:1706.03762)](https://arxiv.org/abs/1706.03762)
 
 *관련 논문: [ResNet](/posts/papers/resnet-deep-residual-learning-for-image-recognition/), [ViT](/posts/papers/vit-an-image-is-worth-16x16-words/), [DETR](/posts/papers/detr-end-to-end-object-detection-with-transformers/), [BEVFormer](/posts/papers/bevformer/)*

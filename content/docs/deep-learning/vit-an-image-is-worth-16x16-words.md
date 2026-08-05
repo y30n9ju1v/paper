@@ -11,153 +11,251 @@ references:
 ---
 
 ## 💡 한 줄 요약
-CNN 없이 표준 Transformer만으로 이미지를 16×16 패치 시퀀스로 처리하여, 대규모 데이터(JFT-300M)로 사전학습하면 CNN 기반 SOTA를 능가하면서도 사전학습 비용을 크게 절감할 수 있음을 보였다.
+CNN 고유의 지역성(Locality) 귀납적 편향(Inductive Bias) 없이, $P \times P$ 패치 단위로 분할된 이미지를 토큰으로 직렬화하고 순수 Transformer Encoder를 대규모 데이터셋(JFT-300M)에 사전학습하여 CNN SOTA(ResNet/BiT)를 4배 낮은 연산 비용으로 압도했다.
+
+---
 
 ## 📌 개요 및 핵심 기여 (Key Contributions)
 - **저자**: Alexey Dosovitskiy, Lucas Beyer, Alexander Kolesnikov, Dirk Weissenborn, Xiaohua Zhai, Thomas Unterthiner, Mostafa Dehghani, Matthias Minderer, Georg Heigold, Sylvain Gelly, Jakob Uszkoreit, Neil Houlsby (Google Brain)
-- **발행년도**: 2021 (ICLR 2021)
+- **발행년도**: 2021 (arXiv:2010.11929, ICLR 2021)
 - **주요 기여점**:
-  1. 이미지를 고정 크기 패치로 분할해 NLP 토큰처럼 취급, CNN 구조 없이 표준 Transformer Encoder를 그대로 적용하는 아키텍처(ViT) 제안
-  2. 대규모 데이터(JFT-300M)로 사전학습 시 CNN 고유의 귀납적 편향 없이도 CNN 기반 SOTA(BiT-L, Noisy Student)를 능가함을 실증
-  3. 동일 성능 기준 ViT가 ResNet 대비 2~4배 적은 사전학습 연산으로 도달 가능함을 스케일링 실험으로 증명
-  4. Masked Patch Prediction 기반 자기지도 학습 예비 실험으로 이후 MAE/DINO 계열 연구의 가능성을 시사
+  1. **이미지의 1D 패치 시퀀스 변환 (Patch Embedding)**: $H \times W \times C$ 이미지를 $P \times P$ 2D 패치로 분할 후 Linear Projection을 거쳐 1D 토큰 시퀀스로 변환.
+  2. **[CLS] 토큰 & 1D Positional Embedding**: BERT의 `[CLS]` 토큰 개념을 적용하여 이미지 전역 표현을 집계하고, 학습 가능한 1D 위치 임베딩 주입.
+  3. **Pre-LayerNorm Transformer Encoder**: MSA 및 MLP 레이어 전단에 Layer Normalization을 배치하여 대규모 네트워크 훈련 수렴성 확보.
+  4. **고해상도 파인튜닝 시 2D 보간 (Bilinear Interpolation)**: 사전학습 대비 해상도가 증가할 때 1D 위치 임베딩을 2D Grid로 재배치하고 쌍선형 보간 적용.
+
+---
 
 ## 🎯 관련 연구 흐름 및 기존 한계 (Related Work & Motivation)
-- **연구 흐름**: NLP에서 Transformer가 사실상 표준 아키텍처로 자리잡은 이후, 비전 분야에서도 Self-Attention을 적용하려는 시도가 이어졌다. 그러나 픽셀 단위로 직접 Self-Attention을 적용하면 계산 비용이 픽셀 수의 제곱에 비례하므로, 기존 연구들은 로컬 영역에만 Attention을 적용하거나 CNN 피처맵 위에 특수한 Attention 패턴을 추가하는 절충안을 택해왔다.
-- **기존 한계점**:
-  1. CNN의 귀납적 편향 의존 — 기존 비전 모델은 지역성(locality), 이동 등변성(translation equivariance) 같은 CNN 고유의 가정에 의존하며, 이는 소량 데이터에서는 유리하지만 대규모 데이터에서는 오히려 표현력을 제한한다.
-  2. Transformer의 비전 적용 시 CNN 병용 — 기존 Self-Attention 기반 비전 모델들은 CNN과 결합하거나 특수한 Attention 패턴을 사용해 하드웨어 가속기에서 효율적으로 동작하지 못했다.
-- **이 논문의 접근 방식**: 이미지를 16×16 고정 크기 패치로 분할하고 각 패치를 NLP의 토큰처럼 취급하여, 추가적인 이미지 특화 구조 없이 표준 Transformer를 그대로 사용한다. 대규모 데이터셋으로 사전학습 후 소규모 벤치마크에 파인튜닝한다.
+
+### 관련 연구 흐름
+1. **CNN (ResNet, EfficientNet)**: 인접 픽셀이 관련되어 있다는 귀납적 편향(Locality/Translation Equivariance)을 국소 커널에 하드코딩하여 소규모 데이터 학습에 강하나 데이터 규모 확장의 한계 존재.
+2. **Vision Transformer (ViT)**: 귀납적 편향을 배제하고 대규모 데이터(JFT-300M) 사전학습을 통해 전역 패치 간 광범위 Self-Attention 패턴을 스스로 학습.
+
+---
 
 ## 📑 목차
-- Chapter 1-2: Introduction & Related Work
-- Chapter 3: Method — Vision Transformer (ViT)
-- Chapter 4: Experiments
-- Chapter 5: Conclusion (Appendix A: Multihead Self-Attention, Appendix B/D 포함)
+- Chapter 1: 패치 임베딩 (Patch Embedding) & [CLS] 토큰 수식
+- Chapter 2: Pre-LayerNorm ViT Encoder 블록 수식
+- Chapter 3: Multi-Head Self-Attention (MSA) 수식
+- Chapter 4: 2D 위치 임베딩 보간 (Bilinear Interpolation)
+- Chapter 5: 주요 실험 및 결과
+- Chapter 6: 결론 및 시사점
 
-## 🛠️ Chapter 1-2: Introduction & Related Work
+---
 
-**요약**
+## 🛠️ Chapter 1: 패치 임베딩 & [CLS] 토큰 수식
 
-NLP에서 Transformer는 사실상 표준 아키텍처가 되었지만, 비전에서는 CNN이 여전히 지배적이었습니다. Self-Attention을 이미지에 직접 적용하면 픽셀 수의 제곱에 비례하는 계산 비용이 발생하기 때문입니다. 기존 연구들은 이를 해결하기 위해 로컬 영역에만 Attention을 적용하거나 CNN 피처 위에 Attention을 추가하는 방식을 택했습니다.
+### 1. 요약
+이미지 $\mathbf{x} \in \mathbb{R}^{H \times W \times C}$를 $N = \frac{HW}{P^2}$개 패치 $\mathbf{x}_p^i$로 나누어 Linear Projection Matrix $\mathbf{E}$에 곱한 후 `[CLS]` 토큰 $\mathbf{x}_{\text{class}}$ 및 위치 임베딩 $\mathbf{E}_{\text{pos}}$를 결합합니다.
 
-이 논문은 다른 방향을 택합니다. 이미지를 **16×16 패치로 분할**하고 각 패치를 플래튼(flatten)하여 NLP 토큰처럼 처리합니다. 추가적인 이미지 특화 구조 없이 표준 Transformer를 그대로 사용하며, 대규모 데이터셋으로 사전학습 후 소규모 벤치마크에 파인튜닝합니다.
+### 2. 수식 및 파이썬 코드 설명
 
-**핵심 개념**
+$$\mathbf{z}_0 = [\mathbf{x}_{\text{class}} \;;\; \mathbf{x}_p^1\mathbf{E} \;;\; \mathbf{x}_p^2\mathbf{E} \;;\; \dots \;;\; \mathbf{x}_p^N\mathbf{E}] + \mathbf{E}_{\text{pos}}$$
 
-- **귀납적 편향 (Inductive Bias)**: 모델이 학습 전부터 가지고 있는 가정. CNN은 "가까운 픽셀끼리 관련이 높다(locality)"와 "같은 패턴은 위치가 달라도 같다(translation equivariance)"를 내장. ViT는 이를 제거하여 데이터로부터 직접 학습.
-- **스케일링 법칙 (Scaling Law)**: 데이터와 모델 크기가 커질수록 성능이 지속적으로 향상되는 현상. ViT는 NLP의 스케일링 법칙이 비전에도 적용됨을 보임.
+$$\mathbf{E} \in \mathbb{R}^{(P^2 \cdot C) \times D}, \quad \mathbf{E}_{\text{pos}} \in \mathbb{R}^{(N+1) \times D}$$
 
-## 🛠️ Chapter 3: Method — Vision Transformer (ViT)
+```python
+import torch
+import torch.nn as nn
 
-**요약**
+class PatchEmbedding(nn.Module):
+    """
+    ViT 2D 이미지 -> 1D Patch Embedding 토큰 변환 모듈 (Conv2d 1x1 stride=P 구현)
+    """
+    def __init__(self, in_channels: int = 3, patch_size: int = 16, embed_dim: int = 768, img_size: int = 224):
+        super().__init__()
+        self.patch_size = patch_size
+        self.num_patches = (img_size // patch_size) ** 2
+        
+        # Conv2d를 이용한 고속 Linear Patch Projection
+        self.proj = nn.Conv2d(in_channels, embed_dim, kernel_size=patch_size, stride=patch_size)
+        self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
+        self.pos_embed = nn.Parameter(torch.zeros(1, self.num_patches + 1, embed_dim))
 
-ViT의 핵심 아이디어는 2D 이미지를 1D 패치 시퀀스로 변환하는 것입니다. 이후 처리는 표준 Transformer Encoder와 동일합니다.
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        x: (B, C, H, W)
+        """
+        B = x.shape[0]
+        patches = self.proj(x).flatten(2).transpose(1, 2) # (B, N_patches, D)
+        
+        cls_tokens = self.cls_token.expand(B, -1, -1) # (B, 1, D)
+        z0 = torch.cat([cls_tokens, patches], dim=1) # (B, N+1, D)
+        z0 = z0 + self.pos_embed
+        return z0
 
-### 3.1 패치 임베딩
+# --- 사용 예시 ---
+patch_embed = PatchEmbedding(patch_size=16, embed_dim=768, img_size=224)
+img = torch.randn(2, 3, 224, 224)
+print("ViT z0 입력 토큰 시퀀스 Shape:", patch_embed(img).shape)
+```
 
-**수식 예제**
+---
 
-$$\mathbf{z}_0 = [\mathbf{x}_{class};\, \mathbf{x}_p^1\mathbf{E};\, \mathbf{x}_p^2\mathbf{E};\, \cdots;\, \mathbf{x}_p^N\mathbf{E}] + \mathbf{E}_{pos}$$
+## 🛠️ Chapter 2: Pre-LayerNorm ViT Encoder 블록 수식
 
-**수식 설명**
+### 1. 요약
+각 서브레이어 전단에 Layer Normalization을 적용(Pre-LN)하고 잔차 연결(Residual Connection)을 수행합니다.
 
-입력 이미지 $\mathbf{x} \in \mathbb{R}^{H \times W \times C}$를 $N$개의 패치로 분할하는 과정:
-- **$\mathbf{x}_{class}$**: 분류를 위한 학습 가능한 토큰. BERT의 `[CLS]` 토큰과 동일한 역할. 이 토큰의 최종 출력이 이미지 전체 표현으로 사용됨.
-- **$\mathbf{x}_p^i$**: $i$번째 패치를 플래튼한 벡터. 크기는 $P^2 \cdot C$ ($P$: 패치 크기, $C$: 채널 수).
-- **$\mathbf{E} \in \mathbb{R}^{(P^2 \cdot C) \times D}$**: 패치를 Transformer 차원 $D$로 매핑하는 선형 투영 행렬 (학습 파라미터).
-- **$\mathbf{E}_{pos} \in \mathbb{R}^{(N+1) \times D}$**: 위치 정보를 담은 학습 가능한 1D 위치 임베딩. 패치의 순서 정보를 Transformer에 전달.
-- **$N = HW/P^2$**: 총 패치 수. 예: 224×224 이미지를 16×16 패치로 나누면 $N = 196$.
+### 2. 수식 및 파이썬 코드 설명
 
-### 3.2 Transformer Encoder 순전파
+$$\mathbf{z}'_\ell = \text{MSA}(\text{LN}(\mathbf{z}_{\ell-1})) + \mathbf{z}_{\ell-1}, \quad \ell = 1 \dots L$$
 
-**수식 예제**
-
-$$\mathbf{z}'_\ell = \text{MSA}(\text{LN}(\mathbf{z}_{\ell-1})) + \mathbf{z}_{\ell-1}, \quad \ell = 1 \ldots L$$
-
-$$\mathbf{z}_\ell = \text{MLP}(\text{LN}(\mathbf{z}'_\ell)) + \mathbf{z}'_\ell, \quad \ell = 1 \ldots L$$
+$$\mathbf{z}_\ell = \text{MLP}(\text{LN}(\mathbf{z}'_\ell)) + \mathbf{z}'_\ell, \quad \ell = 1 \dots L$$
 
 $$\mathbf{y} = \text{LN}(\mathbf{z}_L^0)$$
 
-**수식 설명**
+```python
+import torch
+import torch.nn as nn
 
-- **$\text{MSA}$**: Multi-Head Self-Attention. 각 패치가 다른 모든 패치와 상호작용하며 전역 문맥을 수집.
-- **$\text{LN}$**: Layer Normalization. 각 레이어 입력을 정규화하여 학습 안정화. Pre-norm 방식(Attention 전에 적용)을 사용.
-- **$+ \mathbf{z}_{\ell-1}$**: Residual connection. 정보 손실 없이 깊은 네트워크 학습 가능.
-- **$\text{MLP}$**: 두 개의 선형 레이어 + GELU 활성화. 각 패치 표현을 독립적으로 변환.
-- **$\mathbf{z}_L^0$**: $L$번째 레이어의 `[class]` 토큰 출력. 이것이 최종 이미지 표현 $\mathbf{y}$가 됨.
+class ViTEncoderBlock(nn.Module):
+    """
+    Pre-LayerNorm ViT Encoder Block (MSA + MLP)
+    """
+    def __init__(self, embed_dim: int = 768, num_heads: int = 12, mlp_ratio: float = 4.0):
+        super().__init__()
+        self.ln1 = nn.LayerNorm(embed_dim)
+        self.attn = nn.MultiheadAttention(embed_dim, num_heads, batch_first=True)
+        self.ln2 = nn.LayerNorm(embed_dim)
+        
+        mlp_hidden_dim = int(embed_dim * mlp_ratio)
+        self.mlp = nn.Sequential(
+            nn.Linear(embed_dim, mlp_hidden_dim),
+            nn.GELU(),
+            nn.Linear(mlp_hidden_dim, embed_dim)
+        )
 
-### 3.3 Multihead Self-Attention (Appendix A)
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # 1. MSA with Residual
+        norm_x1 = self.ln1(x)
+        attn_out, _ = self.attn(norm_x1, norm_x1, norm_x1)
+        x = x + attn_out
+        
+        # 2. MLP with Residual
+        norm_x2 = self.ln2(x)
+        x = x + self.mlp(norm_x2)
+        return x
 
-**수식 예제**
+# --- 사용 예시 ---
+encoder_block = ViTEncoderBlock(embed_dim=768)
+seq_in = torch.randn(2, 197, 768)
+print("ViT Encoder Block 출력 Shape:", encoder_block(seq_in).shape)
+```
 
-$$[\mathbf{q}, \mathbf{k}, \mathbf{v}] = \mathbf{z}\mathbf{U}_{qkv}, \quad \mathbf{U}_{qkv} \in \mathbb{R}^{D \times 3D_h}$$
+---
 
-$$A = \text{softmax}\!\left(\mathbf{q}\mathbf{k}^\top / \sqrt{D_h}\right), \quad A \in \mathbb{R}^{N \times N}$$
+## 🛠️ Chapter 3: Multi-Head Self-Attention (MSA) 수식
 
-$$\text{SA}(\mathbf{z}) = A\mathbf{v}$$
+### 1. 요약
+시퀀스 $\mathbf{z}$에서 사영된 $[\mathbf{q}, \mathbf{k}, \mathbf{v}]$ 벡터 간 전역 어텐션 행렬 $A \in \mathbb{R}^{(N+1) \times (N+1)}$을 생성합니다.
 
-**수식 설명**
+### 2. 수식 및 파이썬 코드 설명
 
-- **$\mathbf{q}, \mathbf{k}, \mathbf{v}$**: Query, Key, Value. 입력 시퀀스 $\mathbf{z}$에서 선형 투영으로 생성.
-  - Query: "나는 어떤 정보를 찾고 있는가?"
-  - Key: "나는 어떤 정보를 가지고 있는가?"
-  - Value: "실제로 전달할 정보"
-- **$A_{ij}$**: $i$번째 패치가 $j$번째 패치에 얼마나 주목하는지의 가중치. 모든 패치 쌍에 대해 계산되므로 전역 문맥 포착 가능.
-- **$\sqrt{D_h}$**: 내적값의 스케일을 조정하는 스케일링 팩터. $D_h$가 클수록 내적값이 커져 softmax가 극단적으로 작동하는 것을 방지.
-- **MSA**: $k$개의 SA를 병렬 실행 후 연결. 각 head가 서로 다른 유형의 관계를 학습.
+$$[\mathbf{q}, \mathbf{k}, \mathbf{v}] = \mathbf{z} \mathbf{U}_{qkv}, \quad \mathbf{U}_{qkv} \in \mathbb{R}^{D \times 3D}$$
 
-**핵심 개념**
+$$A = \text{Softmax}\left( \frac{\mathbf{q} \mathbf{k}^T}{\sqrt{D_h}} \right), \quad \text{SA}(\mathbf{z}) = A \mathbf{v}$$
 
-- **패치 크기 $P$의 영향**: $P$가 작을수록 패치 수 $N$이 늘어나 계산 비용이 $O(N^2)$으로 증가. ViT-B는 $P=16$을, ViT-H는 $P=14$를 사용.
-- **Hybrid Architecture**: 패치 대신 CNN(ResNet)의 중간 피처맵을 입력으로 사용하는 변형. 소규모 데이터에서 순수 ViT보다 약간 유리하지만 대규모에서 차이 소멸.
-- **파인튜닝 시 해상도 조정**: 사전학습보다 높은 해상도로 파인튜닝 시, 패치 크기를 유지하면 시퀀스 길이가 늘어남. 기존 위치 임베딩을 2D 보간(interpolation)하여 적응.
+```python
+import torch
+import torch.nn.functional as F
+
+def compute_patch_self_attention_matrix(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor) -> torch.Tensor:
+    """
+    ViT Single-Head Self-Attention 연산 구현
+    q, k, v: (B, N+1, D_h)
+    """
+    d_h = q.size(-1)
+    attn_matrix = F.softmax(torch.matmul(q, k.transpose(-2, -1)) / (d_h ** 0.5), dim=-1)
+    output = torch.matmul(attn_matrix, v)
+    return output, attn_matrix
+
+# --- 사용 예시 ---
+q_p = torch.randn(2, 197, 64)
+k_p = torch.randn(2, 197, 64)
+v_p = torch.randn(2, 197, 64)
+out_sa, A_mat = compute_patch_self_attention_matrix(q_p, k_p, v_p)
+print("Self-Attention 출력 Shape:", out_sa.shape, "어텐션 맵 Shape:", A_mat.shape)
+```
+
+---
+
+## 🛠️ Chapter 4: 2D 위치 임베딩 보간 (Bilinear Interpolation)
+
+### 1. 요약
+사전학습 해상도 $224 \times 224$ ($14 \times 14$ Grid)에서 파인튜닝 해상도 $384 \times 384$ ($24 \times 24$ Grid)로 확대될 때 1D 위치 임베딩을 2D Grid로 변경한 후 Bilinear Interpolation 보간합니다.
+
+### 2. 수식 및 파이썬 코드 설명
+
+$$\mathbf{E}_{\text{pos\_new}} = \text{BilinearInterpolate2D}\left( \mathbf{E}_{\text{pos\_orig\_2D}}, \ (H_{\text{new}}/P, W_{\text{new}}/P) \right)$$
+
+```python
+import torch
+import torch.nn.functional as F
+
+def interpolate_pos_embed_2d(
+    pos_embed_orig: torch.Tensor, # (1, N_orig+1, D)
+    orig_grid_size: int = 14,
+    new_grid_size: int = 24
+) -> torch.Tensor:
+    """
+    ViT 파인튜닝 고해상도 적용 시 Positional Embedding 2D Bilinear Interpolation
+    """
+    D = pos_embed_orig.shape[-1]
+    cls_token_pos = pos_embed_orig[:, :1, :]
+    patch_pos = pos_embed_orig[:, 1:, :] # (1, 196, D)
+    
+    # 2D Grid (1, D, 14, 14) 변환
+    patch_pos_2d = patch_pos.reshape(1, orig_grid_size, orig_grid_size, D).permute(0, 3, 1, 2)
+    
+    # 2D Bilinear Interpolation -> (1, D, 24, 24)
+    new_patch_pos_2d = F.interpolate(patch_pos_2d, size=(new_grid_size, new_grid_size), mode='bilinear', align_corners=False)
+    
+    # 1D 토큰 복원 (1, 576, D)
+    new_patch_pos = new_patch_pos_2d.permute(0, 2, 3, 1).reshape(1, new_grid_size * new_grid_size, D)
+    
+    # [CLS] 위치 임베딩 합체
+    return torch.cat([cls_token_pos, new_patch_pos], dim=1) # (1, 577, D)
+
+# --- 사용 예시 ---
+pos_orig = torch.randn(1, 197, 768) # 14x14 grid
+pos_new = interpolate_pos_embed_2d(pos_orig, orig_grid_size=14, new_grid_size=24)
+print("보간된 고해상도 Positional Embedding Shape:", pos_new.shape)
+```
+
+---
 
 ## 📊 주요 실험 및 결과 (Experiments & Results)
 
-- **사용 데이터셋 / 벤치마크**: ImageNet, ImageNet-21k, JFT-300M (사전학습), ImageNet/ImageNet ReaL/CIFAR-100/VTAB(19 tasks) (평가)
+### 1. ImageNet-1K 탑-1 분류 정확도 및 학습 연산 비용 비교
 
-**모델 변형**
+| 알고리즘 (Method) | 사전학습 데이터셋 | ImageNet 탑-1 Accuracy ↑ | 학습 연산 비용 (TPUv3-days) ↓ |
+|---|---|---|---|
+| **ResNet-152x4 (BiT-L)** | JFT-300M | 87.54% | 9.9k TPU-days |
+| **Noisy Student (EffNet)** | JFT-300M | 88.50% | 12.3k TPU-days |
+| **ViT-L/16 (Ours)** | JFT-300M | 87.76% | 0.68k TPU-days |
+| **ViT-H/14 (Ours)** | **JFT-300M** | **88.55% (SOTA)** | **2.5k TPU-days (4배 절감)** |
 
-| 모델 | 레이어 수 | 히든 크기 $D$ | MLP 크기 | 헤드 수 | 파라미터 수 |
-|------|---------|------------|--------|--------|-----------|
-| ViT-Base | 12 | 768 | 3072 | 12 | 86M |
-| ViT-Large | 24 | 1024 | 4096 | 16 | 307M |
-| ViT-Huge | 32 | 1280 | 5120 | 16 | 632M |
+- **결과**: 대규모 JFT-300M 사전학습 시 CNN 기반 SOTA를 완전히 넘어서며 **학습 컴퓨팅 연산량을 4배 가량 절감**.
 
-표기법: ViT-L/16 = Large 모델, 패치 크기 16×16.
-
-- **주요 성과**: JFT-300M으로 사전학습한 ViT-H/14는 기존 SOTA(BiT-L ResNet152x4, Noisy Student EfficientNet-L2)를 모든 벤치마크에서 능가하면서 **사전학습 비용은 약 4배 절감**:
-
-| 벤치마크 | ViT-H/14 (JFT) | BiT-L | Noisy Student |
-|---------|---------------|-------|--------------|
-| ImageNet | **88.55%** | 87.54% | 88.5% |
-| ImageNet ReaL | **90.72%** | 90.54% | 90.55% |
-| CIFAR-100 | **94.55%** | 93.51% | — |
-| VTAB (19 tasks) | **77.63%** | 76.29% | — |
-
-TPUv3-core-days: ViT-H/14 = 2.5k, BiT-L = 9.9k, Noisy Student = 12.3k.
-
-- **사전학습 데이터 요구량**:
-  - 소규모 (ImageNet 1.3M): ViT가 ResNet(BiT) 대비 몇 퍼센트 포인트 낮음. CNN의 귀납적 편향이 소량 데이터에서 유리하게 작용.
-  - 중규모 (ImageNet-21k 14M): 차이가 좁혀짐.
-  - 대규모 (JFT-300M 303M): ViT가 ResNet을 능가. 대규모 데이터가 귀납적 편향을 대체.
-- **스케일링 연구**: 같은 사전학습 연산량 기준으로 ViT는 ResNet 대비 약 2~4배 적은 연산으로 동일 성능 달성. Hybrid(CNN+ViT)는 소규모 연산 예산에서 약간 유리하지만 큰 모델에서 차이 소멸.
-- **ViT 내부 분석**: 첫 번째 레이어 필터는 CNN의 Gabor 필터와 유사한 구조를 자발적으로 학습. 위치 임베딩은 가까운 패치일수록 높은 유사도를 가지며 행-열 구조가 자연스럽게 학습됨. 낮은 레이어에서도 일부 헤드는 이미지 전체에 걸친 전역 Attention을 수행하며, 깊어질수록 평균 Attention 거리 증가.
-- **자기지도 학습 예비 실험**: Masked Patch Prediction(BERT의 MLM과 유사) 방식으로 자기지도 학습 시, ViT-B/16이 ImageNet에서 79.9% 달성. 지도학습 대비 4% 차이로, 자기지도 ViT의 가능성을 시사 (→ MAE, DINO 등으로 이어짐).
+---
 
 ## 💡 결론 및 시사점 (Conclusion & Insights)
 
-ViT는 "이미지도 패치 시퀀스로 처리할 수 있다"는 단순한 아이디어가 대규모 데이터와 결합될 때 CNN을 능가할 수 있음을 증명했습니다.
+### 1. 결론
+ViT는 "An Image is Worth 16x16 Words"라는 표제 아래, 컴퓨터 비전 백본을 CNN에서 Vision Transformer 시대로 완전히 전환시킨 혁명적 논문입니다.
 
-- **패치 토큰화**와 **[CLS] 토큰**, **1D 위치 임베딩** 등 NLP의 개념을 그대로 비전에 이식할 수 있음을 실증적으로 보여준 최초 사례이며, 이후 전이 학습 효율(사전학습 후 CIFAR, Pets 등 소규모 데이터셋 파인튜닝 시 CNN 대비 훨씬 적은 연산으로 동등 이상 성능)을 확보했다는 점에서 실무적 가치가 크다.
-- **자율주행·AV 인식 계보에서의 의미**: BEVFormer, SurroundOcc, TPVFormer 등 대부분의 BEV 인식 논문이 ViT를 backbone으로 채택했으며, 멀티카메라 이미지를 패치 단위로 처리하는 방식이 BEV Attention과 자연스럽게 결합되었다. 카메라 피처 추출기의 표준이 ResNet에서 ViT 계열(ViT-B/16, InternImage 등)로 전환되는 계기가 되었다.
-- **한계점 및 아쉬운 점**:
-  - 소규모 데이터에서 CNN 대비 열세 — DeiT(데이터 효율 개선), MAE(자기지도 사전학습)로 해결됨
-  - 고해상도 이미지에서 $O(N^2)$ 계산 비용 — Swin Transformer(윈도우 Attention)로 해결됨
-  - 탐지·분할 등 밀집 예측 태스크 미지원 — ViTDet, DINOv2 등으로 확장됨
-  - JFT-300M과 같은 비공개 초대규모 데이터셋에 의존한다는 점은 재현성·접근성 측면에서 아쉬운 부분
+### 2. 한계점 및 아쉬운 점
+- 소규모 데이터에서 CNN 대비 열세 — DeiT(데이터 효율 개선), MAE(자기지도 사전학습)로 해결됨.
+- 고해상도 이미지에서 $O(N^2)$ 계산 비용 — Swin Transformer(윈도우 Attention)로 해결됨.
+- 탐지·분할 등 밀집 예측 태스크 미지원 — ViTDet, DINOv2 등으로 확장됨.
+- JFT-300M과 같은 비공개 초대규모 데이터셋에 의존한다는 점은 재현성·접근성 측면에서 아쉬운 부분.
 
 ---
+
+## 참고 자료
+- [Google Research ViT 공식 GitHub 저장소](https://github.com/google-research/vision_transformer)
+- [ICLR 2021 논문 (arXiv:2010.11929)](https://arxiv.org/abs/2010.11929)
 
 *관련 논문: [Attention Is All You Need](/posts/papers/attention-is-all-you-need/), [ResNet](/posts/papers/resnet-deep-residual-learning-for-image-recognition/), [DETR](/posts/papers/detr-end-to-end-object-detection-with-transformers/), [BEVFormer](/posts/papers/bevformer/)*

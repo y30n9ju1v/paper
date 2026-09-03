@@ -134,4 +134,4 @@ OpenCalib은 "센서 캘리브레이션은 자율주행 시스템의 기초"라�
 - [공식 GitHub 저장소 (PJLab-ADG/SensorsCalibration)](https://github.com/PJLab-ADG/SensorsCalibration)
 - [arXiv 논문 (arXiv:2205.14087)](https://arxiv.org/abs/2205.14087)
 
-*관련 논문: [PointPillars](/posts/papers/pointpillars-fast-encoders-object-detection-point-clouds/), [CenterPoint](/posts/papers/centerpoint-center-based-3d-object-detection-and-tracking/), [BEVFusion](/posts/papers/bevfusion-multi-task-multi-sensor-fusion/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/), [Waymo Open Dataset](/posts/papers/waymo-open-dataset/)*
+*관련 논문: [PointPillars](/posts/papers/pointpillars-fast-encoders-object-detection-point-clouds/), [CenterPoint](/posts/papers/centerpoint-center-based-3d-object-detection-and-tracking/), [BEVFusion](/posts/papers/bevfusion-multi-task-multi-sensor-fusion/), [nuScenes](/posts/papers/nuscenes-multimodal-dataset-autonomous-driving/), [Waymo Open Dataset](/posts/papers/waymo-open-dataset/), [Calib-Anything](/posts/papers/calib-anything-zero-training-lidar-camera-calibration-using-segment-anything/)*
